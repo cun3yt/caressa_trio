@@ -9,23 +9,24 @@
 
     <q-toolbar slot="header">
         <q-toolbar-title>
-        Today & Upcoming
-        <span slot="subtitle">Tasks</span>
+          {{header.title}}
+
+        <span slot="subtitle">{{header.subtitle}}</span>
       </q-toolbar-title>
 
-      <q-btn v-if="newCTA"
+      <q-btn v-if="header.cta"
              class="within-iframe-hide"
              flat
-             @click="newCTA.clickHandler"
+             @click="header.cta.clickHandler"
              style="margin-right: 15px">
         <q-icon name="add" />
-        {{newCTA.label}}
+        {{header.cta.label}}
       </q-btn>
 
     </q-toolbar>
 
     <div class="layout-padding docs-btn row justify-center">
-      <router-view :new-cta-url="setNewCTA" />
+      <router-view :setup-content="setupContent" />
     </div>
 
     <q-tabs slot="footer" v-if="!layoutStore.hideTabs" style="text-align:center;">
@@ -71,18 +72,24 @@
     },
     data () {
       return {
-        newCTA: null,
-        layoutStore
+        layoutStore,
+        header: {
+          cta: null,
+          title: '',
+          subtitle: ''
+        }
       }
     },
     methods: {
-      setNewCTA (newCTA) {
-        this.newCTA = newCTA
+      setupContent ({cta = null, title = '', subtitle = ''} = {}) {
+        this.header.cta = cta
+        this.header.title = title
+        this.header.subtitle = subtitle
       }
     },
     watch: {
       '$route' (to, from) {
-        this.newCTA = null
+        this.setupContent()
       }
     },
     name: 'layout'

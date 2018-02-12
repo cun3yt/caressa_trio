@@ -38,7 +38,7 @@
       QIcon,
       QSpinnerRadio
     },
-    props: ['newCtaUrl'],
+    props: ['setupContent'],
     data () {
       return {
         zzz: false,
@@ -76,10 +76,15 @@
     },
     created () {
       console.log('click handler is called')
-      this.newCtaUrl({
-        label: 'New Task',
-        clickHandler () {
-          this.router.replace('/showcase')
+
+      this.setupContent({
+        title: 'Tasks',
+        cta: {
+          label: 'New Task',
+          clickHandler () {
+            console.log('cta is called...')
+            this.router.replace('/showcase')
+          }
         }
       })
     }

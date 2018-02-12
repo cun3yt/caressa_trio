@@ -175,6 +175,12 @@
       QRange,
       QSelect
     },
+    props: ['setupContent'],
+    created () {
+      this.setupContent({
+        title: 'Settings'
+      })
+    },
     data () {
       return {
         checked_one: true,
