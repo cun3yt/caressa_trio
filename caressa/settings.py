@@ -31,8 +31,10 @@ DEBUG = (ENV == 'dev')
 
 ALLOWED_HOSTS = [
     'localhost',
+    '127.0.0.1',
     '.herokuapp.com',
-    'www.contentty.com',
+    '.ngrok.io',
+    '.serveo.net',
 ]
 
 
@@ -45,9 +47,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
+    'rest_framework',
+    'reversion',                # package `django-reversion`
+    'phonenumber_field',        # package `django-phonenumber-field`
+    'task_list',
+    'corsheaders',
+    'utilities',
+    'django_fsm',
+    'alexa',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -86,6 +98,8 @@ DATABASES = {
     'default': dj_database_url.config(conn_max_age=600)
 }
 
+AUTH_USER_MODEL = 'task_list.User'
+
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
 
@@ -104,6 +118,10 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CORS_ORIGIN_WHITELIST = (
+    '127.0.0.1:8080',
+    'localhost:8080',
+)
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/

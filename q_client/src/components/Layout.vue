@@ -11,8 +11,8 @@
         <q-toolbar-title>
           {{header.title}}
 
-        <span slot="subtitle">{{header.subtitle}}</span>
-      </q-toolbar-title>
+          <span slot="subtitle">{{header.subtitle}}</span>
+        </q-toolbar-title>
 
       <q-btn v-if="header.cta"
              class="within-iframe-hide"
@@ -32,7 +32,7 @@
     <q-tabs slot="footer" v-if="!layoutStore.hideTabs" style="text-align:center;">
       <q-route-tab slot="title" icon="date_range" :to="{ name: 'today' }" replace label="Tasks" />
       <q-route-tab slot="title" icon="people" :to="{ name: 'care-circle' }" replace label="Circle" />
-      <q-route-tab slot="title" icon="show_chart" :to="{ name: 'health-numbers' }" replace label="Health" />
+      <q-route-tab slot="title" icon="show_chart" :to="{ name: 'health-numbers' }" replace label="Status" />
       <q-route-tab slot="title" icon="settings" :to="{ name: 'settings' }" replace label="Settings" />
     </q-tabs>
 

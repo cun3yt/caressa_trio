@@ -1,30 +1,71 @@
 <template>
   <div class="main-content">
 
-    <p class="caption">Today's Tasks</p>
+    <q-list :highlight="todayList.length > 0">
+      <q-list-header class="primary">Today's Tasks</q-list-header>
 
-    <div v-for="(todo, id) in todayList" class="todo-wrapper" :key="todo.id">
-      <q-checkbox color="secondary"
-                  :label="todo.label"
-                  :value="!!todo.doneTime"
-                  @input="toggle(id, $event)">
-      </q-checkbox>
-    </div>
+      <q-item v-if="todayList.length === 0">
+        <q-item-side></q-item-side>
+        <q-item-main>
+          <q-item-tile label>Nothing for today</q-item-tile>
+          <q-item-tile sublabel>Hint: Use "New Task" button at the top right to add a task</q-item-tile>
+        </q-item-main>
+      </q-item>
 
-    <p class="caption">Upcoming Tasks</p>
+      <q-item v-for="(todo, id) in todayList" tag="label" :key="todo.id">
+        <q-item-side>
+          <q-checkbox color="secondary"
+                      :value="!!todo.done_time"
+                      @input="toggle(id, todo.id, $event)" />
+        </q-item-side>
+        <q-item-main>
+          <q-item-tile label>{{ todo.title }}</q-item-tile>
+          <q-item-tile v-if="!!todo.details" sublabel>{{ todo.details }}</q-item-tile>
+          <q-item-tile v-if="!!todo.assignedTo" sublabel>{{ todo.assignedTo }}</q-item-tile>
+        </q-item-main>
+      </q-item>
+    </q-list>
 
-    <!--<slot name="header_cto">-->
-      <!--<q-btn class="within-iframe-hide" flat @click="$router.replace('/showcase')" style="margin-right: 15px">-->
-        <!--<q-icon name="add" />-->
-        <!--New Task-->
-      <!--</q-btn>-->
-    <!--</slot>-->
+    <q-list :highlight="todayList.length > 0">
+      <q-list-header>Upcoming Tasks</q-list-header>
+
+      <q-item v-if="upcomingList.length === 0">
+        <q-item-side></q-item-side>
+        <q-item-main>
+          <q-item-tile label>Nothing upcoming</q-item-tile>
+          <q-item-tile sublabel>Hint: Use "New Task" button at the top right to add a task</q-item-tile>
+        </q-item-main>
+      </q-item>
+
+      <q-item v-for="(todo, id) in upcomingList" :key="todo.id">
+        <q-item-side>
+          <q-item-tile icon="label_outline" color="primary" />
+        </q-item-side>
+        <q-item-main>
+          <q-item-tile label>{{ todo.title }}</q-item-tile>
+          <q-item-tile sublabel>{{ todo.details }}</q-item-tile>
+          <q-item-tile sublabel>{{ todo.time }}</q-item-tile>
+        </q-item-main>
+      </q-item>
+
+    </q-list>
+
+<!--<q-btn class="within-iframe-hide" flat @click="$router.replace('/showcase')" style="margin-right: 15px">-->
+  <!--<q-icon name="add" />-->
+  <!--New Task-->
+<!--</q-btn>-->
 
   </div>
 </template>
 
 <script>
   import {
+    QList,
+    QListHeader,
+    QItem,
+    QItemSide,
+    QItemMain,
+    QItemTile,
     QBtn,
     QCheckbox,
     QIcon,
@@ -33,6 +74,12 @@
 
   export default {
     components: {
+      QList,
+      QListHeader,
+      QItem,
+      QItemSide,
+      QItemMain,
+      QItemTile,
       QBtn,
       QCheckbox,
       QIcon,
@@ -41,51 +88,53 @@
     props: ['setupContent'],
     data () {
       return {
-        zzz: false,
-        todayList: [
-          {
-            id: '1',
-            label: 'Blood Pressure Medicine',
-            doneTime: null,
-            assignedTo: null
-          },
-          {
-            id: '2',
-            label: 'Walking Exercise',
-            doneTime: null,
-            assignedTo: 'Caregiver Org.'
-          }
-        ],
+        todayList: [],
         upcomingList: [
           {
             id: '1',
-            label: 'Blood Pressure Medicine',
+            title: 'Grocery Shopping',
+            time: 'Tomorrow, A.M.'
+          },
+          {
+            id: '2',
+            title: 'Blood Pressure Medicine',
             time: 'Daily, A.M.'
           }
         ]
       }
     },
     methods: {
-      toggle (id, checkValue) {
+      toggle (listId, resourceId, checkValue) {
         if (!checkValue) {
-          this.todayList[id].doneTime = null
+          this.$options.task_resource.patch({id: resourceId}, { done: false })
+          this.todayList[listId].done_time = null
           return
         }
-        this.todayList[id].doneTime = (new Date()).toUTCString()
+        this.$options.task_resource.patch({id: resourceId}, { done: true })
+        this.todayList[listId].done_time = (new Date()).toUTCString()
       }
     },
     created () {
-      console.log('click handler is called')
+      const url = this.$root.$options.apiHost + '/tasks{/id}/'
+      this.$options.task_resource = this.$resource(url,
+        {}, {
+          patch: { method: 'PATCH', url: url }
+        })
 
       this.setupContent({
         title: 'Tasks',
         cta: {
           label: 'New Task',
           clickHandler () {
-            console.log('cta is called...')
             this.router.replace('/showcase')
           }
         }
+      })
+
+      this.$http.get(this.$root.$options.apiHost + '/tasks/', {
+        time: 'today'
+      }).then(response => {
+        this.todayList = response.data
       })
     }
   }

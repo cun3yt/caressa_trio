@@ -11,17 +11,20 @@ require(`quasar/dist/quasar.${__THEME}.css`)
 // require(`quasar/dist/quasar.ie.${__THEME}.css`)
 
 import Vue from 'vue'
-// import Quasar from 'quasar'
 import router from './router'
 
-// todo Don't user this in production
+// todo Don't use this in production
 import Quasar, * as All from 'quasar'
+import VueResource from 'vue-resource'
 
 Vue.config.productionTip = false
+
 Vue.use(Quasar, {
   components: All, // todo don't use in production
   directives: All // todo don't use in production
 })
+
+Vue.use(VueResource)
 
 if (__THEME === 'mat') {
   require('quasar-extras/roboto-font')
@@ -35,6 +38,7 @@ Quasar.start(() => {
   /* eslint-disable no-new */
   new Vue({
     el: '#q-app',
+    apiHost: 'http://127.0.0.1:8000/api/0.1',
     router,
     render: h => h(require('./App').default)
   })

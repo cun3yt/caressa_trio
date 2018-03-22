@@ -1,0 +1,12 @@
+digraph {
+	subgraph cluster_task_list_SomeState_state {
+		graph [label="task_list.SomeState.state"]
+		"task_list.some_state.state.published" [label=published shape=doublecircle]
+		"task_list.some_state.state.draft" [label=draft shape=circle]
+		"task_list.some_state.state._initial" [label="" shape=point]
+		"task_list.some_state.state._initial" -> "task_list.some_state.state.draft"
+		"task_list.some_state.state.approved" [label=approved shape=circle]
+		"task_list.some_state.state.approved" -> "task_list.some_state.state.published" [label=publish]
+		"task_list.some_state.state.draft" -> "task_list.some_state.state.approved" [label=approve]
+	}
+}

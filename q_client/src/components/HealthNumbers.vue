@@ -9,7 +9,7 @@
     props: ['setupContent'],
     created () {
       this.setupContent({
-        title: 'Health Numbers'
+        title: 'Status'
       })
     }
   }
