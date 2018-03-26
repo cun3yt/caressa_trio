@@ -7,7 +7,10 @@ import json
 from random import sample
 
 
-# question => expected answers ("intent"s) => {collect data} and text & where to go next...
+global_state = {
+    'user': None,
+}
+
 
 class Question:
     def __init__(self, versions, intent_list, reprompt=None):
@@ -156,12 +159,32 @@ class EmotionalEngine(Engine):
                       ],
             intent_list=[
                 GoodIntent(question=Question(versions=['so is it good?'],
-                                             intent_list=[GoodIntent()])),
-                BadIntent()
+                                             intent_list=[
+                                                 GoodIntent(
+                                                     process_fn=self.update_on_good_intent
+                                                 )
+                                             ])),
+                BadIntent(
+                    process_fn=self.update_on_bad_intent
+                )
             ],
         )
 
         super(EmotionalEngine, self).__init__(question=init_question)
+
+    @staticmethod
+    def update_on_good_intent():
+        global global_state
+        alexa_user = global_state['user']
+        alexa_user.update_emotion('happiness', percentage=0.1, max_value=75)
+        print(" >>> update_on_good_intent is called")
+
+    @staticmethod
+    def update_on_bad_intent():
+        global global_state
+        alexa_user = global_state['user']
+        alexa_user.update_emotion('happiness', percentage=-5.0)
+        print(" >>> update_on_bad_intent is called")
 
 
 class DailyMoodEngine:
@@ -234,6 +257,8 @@ def continue_engine_session(session: EngineSession, intent_name):
         traverser = traverser.question if lev == 'question' else traverser.intents.get(lev)
 
     intent = traverser.intents.get(intent_name)
+    if intent.process_fn:
+        intent.process_fn()
     return intent.get_random_response(), intent
 
 
@@ -248,12 +273,15 @@ def next_engine(engine_session: EngineSession):
 
 @csrf_exempt
 def alexa_io(request):
+    global global_state
+
     req_body = json.loads(request.body)
 
     session_id = deep_get(req_body, 'session.sessionId', '')
     user_id = deep_get(req_body, 'context.System.user.userId', '')
 
     alexa_user = AUser.objects.get_or_create(alexa_id=user_id)[0]
+    global_state['user'] = alexa_user
     engine_session = alexa_user.last_engine_session()
 
     sess, is_new_session = Session.objects.get_or_create(alexa_id=session_id, alexa_user=alexa_user)

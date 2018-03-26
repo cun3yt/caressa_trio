@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.postgres.fields import JSONField
-from model_utils.models import TimeStampedModel
+from model_utils.models import TimeStampedModel, StatusField
+from model_utils import Choices
 from task_list.models import User
 
 
@@ -15,6 +16,55 @@ class AUser(TimeStampedModel):
         if not state:
             return self.engine_sessions.order_by('modified').last()
         return self.engine_sessions.filter(state=state).order_by('modified').last()
+
+    def set_emotion(self, emotion, value):
+        state = AUserEmotionalState(user=self, attribute=emotion, value=value)
+        state.save()
+        return state
+
+    def update_emotion(self, emotion, increment=None, percentage=None, max_value=100, min_value=0):
+        state = self.emotional_states.filter(attribute=emotion).last()
+        value = float(state.value if state else AUserEmotionalState.EMOTION_DEFAULTS[emotion])
+
+        if increment and 0 <= increment:
+            new_value = value + increment
+            new_value = new_value if new_value < max_value else max_value
+        elif increment and increment < 0:
+            new_value = value + increment
+            new_value = new_value if min_value < new_value else min_value
+        elif percentage and 0 <= percentage:
+            new_value = value * (1+percentage/100)
+            new_value = new_value if new_value < max_value else max_value
+        elif percentage and percentage < 0:
+            new_value = value * (1+percentage/100)
+            new_value = new_value if min_value < new_value else min_value
+        else:
+            raise Exception("Problem with increment/percentage in emotion value update")
+
+        new_state = AUserEmotionalState(user=self, attribute=emotion, value=new_value)
+        new_state.save()
+        return new_state
+
+
+class AUserEmotionalState(TimeStampedModel):
+    class Meta:
+        db_table = 'a_user_emotional_state'
+        ordering = ('-created',)
+
+    EMOTIONS = Choices('happiness', 'anxiety', 'delusional', 'loneliness')
+    EMOTION_DEFAULTS = {
+        'happiness': 50.0,
+        'anxiety': 50.0,
+        'delusional': 50.0,
+        'loneliness': 50.0,
+    }
+
+    user = models.ForeignKey(to=AUser, null=False, related_name='emotional_states', on_delete=models.DO_NOTHING)
+    attribute = StatusField(choices_name='EMOTIONS', db_index=True)
+    value = models.DecimalField(max_digits=5, decimal_places=2)
+
+
+AUserEmotionalState._meta.get_field('created').db_index = True
 
 
 class Request(TimeStampedModel):
