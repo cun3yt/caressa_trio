@@ -93,9 +93,9 @@ class Slot:
 
 
 class GoodIntent(Intent):
-    def __init__(self, slots=None, process_fn=None, question=None):
+    def __init__(self, slots=None, process_fn=None, question=None, response_set=None):
         name = GoodIntent.intent_identifier()
-        response_set = [
+        default_response_set = [
             "that's good to hear.",
             "that's awesome!",
         ]
@@ -106,6 +106,7 @@ class GoodIntent(Intent):
             "the best",
             "good",
         ]
+        response_set = response_set if response_set else default_response_set
         super(GoodIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
                                          process_fn=process_fn, question=question)
 
@@ -122,9 +123,9 @@ class BadIntent(Intent):
     def intent_identifier(cls):
         return 'bad_intent'
 
-    def __init__(self, slots=None, process_fn=None, question=None):
+    def __init__(self, slots=None, process_fn=None, question=None, response_set=None):
         name = self.intent_identifier()
-        response_set = [
+        default_response_set = [
             "I am sorry to hear.",
             "Ah, that's bad!",
             "Oh, I'm sorry",
@@ -137,8 +138,80 @@ class BadIntent(Intent):
             "worse",
             "bad",
         ]
+        response_set = response_set if response_set else default_response_set
         super(BadIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
-                                         process_fn=process_fn, question=question)
+                                        process_fn=process_fn, question=question)
+
+
+class YesIntent(Intent):
+    @classmethod
+    def intent_identifier(cls):
+        return 'yes_intent'
+
+    def __init__(self, slots=None, process_fn=None, question=None, response_set=None):
+        name = self.intent_identifier()
+        default_response_set = [
+            "Good!",
+        ]
+        samples = [
+            "yep",
+            "yeah",
+            "good call",
+            "of course",
+            "sure",
+            "yes",
+        ]
+        response_set = response_set if response_set else default_response_set
+        super(YesIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
+                                        process_fn=process_fn, question=question)
+
+
+class NoIntent(Intent):
+    @classmethod
+    def intent_identifier(cls):
+        return 'no_intent'
+
+    def __init__(self, slots=None, process_fn=None, question=None, response_set=None):
+        name = self.intent_identifier()
+        default_response_set = [
+            'OK',
+            'No problem',
+        ]
+        samples = [
+            "nope",
+            "of course not",
+            "hell no",
+            "no",
+        ]
+        response_set = response_set if response_set else default_response_set
+        super(NoIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
+                                       process_fn=process_fn, question=question)
+
+
+class BloodPressureIntent(Intent):
+    @classmethod
+    def intent_identifier(cls):
+        return 'blood_pressure_intent'
+
+    def __init__(self, slots=None, process_fn=None, question=None, response_set=None):
+        name = self.intent_identifier()
+        default_response_set = [
+            "Thanks, I jotted them down.",
+            "Alright!",
+        ]
+        samples = [
+            "it is {systolic_slot} over {diastolic_slot}",
+            "{diastolic_slot} over Systolic {systolic_slot}",
+            "Diastolic {diastolic_slot} over {systolic_slot}",
+            "{systolic_slot} over Diastolic {diastolic_slot}",
+            "Systolic {systolic_slot} over {diastolic_slot}",
+            "Diastolic {diastolic_slot} over Systolic {systolic_slot}",
+            "Systolic {systolic_slot} over Diastolic {diastolic_slot}",
+            "{systolic_slot} over {diastolic_slot}",
+        ]
+        response_set = response_set if response_set else default_response_set
+        super(BloodPressureIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
+                                                  process_fn=process_fn, question=question)
 
 
 class Engine:
@@ -173,78 +246,62 @@ class EmotionalEngine(Engine):
         super(EmotionalEngine, self).__init__(question=init_question)
 
     @staticmethod
-    def update_on_good_intent():
+    def update_on_good_intent(**kwargs):
         global global_state
         alexa_user = global_state['user']
         alexa_user.update_emotion('happiness', percentage=0.1, max_value=75)
         print(" >>> update_on_good_intent is called")
 
     @staticmethod
-    def update_on_bad_intent():
+    def update_on_bad_intent(**kwargs):
         global global_state
         alexa_user = global_state['user']
         alexa_user.update_emotion('happiness', percentage=-5.0)
         print(" >>> update_on_bad_intent is called")
 
 
-class DailyMoodEngine:
+class MedicalEngine(Engine):
     def __init__(self):
-        self.start_question = "like-to-hear-a-joke"
-        self.questions = {
-            "like-to-hear-a-joke": {
-                "question": [
-                    "Would you like to hear a joke?"
-                ],
-                "intents-expected": {
-                    "yes_intent": {
-                        "follow-up": {
-                            "text": [
-                                "Why are bikes always slow? Because they are two tired!"
-                            ]
-                        }
-                    },
-                    "no_intent": {
-                        "follow-up": {
-                            "text": [
-                                "No problem."
-                            ]
-                        }
-                    }
-                }
-            }
-        }
+        init_question = Question(
+            versions=[
+                "Have you taken your blood pressure measurements yet?",
+                "Did you take your blood pressure today?",
+            ],
+            reprompt=["Have you taken your blood pressure measurements? Yes or no?"],
+            intent_list=[
+                YesIntent(question=Question(versions=['What are your measurements?'],
+                                            reprompt=['Please tell me with systolic over diastolic such as 120 over 80'],
+                                            intent_list=[
+                                                BloodPressureIntent(
+                                                    process_fn=self.save_blood_pressure
+                                                )
+                                            ])),
+                NoIntent(question=Question(versions=['Would you like to take your measurement now then come back to '
+                                                     'tell it to me?'],
+                                           reprompt=["Sorry, I didn't get it. Do you want to measure now and then tell "
+                                                     "it to me? Yes or No?"],
+                                           intent_list=[
+                                               YesIntent(response_set=['You can say Alexa open Caressa after '
+                                                                       'you have taken your blood pressure. Bye.']),
+                                               NoIntent(response_set=['Ok, let’s check your blood pressure later today.']),
+                                           ]))
+            ],
+        )
+
+        super(MedicalEngine, self).__init__(question=init_question)
+
+    @staticmethod
+    def save_blood_pressure(**kwargs):
+        global global_state
+        alexa_user = global_state['user']
+        alexa_user.set_medical_state('blood_pressure', {
+            'diastolic': deep_get(kwargs, 'intent.slots.diastolic_slot.value'),
+            'systolic': deep_get(kwargs, 'intent.slots.systolic_slot.value'),
+            'all_params': kwargs,
+        })
 
 
-class MedicalEngine:
-    def __init__(self):
-        self.start_question = "blood-pressure"
-        self.questions = {
-            "blood-pressure": {
-                "question": [
-                    "Did you measure your blood pressure?",
-                ],
-                "intents-expected": {
-                    "yes_intent": {
-                        "follow-up": {
-                            "text": [
-                                "Atta girl!",
-                                "Good for you little punk! SO WHAT?"
-                            ]
-                        }
-                    },
-                    "no_intent": {
-                        "follow-up": {
-                            "text": [
-                                "Go fun yourself then..."
-                            ]
-                        }
-                    }
-                }
-            }
-        }
-
-
-def continue_engine_session(session: EngineSession, intent_name):
+def continue_engine_session(session: EngineSession, intent_name, request_intent):
     __level = session.data.get('level')
     engine_class = globals()[session.name]
     engine = engine_class()
@@ -257,8 +314,10 @@ def continue_engine_session(session: EngineSession, intent_name):
         traverser = traverser.question if lev == 'question' else traverser.intents.get(lev)
 
     intent = traverser.intents.get(intent_name)
+
     if intent.process_fn:
-        intent.process_fn()
+        intent.process_fn(intent=request_intent)
+
     return intent.get_random_response(), intent
 
 
@@ -266,8 +325,6 @@ def next_engine(engine_session: EngineSession):
     if engine_session.name == 'EmotionalEngine':
         return 'MedicalEngine'
     if engine_session.name == 'MedicalEngine':
-        return 'DailyMoodEngine'
-    if engine_session.name == 'DailyMoodEngine':
         return 'EmotionalEngine'
 
 
@@ -306,7 +363,7 @@ def alexa_io(request):
                                                                    intent_name))
 
     if engine_session and engine_session.state == 'continue' and req_intent:
-        response, intent = continue_engine_session(engine_session, intent_name)
+        response, intent = continue_engine_session(engine_session, intent_name, req_intent)
         text_response = "{}{}".format(text_response, response)
 
         engine_session.state = 'done' if intent.is_end_state() else 'continue'
@@ -337,7 +394,7 @@ def alexa_io(request):
         question = engine.question.asked_question
         text_response = '{} {}'.format(text_response, question)
     else:
-        engine = EmotionalEngine()
+        engine = MedicalEngine()
         question = engine.question.asked_question
         e_session = EngineSession(user=alexa_user, name=engine.__class__.__name__, state='continue')
         e_session.data = {'level': 'question', 'asked_questions': [question]}

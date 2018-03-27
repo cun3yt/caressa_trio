@@ -45,6 +45,11 @@ class AUser(TimeStampedModel):
         new_state.save()
         return new_state
 
+    def set_medical_state(self, measurement, data):
+        state = AUserMedicalState(user=self, measurement=measurement, data=data)
+        state.save()
+        return state
+
 
 class AUserEmotionalState(TimeStampedModel):
     class Meta:
@@ -65,6 +70,17 @@ class AUserEmotionalState(TimeStampedModel):
 
 
 AUserEmotionalState._meta.get_field('created').db_index = True
+
+
+class AUserMedicalState(TimeStampedModel):
+    class Meta:
+        db_table = 'a_user_medical_state'
+
+    MEASUREMENTS = Choices('blood_pressure')
+
+    user = models.ForeignKey(to=AUser, null=False, related_name='medical_state', on_delete=models.DO_NOTHING)
+    measurement = StatusField(choices_name='MEASUREMENTS', db_index=True)
+    data = JSONField(default={})
 
 
 class Request(TimeStampedModel):
