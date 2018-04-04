@@ -11,6 +11,7 @@ class AUser(TimeStampedModel):
 
     alexa_id = models.TextField(db_index=True, editable=False)
     user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='a_users')
+    engine_schedule = models.TextField(null=False, blank=True, default="")
 
     def last_engine_session(self, state=None) -> 'EngineSession':
         if not state:

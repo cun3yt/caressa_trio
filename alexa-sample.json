@@ -1,0 +1,226 @@
+{ "interactionModel": {
+    "languageModel": {
+      "invocationName": "carex",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "yes_intent",
+          "slots": [],
+          "samples": [
+            "yep",
+            "yeah",
+            "good call",
+            "of course",
+            "sure",
+            "yes"
+          ]
+        },
+        {
+          "name": "wrecked_intent",
+          "slots": [],
+          "samples": [
+            "wrecked",
+            "terrible"
+          ]
+        },
+        {
+          "name": "no_intent",
+          "slots": [],
+          "samples": [
+            "nope",
+            "of course not",
+            "hell no",
+            "no"
+          ]
+        },
+        {
+          "name": "maybe_intent",
+          "slots": [],
+          "samples": [
+            "I must think about it",
+            "I should think about it",
+            "maybe",
+            "I don't know"
+          ]
+        },
+        {
+          "name": "what_intent",
+          "slots": [],
+          "samples": [
+            "what is it again",
+            "what's it",
+            "what's that",
+            "what is that",
+            "what is it"
+          ]
+        },
+        {
+          "name": "good_intent",
+          "slots": [
+            {
+              "name": "feeling_good_slot",
+              "type": "slot_type_feeling_good"
+            }
+          ],
+          "samples": [
+            "I feel {feeling_good_slot}",
+            "I am feeling {feeling_good_slot}",
+            "great",
+            "the best",
+            "good"
+          ]
+        },
+        {
+          "name": "blood_pressure_intent",
+          "slots": [
+            {
+              "name": "systolic_slot",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "diastolic_slot",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "it is {systolic_slot} over {diastolic_slot}",
+            "{diastolic_slot} over Systolic {systolic_slot}",
+            "Diastolic {diastolic_slot} over {systolic_slot}",
+            "{systolic_slot} over Diastolic {diastolic_slot}",
+            "Systolic {systolic_slot} over {diastolic_slot}",
+            "Diastolic {diastolic_slot} over Systolic {systolic_slot}",
+            "Systolic {systolic_slot} over Diastolic {diastolic_slot}",
+            "{systolic_slot} over {diastolic_slot}"
+          ]
+        },
+        {
+          "name": "bad_intent",
+          "slots": [
+            {
+              "name": "feeling_bad_slot",
+              "type": "slot_type_feeling_bad"
+            }
+          ],
+          "samples": [
+            "I am feeling {feeling_bad_slot}",
+            "I feel {feeling_bad_slot}",
+            "sad",
+            "terrible",
+            "worse",
+            "bad"
+          ]
+        },
+        {
+          "name": "neutral_intent",
+          "slots": [
+            {
+              "name": "feeling_neutral_slot",
+              "type": "slot_type_feeling_neutral"
+            }
+          ],
+          "samples": [
+            "I am feeling {feeling_neutral_slot}",
+            "I feel {feeling_neutral_slot}",
+            "okay",
+            "fine",
+            "alright",
+            "OK",
+            "natural"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "name": "slot_type_feeling_good",
+          "values": [
+            {
+              "name": {
+                "value": "good",
+                "synonyms": [
+                  "incredible",
+                  "great",
+                  "awesome"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "slot_type_feeling_bad",
+          "values": [
+            {
+              "name": {
+                "value": "worried"
+              },
+              "synonyms": [
+                "anxious",
+                "terrified"
+              ]
+            },
+            {
+              "name": {
+                "value": "sad"
+              }
+            },
+            {
+              "name": {
+                "value": "not good"
+              }
+            },
+            {
+              "name": {
+                "value": "worse"
+              }
+            },
+            {
+              "name": {
+                "value": "terrible"
+              }
+            },
+            {
+              "name": {
+                "value": "bad"
+              }
+            }
+          ]
+        },
+        {
+          "name": "slot_type_feeling_neutral",
+          "values": [
+            {
+              "name": {
+                "value": "not bad"
+              }
+            },
+            {
+              "name": {
+                "value": "alright"
+              }
+            },
+            {
+              "name": {
+                "value": "fine"
+              }
+            },
+            {
+              "name": {
+                "value": "neutral"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

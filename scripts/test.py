@@ -36,9 +36,6 @@ json = JSONRenderer().render(serializer.data)
 stream = BytesIO(json)
 data = JSONParser().parse(stream)
 
-import ipdb
-ipdb.set_trace()
-
 data["email"] = 'sample@example.com'
 seriall = CommentSerializer(comment, data=data)
 if seriall.is_valid():

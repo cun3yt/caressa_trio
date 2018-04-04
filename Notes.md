@@ -25,7 +25,12 @@
     * STARTED
     * IN_PROGRESS
 
-
+# Scripts
+* django-extensions provides management command: runscript. Example:
+    * scripts/ module on the root.
+    * ./manage.py runscript reminder-notification [--script-args arg1 arg2 ...]
+    * the script file must have run() function, it can accept postional arguments.
+    * the working directory policy is set with setting: RUNSCRIPT_CHDIR_POLICY
 
 ## Django
 * add index to the created/modified fields: https://stackoverflow.com/questions/33174680/django-add-index-to-meta-field
@@ -40,8 +45,39 @@
     pq.create
 
 
+## Python specific
+* string to byte:
+    * stringThing.encode(encoding='UTF-8')
+* Byte to string:
+    * cal.to_ical().decode(encoding='UTF-8')
 
-# Sorular
+# Time Work
+* tzs.add('rrule', {'freq': 'yearly', 'bymonth': 10, 'byday': '-1su'})
+    # event.add('rrule', u  'FREQ=YEARLY;INTERVAL=1;COUNT=10'
+* So they must have changed their format to a dictionary instead
+    ev.add('rrule', {'freq': 'daily'} works
+* http://dateutil.readthedocs.io/en/stable/rrule.html
+
+* example
+    from dateutil import *
+    r = rrule(YEARLY, bymonth=1, dtstart=parse('19980101'), until=parse('20000131'))
+    r_as_string = str(r)
+    rs = rrulestr(r_as_string)
+    list(rs)
+
+* from icalendar import Event
+* ev = Event()
+* ev.add('rrule', {'freq': 'daily'}
+
+* evs = icalevents.events(string_content=sch, start=date(2018, 5, 1), end=date(2018, 5, 5))
+* evs = icalevents.events(string_content=sch.encode(encoding='UTF-8'), start=start, end=end)
+* len(evs)
+* evs[0].start
+* evs[0].end
+* evs[0].time_left()
+
+
+# Questions
 
 * bir ana intent olsa ve donen slotlarla dialog yonetilse, boyle bir sey mumkun mu?
 * ilk iki makale su ana kadar en mantikli intent kullanimini sunuyor.

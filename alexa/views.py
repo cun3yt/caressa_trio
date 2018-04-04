@@ -5,6 +5,36 @@ from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
 from alexa.engines import Question, EmotionalEngine, MedicalEngine
+from icalevents.icalevents import events as query_events
+from datetime import datetime, timedelta
+
+
+# 1. Planning td items for a user:
+# A: set of { td-interval (start-end), repetition-schedule, engine, priority }
+# this will be combined with engine-session data
+# B: engine sessions data
+
+# 2. what about scheduling the postponed td items?
+# postpone types:
+# A. next session: already covered with 'continue' engine-session type
+# B. for specified amount of time...
+
+
+def get_engine_from_schedule(alexa_user: AUser):
+    schedule = alexa_user.engine_schedule.encode(encoding='UTF-8')
+    print(datetime.now())
+    print(datetime.now() + timedelta(minutes=10))
+    events = query_events(string_content=schedule, start=datetime.now(), end=(datetime.now() + timedelta(minutes=10)), fix_apple=True)
+
+    engine_name = 'EmotionalEngine'
+
+    for event in events:
+        if EngineSession.objects.filter(created__range=(event.start, event.end), state='done').count() == 0:
+            engine_name = event.summary
+            break
+
+    engine_class = globals()[engine_name]
+    return engine_class(alexa_user=alexa_user)
 
 
 def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_name, request_intent):
@@ -27,8 +57,9 @@ def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_na
     return intent.get_random_response(), intent
 
 
-# todo Sequence/Scheduling problem... Each time a request comes, there must be an engine serving
-# todo Engine triggering another engine
+# todo 1. Sequence/Scheduling problem... Each time a request comes, there must be an engine serving
+# todo 2. Engine triggering another engine
+# todo 3. Value Confirmation
 def next_engine(engine_session: EngineSession):
     if engine_session.name == 'EmotionalEngine':
         return 'MedicalEngine'
@@ -110,7 +141,8 @@ def alexa_io(request):
         engine_session.data['level'] = 'question'
         engine_session.save()
     else:
-        engine = MedicalEngine(alexa_user)
+        engine = get_engine_from_schedule(alexa_user)
+        # engine = MedicalEngine(alexa_user)
         question = engine.question.asked_question
         e_session = EngineSession(user=alexa_user, name=engine.__class__.__name__, state='continue')
         e_session.data = {'level': 'question', 'asked_questions': [question]}
