@@ -80,4 +80,4 @@ def alexa_broker_good_luck(request):
     text_response = 'Welcome, ' if req_type == 'LaunchRequest' else ''
     text_response += "say something like 'yep', 'of course not' or 'I feel good'"
 
-    return JsonResponse(alexa_render(output_speech=text_response))
+    return JsonResponse(alexa_render(speech=text_response))

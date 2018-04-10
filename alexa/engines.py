@@ -56,6 +56,22 @@ class EmotionalEngine(Engine):
         print(" >>> update_on_bad_intent is called")
 
 
+class JokeEngine(Engine):
+    def __init__(self, alexa_user: AUser):
+        init_question = Question(
+            versions=['Would you like to hear a joke?', ],
+            reprompt=["Do you want a joke?", ],
+            intent_list=[
+                YesIntent(response_set=[
+                    "Do you know why bicycle are slow? <break time=\"1s\"/> Because they are two tired!",
+                ]),                # todo how to connect with profile building question, e.g. "Do you like jokes?"
+                NoIntent(response_set=['No problem', ])
+            ]
+        )
+
+        super(JokeEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+
+
 class MedicalEngine(Engine):
     def __init__(self, alexa_user: AUser):
         init_question = Question(

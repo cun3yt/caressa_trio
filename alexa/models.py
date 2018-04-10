@@ -3,6 +3,7 @@ from django.contrib.postgres.fields import JSONField
 from model_utils.models import TimeStampedModel, StatusField
 from model_utils import Choices
 from task_list.models import User
+from utilities.dictionaries import deep_get, deep_set
 
 
 class AUser(TimeStampedModel):
@@ -12,6 +13,7 @@ class AUser(TimeStampedModel):
     alexa_id = models.TextField(db_index=True, editable=False)
     user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='a_users')
     engine_schedule = models.TextField(null=False, blank=True, default="")
+    profile = JSONField(default={})
 
     def last_engine_session(self, state=None) -> 'EngineSession':
         if not state:
@@ -50,6 +52,13 @@ class AUser(TimeStampedModel):
         state = AUserMedicalState(user=self, measurement=measurement, data=data)
         state.save()
         return state
+
+    def profile_get(self, key):
+        return deep_get(self.profile, key, None)
+
+    def profile_set(self, key, value):
+        deep_set(self.profile, key, value)
+        self.save()
 
 
 class AUserEmotionalState(TimeStampedModel):

@@ -15,3 +15,4 @@ pq==1.5
 django-fsm==2.6.0
 icalendar==4.0.1
 -e git+git://github.com/cun3yt/icalevents.git@5831b1ee1f969bf7c74a1c8a5b287ecf9b7f49ce#egg=icalevents
+daiquiri==1.3.0

@@ -1,11 +1,15 @@
-def alexa_render(output_speech, directive=None, should_session_end=False):
+def speech_render(speech):
+    return {
+        "type": "SSML",
+        "ssml": "<speak>{}</speak>".format(speech)
+    }
+
+
+def alexa_render(speech, directive=None, should_session_end=False):
     template = {
         "version": "1.0",
         "response": {
-            "outputSpeech": {
-                "type": "PlainText",
-                "text": output_speech
-            },
+            "outputSpeech": speech_render(speech),
             "reprompt": {
                 "outputSpeech": {
                     "type": "PlainText",

@@ -4,9 +4,11 @@ from .models import AUser, Session, EngineSession
 from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
-from alexa.engines import Question, EmotionalEngine, MedicalEngine
+from alexa.engines import Question, EmotionalEngine, MedicalEngine, JokeEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
+import logging
+import daiquiri
 
 
 # 1. Planning td items for a user:
@@ -19,19 +21,31 @@ from datetime import datetime, timedelta
 # A. next session: already covered with 'continue' engine-session type
 # B. for specified amount of time...
 
+daiquiri.setup(level=logging.INFO)
+logger = daiquiri.getLogger()
+
 
 def get_engine_from_schedule(alexa_user: AUser):
+    logger.info("get_engine_from_schedule with AUser::{}".format(alexa_user.id))
+
     schedule = alexa_user.engine_schedule.encode(encoding='UTF-8')
-    print(datetime.now())
-    print(datetime.now() + timedelta(minutes=10))
+    logger.info(datetime.now())
+    logger.info(datetime.now() + timedelta(minutes=10))
     events = query_events(string_content=schedule, start=datetime.now(), end=(datetime.now() + timedelta(minutes=10)), fix_apple=True)
 
-    engine_name = 'EmotionalEngine'
+    # filler or info-collector engines will come here..
+    # engine_name = 'EmotionalEngine'
+    engine_name = 'JokeEngine'
+
+    logger.info("# events fetched from schedule: {}".format(len(events)))
 
     for event in events:
+        logger.info(" >> event in question: {}".format(event.summary))
         if EngineSession.objects.filter(created__range=(event.start, event.end), state='done').count() == 0:
+            logger.info("  This is being EXECUTED: {}".format(event.summary))
             engine_name = event.summary
             break
+        logger.info(" PASSED...")
 
     engine_class = globals()[engine_name]
     return engine_class(alexa_user=alexa_user)
@@ -57,16 +71,8 @@ def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_na
     return intent.get_random_response(), intent
 
 
-# todo 1. Sequence/Scheduling problem... Each time a request comes, there must be an engine serving
 # todo 2. Engine triggering another engine
-# todo 3. Value Confirmation
-def next_engine(engine_session: EngineSession):
-    if engine_session.name == 'EmotionalEngine':
-        return 'MedicalEngine'
-    if engine_session.name == 'MedicalEngine':
-        return 'EmotionalEngine'
-
-
+# todo 3. Value (slot) confirmation
 @csrf_exempt
 def alexa_io(request):
     req_body = json.loads(request.body)
@@ -87,18 +93,20 @@ def alexa_io(request):
     text_response = 'Welcome, ' if req_type == 'LaunchRequest' else ''
 
     if req_type == 'SessionEndedRequest':
-        print("~~~ Session ended request came ~~~")
-        return JsonResponse(alexa_render(output_speech='OK'))
+        logger.info("~~~ Session ended request came ~~~")
+        return JsonResponse(alexa_render(speech='OK'))
 
-    print('-----')
-    print(" TYPE: {}\n INTENT: {}".format(req_type, intent_name))
-    print(" FULL INTENT: {}".format(req_intent))
-    print(
+    logger.info('-----')
+    logger.info(" TYPE: {}\n INTENT: {}".format(req_type, intent_name))
+    logger.info(" FULL INTENT: {}".format(req_intent))
+    logger.info(
         "Engine Session? {}\nSession State: {}\nIntent: {}".format("Yes" if engine_session else "No",
                                                                    engine_session.state if engine_session else "None",
                                                                    intent_name))
 
+    logger.info("START: ")
     if engine_session and engine_session.state == 'continue' and req_intent:
+        logger.info(" Continuing Engine Session and there is an INTENT")
         response, intent = continue_engine_session(engine_session, alexa_user, intent_name, req_intent)
         text_response = "{}{}".format(text_response, response)
 
@@ -111,7 +119,7 @@ def alexa_io(request):
         if intent.end_session:  # end the alexa session
             engine_session.data['level'] = 'question'   # start over in the next session
             engine_session.save()
-            return JsonResponse(alexa_render(output_speech=text_response, should_session_end=True))
+            return JsonResponse(alexa_render(speech=text_response, should_session_end=True))
 
         if not intent.is_end_state():
             engine_session.data['level'] = '{level}.{intent_name}.question'.format(level=engine_session.data['level'],
@@ -124,9 +132,7 @@ def alexa_io(request):
             engine_session.data['level'] = '{level}.{intent_name}'.format(level=engine_session.data['level'],
                                                                           intent_name=intent_name)
             engine_session.save()
-            engine_name = next_engine(engine_session)
-            engine_class = globals()[engine_name]
-            follow_engine = engine_class(alexa_user=alexa_user)
+            follow_engine = get_engine_from_schedule(alexa_user=alexa_user)
             question = follow_engine.question.asked_question
 
             e_session = EngineSession(user=alexa_user, name=follow_engine.__class__.__name__, state='continue')
@@ -134,6 +140,7 @@ def alexa_io(request):
             e_session.save()
             text_response = '{} {}'.format(text_response, question)
     elif engine_session and engine_session.state == 'continue':
+        logger.info(" Continuing Engine Session and there is NO intent")
         engine_class = globals()[engine_session.name]
         engine = engine_class(alexa_user=alexa_user)
         question = engine.question.asked_question
@@ -141,12 +148,12 @@ def alexa_io(request):
         engine_session.data['level'] = 'question'
         engine_session.save()
     else:
+        logger.info(" No continuing engine session (must be 'open caressa')")
         engine = get_engine_from_schedule(alexa_user)
-        # engine = MedicalEngine(alexa_user)
         question = engine.question.asked_question
         e_session = EngineSession(user=alexa_user, name=engine.__class__.__name__, state='continue')
         e_session.data = {'level': 'question', 'asked_questions': [question]}
         e_session.save()
         text_response = '{} {}'.format(text_response, question)
 
-    return JsonResponse(alexa_render(output_speech=text_response))
+    return JsonResponse(alexa_render(speech=text_response))

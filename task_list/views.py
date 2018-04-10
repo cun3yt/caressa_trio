@@ -27,7 +27,7 @@ class GreetingEngine(ConversationEngineMixin):
             'intent_name': 'ci_current_feeling',
             'slot_to_elicit': 'ci_feeling',     # todo: needs to be `cs_feeling`
         }
-        return alexa_render(output_speech='Hi, how are you?', directive=directive)
+        return alexa_render(speech='Hi, how are you?', directive=directive)
 
 
 class MedicalEngine(ConversationEngineMixin):
@@ -35,7 +35,7 @@ class MedicalEngine(ConversationEngineMixin):
         super(MedicalEngine, self).__init__()
 
     def run(self):
-        return alexa_render(output_speech='This is medical engine!')
+        return alexa_render(speech='This is medical engine!')
 
 
 class SocialEngine(ConversationEngineMixin):
@@ -43,7 +43,7 @@ class SocialEngine(ConversationEngineMixin):
         super(SocialEngine, self).__init__()
 
     def run(self):
-        return alexa_render(output_speech='This is social engine!')
+        return alexa_render(speech='This is social engine!')
 
 
 registered_engines = [
@@ -108,12 +108,12 @@ def brain_run(alexa_user, sess, alexa_req):
                 'intent_name': 'ci_my_feeling',
                 'slot_to_elicit': 'feeling',
             }
-            return alexa_render(output_speech='How do you feel?', directive=directive)
+            return alexa_render(speech='How do you feel?', directive=directive)
 
     except Exception:
         print("Exception happened! ")
 
-    return alexa_render(output_speech=text)
+    return alexa_render(speech=text)
 
 
 @csrf_exempt

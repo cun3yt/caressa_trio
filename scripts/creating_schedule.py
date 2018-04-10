@@ -9,6 +9,7 @@ def run():
 
     user = AUser.objects.get(id=user_id)
 
+    # todo admin facility to create a schedule for the users?
     cal = Calendar()
     cal.add('dtstart', datetime.now())
     cal.add('summary', 'schedule of user:{}'.format(user_id))
