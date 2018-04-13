@@ -279,3 +279,6 @@ class Todo(TimeStampedModel):
 # Python Cookbook
 https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch14s08.html
 
+# Fuzzy Logic
+* fuzzy logic is the logic that is used to describe fuzziness.
+* membership is converted from 0/1 to a range of values [0,1] as membership value.
