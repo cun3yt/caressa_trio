@@ -1,5 +1,5 @@
 from random import sample
-from alexa.models import AUser
+from alexa.models import AUser, Joke
 from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent
 from utilities.dictionaries import deep_get
 
@@ -62,14 +62,18 @@ class JokeEngine(Engine):
             versions=['Would you like to hear a joke?', ],
             reprompt=["Do you want a joke?", ],
             intent_list=[
-                YesIntent(response_set=[
-                    "Do you know why bicycle are slow? <break time=\"1s\"/> Because they are two tired!",
-                ]),                # todo how to connect with profile building question, e.g. "Do you like jokes?"
+                YesIntent(response_set=self.fetch_random_joke),
+                # todo how to connect with profile building question, e.g. "Do you like jokes?"
                 NoIntent(response_set=['No problem', ])
             ]
         )
 
         super(JokeEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+
+    @staticmethod
+    def fetch_random_joke():
+        joke = Joke.fetch_random()
+        return '{main}<break time="1s">{punchline}'.format(main=joke.main, punchline=joke.punchline)
 
 
 class MedicalEngine(Engine):
@@ -112,3 +116,47 @@ class MedicalEngine(Engine):
             'systolic': deep_get(kwargs, 'intent.slots.systolic_slot.value'),
             'all_params': kwargs,
         })
+
+
+class AdEngine(Engine):
+    def __init__(self, alexa_user: AUser):
+        init_question = Question(
+            versions=[
+                "So, many seniors suffer from night-time leg cramps. Have you had one recently?",
+            ],
+            reprompt=["Sorry, I didn't hear you. Did you have any night-time leg cramps lately?"],
+            intent_list=[
+                YesIntent(question=Question(
+                    versions=[
+                        "A chiropractor can ease the pain with warm massage. "
+                        "Dr. Smith in San Jose has over 20 years experiences. "
+                        "Would you like him to give you a call?", ],
+                    intent_list=[
+                        YesIntent(
+                            response_set=["Great, I will ask him to give you a call.", ]
+                        ),
+                        NoIntent(response_set=['No problem.', ])
+                    ]
+                )),
+                NoIntent(response_set=["It is great to hear that you don't have leg cramps. "
+                                       "Just a friendly reminder: Magnesium is the mineral curing cramps."])
+
+            ]
+        )
+        super(AdEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+
+
+engine_registration = {
+    'critical': [
+        'EmotionalEngine',
+    ],
+    'schedule-based': [
+        'MedicalEngine',
+    ],
+    'filler': [
+        'JokeEngine',
+    ],
+    'sponsored': [
+        'AdEngine',
+    ]
+}

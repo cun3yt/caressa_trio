@@ -4,7 +4,7 @@ from .models import AUser, Session, EngineSession
 from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
-from alexa.engines import Question, EmotionalEngine, MedicalEngine, JokeEngine
+from alexa.engines import Question, EmotionalEngine, MedicalEngine, JokeEngine, AdEngine, engine_registration
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 import logging
@@ -25,6 +25,19 @@ daiquiri.setup(level=logging.INFO)
 logger = daiquiri.getLogger()
 
 
+def get_engine_from_cascade(alexa_user: AUser):
+    engine = get_engine_from_schedule(alexa_user)
+    if engine:
+        return engine
+
+    engine = get_engine_from_critical_list(alexa_user)
+
+    if engine:
+        return engine
+
+    return get_engine_from_filler(alexa_user)
+
+
 def get_engine_from_schedule(alexa_user: AUser):
     logger.info("get_engine_from_schedule with AUser::{}".format(alexa_user.id))
 
@@ -35,7 +48,7 @@ def get_engine_from_schedule(alexa_user: AUser):
 
     # filler or info-collector engines will come here..
     # engine_name = 'EmotionalEngine'
-    engine_name = 'JokeEngine'
+    engine_name = None
 
     logger.info("# events fetched from schedule: {}".format(len(events)))
 
@@ -47,8 +60,21 @@ def get_engine_from_schedule(alexa_user: AUser):
             break
         logger.info(" PASSED...")
 
+    if not engine_name:
+        return None
+
     engine_class = globals()[engine_name]
     return engine_class(alexa_user=alexa_user)
+
+
+def get_engine_from_critical_list(alexa_user: AUser):
+    logger.info("get_engine_from_critical_list for AUser: {}".format(alexa_user.id))
+    return None
+
+
+def get_engine_from_filler(alexa_user: AUser):
+    logger.info('get_engine_from_filler for AUser: {}'.format(alexa_user.id))
+    return None
 
 
 def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_name, request_intent):

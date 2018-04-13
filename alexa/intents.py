@@ -6,7 +6,7 @@ class Intent:
     def __init__(self, name, response_set, slots=None, follow_engine=None, samples=None, process_fn=None,
                  question=None, end_session=False, **kwargs):
         self.name = name
-        self.response_set = response_set
+        self.response_set = response_set    # either function or list of strings
         self.slots = slots
         self.follow_engine = follow_engine
         self.samples = samples
@@ -24,7 +24,9 @@ class Intent:
         return not self.question
 
     def get_random_response(self):
-        return sample(self.response_set, 1)[0]
+        if type(self.response_set) is list:
+            return sample(self.response_set, 1)[0]
+        return self.response_set()
 
     def render(self, render_type='json'):
         pass

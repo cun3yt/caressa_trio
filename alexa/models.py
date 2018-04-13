@@ -4,6 +4,7 @@ from model_utils.models import TimeStampedModel, StatusField
 from model_utils import Choices
 from task_list.models import User
 from utilities.dictionaries import deep_get, deep_set
+from random import randint
 
 
 class AUser(TimeStampedModel):
@@ -127,3 +128,18 @@ class EngineSession(TimeStampedModel):
 
 Request._meta.get_field('created').db_index = True
 Request._meta.get_field('modified').db_index = True
+
+
+class Joke(TimeStampedModel):
+    class Meta:
+        db_table = 'joke'
+
+    main = models.TextField(null=False, blank=False)
+    punchline = models.TextField(null=False, blank=False)
+
+    @staticmethod
+    def fetch_random():
+        count = Joke.objects.all().count()
+        random_slice = randint(0, count-1)
+        joke_set = Joke.objects.all()[random_slice: random_slice+1]
+        return joke_set[0]
