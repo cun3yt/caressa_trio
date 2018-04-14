@@ -1,6 +1,6 @@
 from random import sample
 from alexa.models import AUser, Joke
-from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent
+from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent
 from utilities.dictionaries import deep_get
 
 
@@ -56,14 +56,35 @@ class EmotionalEngine(Engine):
         print(" >>> update_on_bad_intent is called")
 
 
+class ProfileBuilderForJoke(Question):
+    def __init__(self, alexa_user: AUser):
+        self.key = 'joke'
+        self.alexa_user = alexa_user
+        versions = ['Do you like such jokes?', ]
+        reprompt = ["Sorry, I didn't get it. Do you like such jokes? Yes or No?", ]
+        intents = [
+            YesIntent(response_set=['OK, I will tell more of them as comes to my mind'], process_fn=self.save_yes),
+            NoIntent(response_set=['No problem, I know my jokes are a bit lame'], process_fn=self.save_no),
+        ]
+        super(ProfileBuilderForJoke, self).__init__(versions=versions, intent_list=intents, reprompt=reprompt)
+
+    def save_yes(self, **kwargs):
+        self.alexa_user.profile_set('joke', True)
+
+    def save_no(self, **kwargs):
+        self.alexa_user.profile_set('joke', False)
+
+
 class JokeEngine(Engine):
     def __init__(self, alexa_user: AUser):
         init_question = Question(
             versions=['Would you like to hear a joke?', ],
             reprompt=["Do you want a joke?", ],
             intent_list=[
-                YesIntent(response_set=self.fetch_random_joke),
-                # todo how to connect with profile building question, e.g. "Do you like jokes?"
+                YesIntent(
+                    response_set=self.fetch_random_joke,
+                    profile_builder=ProfileBuilderForJoke(alexa_user=alexa_user),
+                ),
                 NoIntent(response_set=['No problem', ])
             ]
         )
@@ -73,7 +94,7 @@ class JokeEngine(Engine):
     @staticmethod
     def fetch_random_joke():
         joke = Joke.fetch_random()
-        return '{main}<break time="1s">{punchline}'.format(main=joke.main, punchline=joke.punchline)
+        return '{main}<break time="1s"/>{punchline}'.format(main=joke.main, punchline=joke.punchline)
 
 
 class MedicalEngine(Engine):
@@ -88,9 +109,7 @@ class MedicalEngine(Engine):
                 YesIntent(question=Question(versions=['What are your measurements?'],
                                             reprompt=['Please tell me with systolic over diastolic such as 120 over 80'],
                                             intent_list=[
-                                                BloodPressureIntent(
-                                                    process_fn=self.save_blood_pressure
-                                                )
+                                                BloodPressureIntent(process_fn=self.save_blood_pressure)
                                             ])),
                 NoIntent(question=Question(versions=['Would you like to take your measurement now then come back to '
                                                      'tell it to me?'],
@@ -103,8 +122,8 @@ class MedicalEngine(Engine):
                                                          engine_session='continue'
                                                          # todo reference back to the previous questions is needed??
                                                          ),
-                                               NoIntent(response_set=['Ok, let’s check your blood pressure later today.']),
-                                           ]))
+                                               NoIntent(response_set=['Ok, let’s check your blood pressure later.']),
+                                           ])),
             ],
         )
 
@@ -114,6 +133,45 @@ class MedicalEngine(Engine):
         self.alexa_user.set_medical_state('blood_pressure', {
             'diastolic': deep_get(kwargs, 'intent.slots.diastolic_slot.value'),
             'systolic': deep_get(kwargs, 'intent.slots.systolic_slot.value'),
+            'all_params': kwargs,
+        })
+
+
+class WeightEngine(Engine):
+    def __init__(self, alexa_user: AUser):
+        init_question = Question(
+            versions=[
+                "Have you taken your weight measurement yet?",
+                "Did you take your weight measurement today?",
+            ],
+            reprompt=["Have you taken your weight measurement yet? Yes or no?", ],
+            intent_list=[
+                YesIntent(question=Question(versions=['Good. What is your weight in pounds?'],
+                                            reprompt=['Please, tell me your weight in pounds, '
+                                                      'for example a hundred and twenty pounds.', ],
+                                            intent_list=[
+                                                WeightIntent(process_fn=self.save_weight),
+                                            ])),
+                NoIntent(question=Question(versions=['Would you like to go take your weight measurement now, '
+                                                     'then come back to let me know?'],
+                                           reprompt=["Sorry, I didn't get it. Do you want to measure your weight now "
+                                                     "and then tell it to me? Yes or No?"],
+                                           intent_list=[
+                                               YesIntent(response_set=['You can say Alexa open Caressa '
+                                                                       'after you have taken your weight. Goodbye.'],
+                                                         end_session=True,
+                                                         engine_session='continue'),
+                                               NoIntent(response_set=["OK, let's check your blood pressure later."]),
+                                           ])),
+            ],
+        )
+
+        super(WeightEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+
+    def save_weight(self, **kwargs):
+        self.alexa_user.set_medical_state('weight', {
+            'amount': deep_get(kwargs, 'intent.slots.weight_slot.value'),
+            'unit': 'pound',
             'all_params': kwargs,
         })
 
@@ -152,6 +210,7 @@ engine_registration = {
     ],
     'schedule-based': [
         'MedicalEngine',
+        'WeightEngine',
     ],
     'filler': [
         'JokeEngine',
