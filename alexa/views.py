@@ -7,22 +7,22 @@ from utilities.dictionaries import deep_get
 from alexa.engines import Question, EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, engine_registration
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
+from django.shortcuts import render
 import logging
 import daiquiri
 
 
-# 1. Planning td items for a user:
-# A: set of { td-interval (start-end), repetition-schedule, engine, priority }
-# this will be combined with engine-session data
-# B: engine sessions data
-
-# 2. what about scheduling the postponed td items?
+# todo what about scheduling the postponed td items?
 # postpone types:
 # A. next session: already covered with 'continue' engine-session type
 # B. for specified amount of time...
 
 daiquiri.setup(level=logging.INFO)
 logger = daiquiri.getLogger()
+
+
+def main_view(request):
+    return render(request, 'main.html')
 
 
 def get_engine_from_cascade(alexa_user: AUser):

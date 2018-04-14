@@ -54,7 +54,6 @@ INSTALLED_APPS = [
     'task_list',
     'corsheaders',
     'utilities',
-    'django_fsm',
     'alexa',
 ]
 
