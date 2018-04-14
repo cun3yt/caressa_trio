@@ -156,3 +156,26 @@ class BloodPressureIntent(Intent):
         response_set = response_set if response_set else default_response_set
         super(BloodPressureIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
                                                   process_fn=process_fn, question=question)
+
+
+class WeightIntent(Intent):
+    @classmethod
+    def intent_identifier(cls):
+        return 'weight_intent'
+
+    def __init__(self, slots=None, process_fn=None, question=None, response_set=None):
+        name = self.intent_identifier()
+        default_response_set = [
+            "Thanks for letting me know your weight measure, I jotted it down.",
+            "Awesome, I wrote your weight measure down.",
+            "Thanks for letting me know.",
+            "Alright, thank you!",
+            "Thank you very much!",
+        ]
+        samples = [
+            "{weight_slot}",
+            "{weight_slot} pounds",
+        ]
+        response_set = response_set if response_set else default_response_set
+        super(WeightIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
+                                           process_fn=process_fn, question=question)

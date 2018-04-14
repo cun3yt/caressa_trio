@@ -4,7 +4,7 @@ from .models import AUser, Session, EngineSession
 from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
-from alexa.engines import Question, EmotionalEngine, MedicalEngine, JokeEngine, AdEngine, engine_registration
+from alexa.engines import Question, EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, engine_registration
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 import logging
