@@ -73,7 +73,7 @@ class JokeEngine(Engine):
     @staticmethod
     def fetch_random_joke():
         joke = Joke.fetch_random()
-        return '{main}<break time="1s">{punchline}'.format(main=joke.main, punchline=joke.punchline)
+        return '{main}<break time="1s"/>{punchline}'.format(main=joke.main, punchline=joke.punchline)
 
 
 class MedicalEngine(Engine):
