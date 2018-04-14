@@ -37,12 +37,16 @@
     * outside of class scope: `AlexaEngineLog._meta.get_field('modified').db_index = True`
 
 ## Queue
+* Package: `pq==1.5`
 * Need to run pq.create()
     from psycopg2 import connect
     from pq import PQ    
     conn = connect('host={host} dbname={dbname} user={user}'.format(host='xx', dbname='xx', user='xx'))
     pq = PQ(conn, table='alexa_conversation_queue')
     pq.create
+* Usage:
+    def get_alexa_user_communication_queue(alexa_user_id):
+        return pq['alexa_u_{}/pickle'.format(alexa_user_id)]
 
 
 ## Python specific
@@ -282,3 +286,41 @@ https://www.safaribooksonline.com/library/view/python-cookbook/0596001673/ch14s0
 # Fuzzy Logic
 * fuzzy logic is the logic that is used to describe fuzziness.
 * membership is converted from 0/1 to a range of values [0,1] as membership value.
+
+# Example Usage of `django-fsm` (FSMField):
+
+* Definition:
+```python
+from django_fsm import FSMField, transition
+from model_utils import Choices
+
+class SomeState(models.Model):
+    class Meta:
+        db_table = 'some_state'
+    STATUS = Choices('draft', 'approved', 'published', 'removed')
+    state = FSMField(
+        default=STATUS.draft,
+        verbose_name='Publication State',
+        choices=STATUS,
+        protected=True,
+    )
+    can_display = models.BooleanField(default=False)
+    def is_displayable(self):
+        return self.can_display
+    @transition(field=state, source=[STATUS.approved],
+                target=STATUS.published,
+                conditions=[is_displayable])
+    def publish(self):
+        print('published')
+
+    @transition(field=state, source=[STATUS.draft],
+                target=STATUS.approved)
+    def approve(self):
+        print('approved')
+```
+
+* Generating Graph
+```bash
+./manage.py graph_transitions -o example-graph.png task_list.SomeState
+```
+

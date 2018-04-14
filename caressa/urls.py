@@ -15,13 +15,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
-from task_list.views import main_view, alexa_broker
-from alexa.views import alexa_io
+from alexa.views import main_view, alexa_io
 
 urlpatterns = [
     path('', main_view),
-    path('discussion', alexa_broker),
-    path('discussion2', alexa_io),
+    path('discussion', alexa_io),
     path('admin/', admin.site.urls),
     path('api/0.1/', include('task_list.api.urls')),
 ]
