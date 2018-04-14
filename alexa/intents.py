@@ -14,6 +14,7 @@ class Intent:
         self.question = question
         self.end_session = end_session
         self.engine_session = kwargs.get('engine_session', None)
+        self.profile_builder = kwargs.get('profile_builder', None)
 
     @classmethod
     def intent_identifier(cls):

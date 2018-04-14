@@ -56,14 +56,35 @@ class EmotionalEngine(Engine):
         print(" >>> update_on_bad_intent is called")
 
 
+class ProfileBuilderForJoke(Question):
+    def __init__(self, alexa_user: AUser):
+        self.key = 'joke'
+        self.alexa_user = alexa_user
+        versions = ['Do you like such jokes?', ]
+        reprompt = ["Sorry, I didn't get it. Do you like such jokes? Yes or No?", ]
+        intents = [
+            YesIntent(response_set=['OK, I will tell more of them as comes to my mind'], process_fn=self.save_yes),
+            NoIntent(response_set=['No problem, I know my jokes are a bit lame'], process_fn=self.save_no),
+        ]
+        super(ProfileBuilderForJoke, self).__init__(versions=versions, intent_list=intents, reprompt=reprompt)
+
+    def save_yes(self, **kwargs):
+        self.alexa_user.profile_set('joke', True)
+
+    def save_no(self, **kwargs):
+        self.alexa_user.profile_set('joke', False)
+
+
 class JokeEngine(Engine):
     def __init__(self, alexa_user: AUser):
         init_question = Question(
             versions=['Would you like to hear a joke?', ],
             reprompt=["Do you want a joke?", ],
             intent_list=[
-                YesIntent(response_set=self.fetch_random_joke),
-                # todo how to connect with profile building question, e.g. "Do you like jokes?"
+                YesIntent(
+                    response_set=self.fetch_random_joke,
+                    profile_builder=ProfileBuilderForJoke(alexa_user=alexa_user),
+                ),
                 NoIntent(response_set=['No problem', ])
             ]
         )

@@ -42,8 +42,6 @@ def get_engine_from_schedule(alexa_user: AUser):
     logger.info("get_engine_from_schedule with AUser::{}".format(alexa_user.id))
 
     schedule = alexa_user.engine_schedule.encode(encoding='UTF-8')
-    logger.info(datetime.now())
-    logger.info(datetime.now() + timedelta(minutes=10))
     events = query_events(string_content=schedule, start=datetime.now(), end=(datetime.now() + timedelta(minutes=10)), fix_apple=True)
 
     # filler or info-collector engines will come here..
@@ -87,7 +85,13 @@ def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_na
     traverser = engine
 
     for lev in levels:
-        traverser = traverser.question if lev == 'question' else traverser.intents.get(lev)
+        # traverser = traverser.question if lev == 'question' else traverser.intents.get(lev)
+        if lev == 'question':
+            traverser = traverser.question
+        elif lev == 'profile_builder':
+            traverser = traverser.profile_builder
+        else:
+            traverser = traverser.intents.get(lev)
 
     intent = traverser.intents.get(intent_name)
 
@@ -99,6 +103,7 @@ def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_na
 
 # todo 2. Engine triggering another engine
 # todo 3. Value (slot) confirmation
+# todo 4. Simplify this fn.
 @csrf_exempt
 def alexa_io(request):
     req_body = json.loads(request.body)
@@ -140,23 +145,34 @@ def alexa_io(request):
             # if the intent has specific direction on engine session it takes precedence
             engine_session.state = intent.engine_session
         else:
-            engine_session.state = 'done' if intent.is_end_state() else 'continue'
+            engine_session.state = 'done' if intent.is_end_state() else 'continue'  # todo: Fix this fucked up logic. Goes crazy below!!
 
         if intent.end_session:  # end the alexa session
             engine_session.data['level'] = 'question'   # start over in the next session
             engine_session.save()
             return JsonResponse(alexa_render(speech=text_response, should_session_end=True))
 
-        if not intent.is_end_state():
+        # "profile builder execution" if the user don't have it in her profile.
+        if intent.profile_builder and (alexa_user.profile_get(intent.profile_builder.key) is None):
+            engine_session.data['level'] = '{level}.{intent_name}.profile_builder'.format(level=engine_session.data['level'],
+                                                                                          intent_name=intent_name)
+            engine_session.data['asked_questions'].append(intent.profile_builder.asked_question)
+            engine_session.state = 'continue'
+            engine_session.save()
+            text_response = '{} {}'.format(text_response, intent.profile_builder.asked_question)
+
+        elif not intent.is_end_state():
             engine_session.data['level'] = '{level}.{intent_name}.question'.format(level=engine_session.data['level'],
                                                                                    intent_name=intent_name)
             engine_session.data['asked_questions'].append(intent.question.asked_question)
+            engine_session.state = 'continue'
             engine_session.save()
             text_response = '{} {}'.format(text_response, intent.question.asked_question)
 
         else:
             engine_session.data['level'] = '{level}.{intent_name}'.format(level=engine_session.data['level'],
                                                                           intent_name=intent_name)
+            engine_session.state = 'done'
             engine_session.save()
             follow_engine = get_engine_from_schedule(alexa_user=alexa_user)
             question = follow_engine.question.asked_question
@@ -181,5 +197,6 @@ def alexa_io(request):
         e_session.data = {'level': 'question', 'asked_questions': [question]}
         e_session.save()
         text_response = '{} {}'.format(text_response, question)
+        logger.info(" Response: {}".format(text_response))
 
     return JsonResponse(alexa_render(speech=text_response))
