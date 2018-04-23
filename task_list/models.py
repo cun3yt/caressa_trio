@@ -25,7 +25,7 @@ class User(AbstractUser, TimeStampedModel):
         default=CARETAKER,
     )
 
-    phone_number = PhoneNumberField(db_index=True)
+    phone_number = PhoneNumberField(db_index=True, blank=True)
 
     def is_senior(self):
         return self.user_type == self.CARETAKER
