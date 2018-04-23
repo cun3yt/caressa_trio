@@ -324,3 +324,7 @@ class SomeState(models.Model):
 ./manage.py graph_transitions -o example-graph.png task_list.SomeState
 ```
 
+# API with PostgREST
+
+* [https://postgrest.com/en/v4.4/tutorials/tut0.html](Documentation)
+* postgrest ./postgrest.conf
