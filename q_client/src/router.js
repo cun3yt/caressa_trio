@@ -22,9 +22,24 @@ export default new VueRouter({
       component: load('Layout'),
       children: [
         {
+          path: 'feed',
+          component: load('Feed'),
+          name: 'feed'
+        },
+        {
           path: 'today',
           component: load('Today'),
           name: 'today'
+        },
+        {
+          path: 'post',
+          component: load('Post'),
+          name: 'post'
+        },
+        {
+          path: 'chat',
+          component: load('Chat'),
+          name: 'chat'
         },
         {
           path: 'care-circle',
