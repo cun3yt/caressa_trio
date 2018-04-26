@@ -34,10 +34,9 @@
       <q-route-tab slot="title" icon="show_chart" :to="{ name: 'health-numbers' }" replace label="Status" />
       <q-route-tab slot="title" icon="add_box" :to="{ name: 'post' }" replace label="Post" />
       <q-route-tab slot="title" icon="forum" :to="{ name: 'chat' }" replace label="Chat" />
-      <!--<q-route-tab slot="title" icon="date_range" :to="{ name: 'today' }" replace label="Tasks" />-->
+      <q-route-tab slot="title" icon="settings" :to="{ name: 'settings' }" replace label="Settings" />
       <!--<q-route-tab slot="title" icon="date_range" :to="{ name: 'today' }" replace label="Tasks" />-->
       <!--<q-route-tab slot="title" icon="people" :to="{ name: 'care-circle' }" replace label="Circle" />-->
-      <q-route-tab slot="title" icon="settings" :to="{ name: 'settings' }" replace label="Settings" />
     </q-tabs>
 
   </q-layout>
