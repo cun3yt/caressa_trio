@@ -39,7 +39,7 @@
           </div>
         </div>
         <div class="col-sm-8 col-xs-7">
-          <bar-chart :chart-data="weightChart.data" ref="weight" :options="weightChart.options" :height="weightChart.options.height"></bar-chart>
+          <line-chart :chart-data="weightChart.data" ref="weight" :options="weightChart.options" :height="weightChart.options.height"></line-chart>
         </div>
       </q-card-main>
     </q-card>
@@ -63,6 +63,36 @@
         </div>
       </q-card-main>
     </q-card>
+
+    <!-- this is static -->
+    <q-card>
+      <q-card-title class="row" style="display: flex;">
+        <span class="col-4" style="width: 100px;">Positive Moods</span>
+        <span class="tag text-white bg-positive col-6">Improve</span>
+      </q-card-title>
+      <q-card-separator/>
+      <q-card-main class="text-blue-grey-4" style="font-size: 1.6em">
+        <div class="row">
+          <div class="col-1 text-positive"><q-icon name="arrow_upward"/></div>
+          <div class="col-5">Amused</div>
+          <div class="col-1"><q-icon name="brightness_1" style="font-size: 0.8em"/></div>
+          <div class="col-5">Calm</div>
+        </div>
+        <div class="row">
+          <div class="col-1 text-positive"><q-icon name="arrow_upward" /></div>
+          <div class="col-5 text-positive">Happy</div>
+          <div class="col-1 text-negative"><q-icon name="arrow_downward" /></div>
+          <div class="col-5">Optimistic</div>
+        </div>
+        <div class="row">
+          <div class="col-1"><q-icon name="brightness_1" style="font-size: 0.8em"/></div>
+          <div class="col-5">Loving</div>
+          <div class="col-1 text-negative"><q-icon name="arrow_downward" /></div>
+          <div class="col-5 text-negative">Excited</div>
+        </div>
+      </q-card-main>
+    </q-card>
+
 
   </div>
 </template>
@@ -154,6 +184,7 @@
             backgroundColor: '#ff0000',
             label: 'Blood Pressure',
             fill: false,
+            lineTension: 0,
             legend: {
               display: false
             }
@@ -181,6 +212,17 @@
             fill: false,
             legend: {
               display: false
+            },
+            scales: {
+              yAxes: [{
+                gridLines: {
+                  display: true
+                },
+                ticks: {
+                  min: 0
+                  // max: this.yTicks.max,
+                }
+              }]
             }
           }
         },
@@ -204,6 +246,11 @@
             backgroundColor: '#ff0000',
             label: 'Weight (lbs)',
             fill: false,
+            lineTension: 0,
+            cubicInterpolationMode: 'monotone',
+            legend: {
+              display: false
+            },
             scales: {
               yAxes: [{
                 gridLines: {
@@ -217,6 +264,8 @@
             }
           }
         }
+
+
       }
     }
   }
@@ -231,5 +280,14 @@
   }
   .last-value {
     height: 80px;
+  }
+  .tag {
+    width: 80px;
+    border-radius: 100px;
+    text-align: center;
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 3px 8px 4px 8px;
+    margin-left: 10px;
   }
 </style>
