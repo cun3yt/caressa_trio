@@ -38,7 +38,7 @@ Quasar.start(() => {
   /* eslint-disable no-new */
   new Vue({
     el: '#q-app',
-    apiHost: 'http://127.0.0.1:8000/api/0.1',
+    apiHost: 'http://127.0.0.1:3000',
     router,
     render: h => h(require('./App').default)
   })
