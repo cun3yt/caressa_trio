@@ -5,7 +5,7 @@ from stream_django.enrich import Enrich
 enricher = Enrich()
 
 
-def something():
+def setup_follows():
     print("Following Part!")
 
     user_1 = User.objects.get(id=1)
@@ -32,9 +32,8 @@ def something():
     act.save()
 
 
-def user_feed():
-    # something()
-
+def see_user_feeds():
+    print("See User Feeds")
     user_1 = User.objects.get(id=1)
     feeds = feed_manager.get_user_feed(user_1.id)
 
@@ -42,11 +41,16 @@ def user_feed():
     print(activities)
 
 
-def run():
-    something()
-
+def see_timeline():
+    print("See Timeline")
     user_2 = User.objects.get(id=2)
     feeds = feed_manager.get_news_feeds(user_2.id)
     activities = feeds.get('timeline').get()['results']
     enriched_activities = enricher.enrich_activities(activities)
-    print(activities)
+    print(enriched_activities)
+
+
+def run():
+    setup_follows()
+    see_user_feeds()
+    see_timeline()

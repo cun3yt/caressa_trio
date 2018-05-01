@@ -222,5 +222,3 @@ def follow_feed(sender, instance, created, **kwargs):
 
 
 signals.post_save.connect(follow_feed, sender=UserFollowUser)
-
-
