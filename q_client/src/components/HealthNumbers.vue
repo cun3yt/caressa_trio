@@ -8,13 +8,13 @@
       <q-card-main class="row">
         <div class="col-sm-4 col-xs-5 row last-value">
           <div class="text-weight-bolder col-12 text-positive" style="font-size: 3em">
-            {{bloodPressureChart.data.lastMeasurment[0]}}/{{bloodPressureChart.data.lastMeasurment[1]}}
+            {{bloodPressureChart.data.lastMeasurement[0]}}/{{bloodPressureChart.data.lastMeasurement[1]}}
           </div>
           <div class="text-blue-grey-4 col-5" style="font-size: 1.2em; font-weight: bold;">
             mmHg
           </div>
           <div class="text-blue-grey-4 col-6 text-right" style="margin-top: 2px;">
-            {{bloodPressureChart.data.lastMeasurment[2]}}
+            {{bloodPressureChart.data.lastMeasurement[2]}}
           </div>
         </div>
         <div class="col-sm-8 col-xs-7">
@@ -31,11 +31,11 @@
       <q-card-main class="row">
         <div class="col-sm-4 col-xs-5 row last-value">
           <div class="text-weight-bolder col-7 text-positive" style="font-size: 3em">
-            {{weightChart.data.lastMeasurment[0]}}
+            {{weightChart.data.lastMeasurement[0]}}
           </div>
           <div class="col-5 text-blue-grey-4">
             <div style="font-size: 1.2em; font-weight: bold; height: 22px; margin-top: 4px;">lbs</div>
-            <div>{{weightChart.data.lastMeasurment[1]}}</div>
+            <div>{{weightChart.data.lastMeasurement[1]}}</div>
           </div>
         </div>
         <div class="col-sm-8 col-xs-7">
@@ -51,11 +51,11 @@
       <q-card-main class="row">
         <div class="col-sm-4 col-xs-5 row last-value">
           <div class="text-weight-bolder col-7 text-positive" style="font-size: 3em">
-            {{bloodSugar.data.lastMeasurment[0]}}
+            {{bloodSugar.data.lastMeasurement[0]}}
           </div>
           <div class="col-5 text-blue-grey-4">
             <div style="font-size: 1.2em; font-weight: bold; height: 22px; margin-top: 4px;">mg/dl</div>
-            <div>{{bloodSugar.data.lastMeasurment[1]}}</div>
+            <div>{{bloodSugar.data.lastMeasurement[1]}}</div>
           </div>
         </div>
         <div class="col-sm-8 col-xs-7">
@@ -124,7 +124,7 @@
         this.bloodPressureChart.data.datasets[0].data = response.data.map(fetchSystolic)
         this.bloodPressureChart.data.datasets[1].data = response.data.map(fetchDiastolic)
 
-        this.bloodPressureChart.data.lastMeasurment = this.lastBloodPressure()
+        this.bloodPressureChart.data.lastMeasurement = this.lastBloodPressure()
         this.$refs.bloodPressure.update()
       })
 
@@ -137,7 +137,7 @@
         this.weightChart.data.labels = response.data.map(fetchLabels)
         this.weightChart.data.datasets[0].data = response.data.map(fetchWeight)
 
-        this.weightChart.data.lastMeasurment = this.lastBodyWeight()
+        this.weightChart.data.lastMeasurement = this.lastBodyWeight()
         this.$refs.weight.update()
       })
     },
@@ -160,7 +160,7 @@
       return {
         bloodPressureChart: {
           data: {
-            lastMeasurment: [0, 0, 0],
+            lastMeasurement: [0, 0, 0],
             labels: [],
             datasets: [
               {
@@ -193,7 +193,7 @@
 
         bloodSugar: {
           data: {
-            lastMeasurment: [132, moment('2018-04-24 12:35:00 PST').format('MM/DD')],
+            lastMeasurement: [132, moment('2018-04-24 12:35:00 PST').format('MM/DD')],
             labels: ['03/23', '04/05', '04/13', '04/20', '04/23', '04/24'],
             datasets: [
               {
@@ -229,7 +229,7 @@
 
         weightChart: {
           data: {
-            lastMeasurment: [0, 0],
+            lastMeasurement: [0, 0],
             labels: [],
             datasets: [
               {
@@ -263,24 +263,13 @@
               }]
             }
           }
-        }
-
-
+        } // here
       }
     }
   }
 </script>
 
 <style scoped>
-  .systolic-last {
-    color: #00cc99;
-  }
-  .diastolic-last {
-    color: #ffcc0f;
-  }
-  .last-value {
-    height: 80px;
-  }
   .tag {
     width: 80px;
     border-radius: 100px;

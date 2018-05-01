@@ -51,10 +51,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'reversion',                # package `django-reversion`
     'phonenumber_field',        # package `django-phonenumber-field`
-    'task_list',
     'corsheaders',
     'utilities',
     'alexa',
+    'stream_django',
 ]
 
 MIDDLEWARE = [
@@ -97,7 +97,7 @@ DATABASES = {
     'default': dj_database_url.config(conn_max_age=600)
 }
 
-AUTH_USER_MODEL = 'task_list.User'
+AUTH_USER_MODEL = 'alexa.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -145,3 +145,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(PROJECT_ROOT, 'static'),
 )
+
+STREAM_API_KEY = os.environ.get('STREAM_API_KEY')
+STREAM_API_SECRET = os.environ.get('STREAM_API_SECRET')
+STREAM_NEWS_FEEDS = {'timeline':'timeline'}

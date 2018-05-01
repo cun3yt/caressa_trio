@@ -1,10 +1,48 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.contrib.postgres.fields import JSONField
 from model_utils.models import TimeStampedModel, StatusField
 from model_utils import Choices
-from task_list.models import User
+from phonenumber_field.modelfields import PhoneNumberField
+
 from utilities.dictionaries import deep_get, deep_set
 from random import randint
+from stream_django.activity import Activity
+from stream_django.feed_manager import feed_manager
+from django.db.models import signals
+
+
+class User(AbstractUser, TimeStampedModel):
+    class Meta:
+        db_table = 'user'
+
+    CARETAKER = 'SENIOR'
+    FAMILY = 'FAMILY'
+    CAREGIVER = 'CAREGIVER'
+    CAREGIVER_ORG = 'CAREGIVER_ORG'
+
+    TYPE_SET = (
+        (CARETAKER, 'Senior'),
+        (FAMILY, 'Family Member'),
+        (CAREGIVER, 'Caregiver'),
+        (CAREGIVER_ORG, 'Caregiver Organization'),
+    )
+
+    user_type = models.TextField(
+        choices=TYPE_SET,
+        default=CARETAKER,
+    )
+
+    phone_number = PhoneNumberField(db_index=True, blank=True)
+
+    def is_senior(self):
+        return self.user_type == self.CARETAKER
+
+    def is_family(self):
+        return self.user_type == self.FAMILY
+
+    def is_provider(self):
+        return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
 
 
 class AUser(TimeStampedModel):
@@ -143,3 +181,46 @@ class Joke(TimeStampedModel):
         random_slice = randint(0, count-1)
         joke_set = Joke.objects.all()[random_slice: random_slice+1]
         return joke_set[0]
+
+
+class UserActOnContent(TimeStampedModel, Activity):
+    class Meta:
+        db_table = 'user_act_on_content'
+
+    user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='contents_user_acted_on')
+    verb = models.TextField(db_index=True)
+    object = models.ForeignKey(Joke, null=True, on_delete=models.DO_NOTHING, related_name='user_actions_on_content')
+
+    @property
+    def activity_actor_attr(self):
+        return self.user
+
+    @property
+    def activity_verb(self):
+        return self.verb
+
+    @property
+    def activity_object_attr(self):
+        return self.object
+
+    @property
+    def created_at(self):
+        return self.created
+
+
+class UserFollowUser(TimeStampedModel):
+    class Meta:
+        db_table = 'user_follow_user'
+
+    from_user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='following')
+    to_user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='followed_by')
+
+
+def follow_feed(sender, instance, created, **kwargs):
+    if created:
+        feed_manager.follow_user(instance.from_user_id, instance.to_user_id)
+
+
+signals.post_save.connect(follow_feed, sender=UserFollowUser)
+
+

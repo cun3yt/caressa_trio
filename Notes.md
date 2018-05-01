@@ -321,7 +321,7 @@ class SomeState(models.Model):
 
 * Generating Graph
 ```bash
-./manage.py graph_transitions -o example-graph.png task_list.SomeState
+./manage.py graph_transitions -o example-graph.png alexa.SomeState
 ```
 
 # API with PostgREST

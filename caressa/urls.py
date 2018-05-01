@@ -21,5 +21,4 @@ urlpatterns = [
     path('', main_view),
     path('discussion', alexa_io),
     path('admin/', admin.site.urls),
-    path('api/0.1/', include('task_list.api.urls')),
 ]
