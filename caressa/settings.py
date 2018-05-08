@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.sites',
     'django.contrib.staticfiles',
     'django_extensions',
     'rest_framework',
@@ -53,8 +54,8 @@ INSTALLED_APPS = [
     'phonenumber_field',        # package `django-phonenumber-field`
     'corsheaders',
     'utilities',
+    'actstream',    # package `django activity stream`
     'alexa',
-    'stream_django',
 ]
 
 MIDDLEWARE = [
@@ -149,3 +150,19 @@ STATICFILES_DIRS = (
 STREAM_API_KEY = os.environ.get('STREAM_API_KEY')
 STREAM_API_SECRET = os.environ.get('STREAM_API_SECRET')
 STREAM_NEWS_FEEDS = {'timeline':'timeline'}
+
+SITE_ID = 1
+
+ACTSTREAM_SETTINGS = {
+    'MANAGER': 'actstream.managers.ActionManager',
+    'FETCH_RELATIONS': True,
+    'USE_PREFETCH': True,
+    'USE_JSONFIELD': True,
+    'GFK_FETCH_DEPTH': 1,
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
+    ]
+}

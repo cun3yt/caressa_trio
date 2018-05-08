@@ -83,7 +83,15 @@ class JokeEngine(Engine):
             intent_list=[
                 YesIntent(
                     response_set=self.fetch_random_joke,
-                    profile_builder=ProfileBuilderForJoke(alexa_user=alexa_user),
+                    question=Question(versions=['Was it funny?',
+                                                'Did you like this joke?',],
+                                      intent_list=[
+                                          YesIntent(
+                                              response_set=['Thanks!'],
+                                              process_fn=self.save_joke_like),
+                                          NoIntent(response_set=['OK']),
+                                      ]),
+                    # profile_builder=ProfileBuilderForJoke(alexa_user=alexa_user),
                 ),
                 NoIntent(response_set=['No problem', ])
             ]
@@ -95,6 +103,13 @@ class JokeEngine(Engine):
     def fetch_random_joke():
         joke = Joke.fetch_random()
         return '{main}<break time="1s"/>{punchline}'.format(main=joke.main, punchline=joke.punchline)
+
+    def save_joke_like(self, **kwargs):
+        from alexa.models import UserActOnContent
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='laughed at',
+                               object=Joke.objects.get(id=2)) # hardcoded for now..
+        act.save()
 
 
 class MedicalEngine(Engine):

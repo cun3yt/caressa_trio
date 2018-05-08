@@ -1,15 +1,14 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.contrib.postgres.fields import JSONField
+from jsonfield import JSONField
 from model_utils.models import TimeStampedModel, StatusField
 from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
 from utilities.dictionaries import deep_get, deep_set
 from random import randint
-from stream_django.activity import Activity
-from stream_django.feed_manager import feed_manager
 from django.db.models import signals
+from actstream import action
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -183,42 +182,41 @@ class Joke(TimeStampedModel):
         return joke_set[0]
 
 
-class UserActOnContent(TimeStampedModel, Activity):
+class UserActOnContent(TimeStampedModel):
     class Meta:
         db_table = 'user_act_on_content'
 
-    user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='contents_user_acted_on')
+    user = models.ForeignKey(to=User,
+                             null=True,
+                             on_delete=models.DO_NOTHING,
+                             related_name='contents_user_acted_on')
     verb = models.TextField(db_index=True)
-    object = models.ForeignKey(Joke, null=True, on_delete=models.DO_NOTHING, related_name='user_actions_on_content')
+    object = models.ForeignKey(Joke,
+                               null=True,
+                               on_delete=models.DO_NOTHING,
+                               related_name='user_actions_on_content')
 
-    @property
-    def activity_actor_attr(self):
-        return self.user
 
-    @property
-    def activity_verb(self):
-        return self.verb
+def user_act_on_content_activity_save(sender, instance, created, **kwargs):
+    action.send(instance.user,
+                verb=instance.verb,
+                description='joke reaction',
+                target=instance.object
+                )
 
-    @property
-    def activity_object_attr(self):
-        return self.object
 
-    @property
-    def created_at(self):
-        return self.created
+signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)
 
 
 class UserFollowUser(TimeStampedModel):
     class Meta:
         db_table = 'user_follow_user'
 
-    from_user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='following')
-    to_user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='followed_by')
-
-
-def follow_feed(sender, instance, created, **kwargs):
-    if created:
-        feed_manager.follow_user(instance.from_user_id, instance.to_user_id)
-
-
-signals.post_save.connect(follow_feed, sender=UserFollowUser)
+    from_user = models.ForeignKey(to=User,
+                                  null=True,
+                                  on_delete=models.DO_NOTHING,
+                                  related_name='following')
+    to_user = models.ForeignKey(to=User,
+                                null=True,
+                                on_delete=models.DO_NOTHING,
+                                related_name='followed_by')
