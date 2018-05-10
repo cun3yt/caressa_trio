@@ -6,9 +6,11 @@ from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
 from utilities.dictionaries import deep_get, deep_set
+from utilities.logger import log
 from random import randint
 from django.db.models import signals
 from actstream import action
+from actstream.actions import follow as act_follow
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -42,6 +44,61 @@ class User(AbstractUser, TimeStampedModel):
 
     def is_provider(self):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
+
+    def __repr__(self):
+        return self.username
+
+
+class Circle(TimeStampedModel):
+    class Meta:
+        db_table = 'circle'
+
+    members = models.ManyToManyField(User, through='CircleMembership', through_fields=('circle', 'member', ), )
+    person_of_interest = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=False, related_name='main_circle')
+
+    def __repr__(self):
+        circle_owner = self.person_of_interest
+        member_count = self.members.count()
+        return 'Circle of [{circle_owner}] with {count} member(s)'.format(circle_owner=circle_owner,
+                                                                          count=member_count)
+
+    def add_member(self, member: User, is_admin: bool):
+        CircleMembership.add_member(self, member=member, is_admin=is_admin)
+
+    def is_member(self, member: User):
+        return CircleMembership.is_member(self, member)
+
+
+class CircleMembership(TimeStampedModel):
+    class Meta:
+        db_table = 'circle_membership'
+        unique_together = ('circle', 'member', )
+
+    circle = models.ForeignKey(Circle, on_delete=models.DO_NOTHING, related_name='circle')
+    member = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='circle_memberships')
+    is_admin = models.BooleanField(default=False)
+
+    @classmethod
+    def add_member(cls, circle: Circle, member: User, is_admin: bool) -> None:
+        if cls.objects.filter(circle=circle, member=member).count() > 0:
+            log("{member} is already a member of circle: {circle}\n"\
+                "Other parameters are ignored even if "\
+                "they are different from the current object".format(member=member, circle=circle))
+            return
+        cls.objects.create(circle=circle, member=member, is_admin=is_admin)
+
+        # Setting follows relationship from the circle POI to the added member
+        act_follow(circle.person_of_interest, member, send_action=False, actor_only=False)
+        action.send(member, verb='joined the circle')
+
+    @classmethod
+    def is_member(cls, circle: Circle, member: User) -> bool:
+        return cls.objects.filter(circle=circle, member=member).count() > 0
+
+    def __repr__(self):
+        return 'CircleMembership ({id}): {member} in {circle} with admin: {admin} and POI: {poi}'\
+            .format(id=self.id, member=self.member, circle=self.circle, admin=self.is_admin,
+                    poi=(self.circle.person_of_interest == self.member))
 
 
 class AUser(TimeStampedModel):
@@ -206,17 +263,3 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
 
 
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)
-
-
-class UserFollowUser(TimeStampedModel):
-    class Meta:
-        db_table = 'user_follow_user'
-
-    from_user = models.ForeignKey(to=User,
-                                  null=True,
-                                  on_delete=models.DO_NOTHING,
-                                  related_name='following')
-    to_user = models.ForeignKey(to=User,
-                                null=True,
-                                on_delete=models.DO_NOTHING,
-                                related_name='followed_by')

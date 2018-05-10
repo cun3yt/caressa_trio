@@ -9,7 +9,7 @@ import django.db.models.deletion
 import django.utils.timezone
 import model_utils.fields
 import phonenumber_field.modelfields
-import stream_django.activity
+# import stream_django.activity
 
 
 class Migration(migrations.Migration):
@@ -160,7 +160,6 @@ class Migration(migrations.Migration):
             options={
                 'db_table': 'user_act_on_content',
             },
-            bases=(models.Model, stream_django.activity.Activity),
         ),
         migrations.CreateModel(
             name='UserFollowUser',

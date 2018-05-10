@@ -154,7 +154,7 @@ STREAM_NEWS_FEEDS = {'timeline':'timeline'}
 SITE_ID = 1
 
 ACTSTREAM_SETTINGS = {
-    'MANAGER': 'actstream.managers.ActionManager',
+    'MANAGER': 'alexa.managers.ActionManagerByCircle',
     'FETCH_RELATIONS': True,
     'USE_PREFETCH': True,
     'USE_JSONFIELD': True,
