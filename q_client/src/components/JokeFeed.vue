@@ -1,30 +1,28 @@
 <template>
-    <q-card>
-      <q-card-title>
-        <span id="actor">{{ actor }}</span> Laughed At This Joke
-      </q-card-title>
-      <q-card-main class="row">
-        <p>{{ joke.main }}</p>
-        <p>{{ joke.punchline }}</p>
-      </q-card-main>
-      <q-card-separator />
-      <q-card-actions>
-        <q-btn flat label="That's funny!" />
-        <q-btn flat label="Tell me another joke" />
-      </q-card-actions>
+  <q-card>
+    <q-card-title class="row">
+      <q-item-side avatar="/statics/grandma-avatar.png" class="col-1" />
+      <div class="col-11">{{ statement }}</div>
 
-      {{ something }}
-    </q-card>
+    </q-card-title>
+    <q-card-main class="row">
+      <p>{{ joke.main }}</p>
+      <p> {{ joke.punchline }} </p>
+    </q-card-main>
+    <q-card-separator />
+    <q-card-actions>
+      <q-btn class="action-btn" flat color="primary">That's funny!</q-btn>
+      <q-btn class="action-btn" flat color="secondary">Tell me another joke</q-btn>
+    </q-card-actions>
+  </q-card>
 </template>
 
 <script>
     export default {
-      name: "joke-feed",
-      props: ['actor', 'joke'],
+      name: 'joke-feed',
+      props: ['joke', 'statement'],
       data () {
-        return {
-          something: 'data data...'
-        }
+        return {}
       }
     }
 </script>
@@ -32,5 +30,9 @@
 <style scoped>
   #actor {
     font-weight: bold;
+  }
+  .action-btn {
+    text-transform: capitalize;
+    font-weight: normal;
   }
 </style>

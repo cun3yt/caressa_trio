@@ -46,7 +46,10 @@ class User(AbstractUser, TimeStampedModel):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
 
     def __repr__(self):
-        return self.username
+        return self.first_name.title()
+
+    def __str__(self):
+        return self.first_name.title()
 
 
 class Circle(TimeStampedModel):
@@ -237,6 +240,14 @@ class Joke(TimeStampedModel):
         random_slice = randint(0, count-1)
         joke_set = Joke.objects.all()[random_slice: random_slice+1]
         return joke_set[0]
+
+    def __repr__(self):
+        return "Joke({id}, {main}-{punchline})".format(id=self.id,
+                                                       main=self.main,
+                                                       punchline=self.punchline)
+
+    def __str__(self):
+        return "a joke"
 
 
 class UserActOnContent(TimeStampedModel):
