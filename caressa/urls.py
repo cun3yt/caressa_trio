@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from alexa.views import main_view, alexa_io
-from alexa.api.views import JokeViewSet, action_stream
+from alexa.api.views import JokeViewSet, ActionStreamView
 from rest_framework import routers
 
 router = routers.DefaultRouter()
@@ -27,7 +27,7 @@ urlpatterns = [
     path('discussion', alexa_io),
     path('activity', include('actstream.urls')),
     path('act/', include(router.urls)),
-    path('stream/', action_stream),
+    path('act/streams/', ActionStreamView.as_view()),
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls'))
 ]

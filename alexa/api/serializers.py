@@ -14,7 +14,8 @@ class ActionSerializer(serializers.BaseSerializer):
             'id': instance.id,
             'statement': instance.__str__(),
             'action_object_type': type(instance.action_object).__name__ if instance.action_object else None,
-            'action_object': JokeSerializer(instance.action_object).data if instance.action_object and isinstance(instance.action_object, Joke) else None,
+            'action_object': JokeSerializer(instance.action_object).data
+            if instance.action_object and isinstance(instance.action_object, Joke) else None,
         }
 
     def create(self, validated_data):

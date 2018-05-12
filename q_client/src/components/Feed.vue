@@ -21,18 +21,47 @@
     },
     data () {
       return {
-        feeds: []
+        pageNumber: 0,
+        feeds: [],
+        moreFeedsNeeded: false
+      }
+    },
+    methods: {
+      bottomVisible () {
+        const scrollY = window.scrollY
+        const visible = document.documentElement.clientHeight
+        const pageHeight = document.documentElement.scrollHeight
+        const bottomOfPage = visible + scrollY >= pageHeight
+        return bottomOfPage || pageHeight < visible
+      },
+      addFeeds () {
+        let vm = this
+        ++this.pageNumber
+
+        this.$http.get(`${this.$root.$options.restHost}/act/streams/?id=${this.$root.$options.userId}&page=${this.pageNumber}`, {})
+          .then(response => {
+            vm.feeds = vm.feeds.concat(response.data['results'])
+            if (vm.bottomVisible()) {
+              vm.addFeeds()
+            }
+          })
+      }
+    },
+    watch: {
+      moreFeedsNeeded (moreFeedsNeeded) {
+        if (moreFeedsNeeded) {
+          this.addFeeds()
+        }
       }
     },
     created () {
       this.setupContent({
         title: 'Feed'
       })
-
-      this.$http.get(this.$root.$options.restHost + '/stream/?id=' + this.$root.$options.userId, {
-      }).then(response => {
-        this.feeds = response.data
+      window.addEventListener('scroll', () => {
+        this.moreFeedsNeeded = this.bottomVisible()
       })
+      this.addFeeds()
     }
   }
 </script>
