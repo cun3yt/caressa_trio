@@ -13,21 +13,32 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import include, path
 from alexa.views import main_view, alexa_io
-from alexa.api.views import JokeViewSet, ActionStreamView
+from actions.api.views import ActionViewSet, CommentViewSet
 from rest_framework import routers
+from rest_framework_extensions.routers import ExtendedSimpleRouter
 
-router = routers.DefaultRouter()
-router.register(r'jokes', JokeViewSet)
+
+router = ExtendedSimpleRouter()
+(
+    router.register(r'actions', ActionViewSet, base_name='action')
+          .register(r'comments', CommentViewSet, base_name='actions-comment',
+                    parents_query_lookups=['content'])
+)
+
+
+flat_router = routers.DefaultRouter()
+flat_router.register(r'streams', ActionViewSet, 'stream')
+flat_router.register(r'comments', CommentViewSet, 'comment')
 
 urlpatterns = [
     path('', main_view),
     path('discussion', alexa_io),
-    path('activity', include('actstream.urls')),
     path('act/', include(router.urls)),
-    path('act/streams/', ActionStreamView.as_view()),
+    path('flat-api/', include(flat_router.urls)),
     path('admin/', admin.site.urls),
-    path('api-auth/', include('rest_framework.urls'))
+    path('api-auth/', include('rest_framework.urls')),
 ]

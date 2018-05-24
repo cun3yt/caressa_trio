@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'utilities',
     'actstream',    # package `django activity stream`
     'alexa',
+    'actions',
 ]
 
 MIDDLEWARE = [

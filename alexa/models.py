@@ -11,6 +11,9 @@ from random import randint
 from django.db.models import signals
 from actstream import action
 from actstream.actions import follow as act_follow
+from actstream.models import Action
+
+from django.contrib.contenttypes.models import ContentType
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -268,7 +271,7 @@ class UserActOnContent(TimeStampedModel):
 def user_act_on_content_activity_save(sender, instance, created, **kwargs):
     action.send(instance.user,
                 verb=instance.verb,
-                description='joke reaction',
+                description=kwargs.get('description', ''),
                 target=instance.object
                 )
 
