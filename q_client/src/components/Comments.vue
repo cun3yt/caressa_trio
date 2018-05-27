@@ -1,0 +1,58 @@
+<template>
+  <div class="main">
+
+    <q-list no-border separator class="q-mt-md">
+      <div v-if="comments.count===0">Be first to comment</div>
+      <q-item v-else v-for="comment in comments.results" :key="comment.id">
+        <q-item-side avatar="/statics/man-avatar.png" />
+        <q-item-main :label="comment.commenter" :sublabel="comment.comment" label-lines="1" />
+        <q-item-side right :stamp="timePasted(comment)" />
+      </q-item>
+    </q-list>
+
+    <q-btn v-if="comments.results.length < comments.count"
+           v-on:click="loadMore()" flat color="secondary">Load More</q-btn>
+    <q-input v-model="new_comment" type="textarea" name="new-comment" placeholder="Write your comment" />
+    <q-btn class="action-btn" flat color="primary">Post</q-btn>
+  </div>
+</template>
+
+<script>
+  import moment from 'moment'
+
+  export default {
+    name: 'Comments',
+    props: ['comments'],
+    data () {
+      return {
+        next_url: '',
+        new_comment: ''
+      }
+    },
+    created () {
+      this.next_url = this.comments.next
+    },
+    methods: {
+      loadMore () {
+        let vm = this
+
+        this.$http.get(this.next_url, {})
+          .then(response => {
+
+            debugger
+            vm.comments.results = vm.comments.results.concat(response.data['results'])
+            // if (vm.bottomVisible()) {
+            //   vm.addFeeds()
+            // }
+          })
+      },
+      timePasted (comment) {
+        return moment(comment.created).fromNow()
+      }
+    }
+  }
+</script>
+
+<style scoped>
+
+</style>

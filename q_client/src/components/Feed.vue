@@ -1,23 +1,29 @@
 <template>
   <div class="main-content">
-    <div v-for="feed in feeds">
-      <joke-feed :statement="feed.statement" :joke="feed.action_object"
-                 v-if="feed.action_object_type=='Joke'"></joke-feed>
-      <regular-feed :statement="feed.statement" v-else />
-    </div>
+    <template v-for="feed in feeds">
+      <q-card>
+        <joke-feed :statement="feed.statement" :joke="feed.action_object"
+                   v-if="feed.action_object_type==='Joke'" />
+        <regular-feed :statement="feed.statement" v-else />
+        <q-card-separator />
+        <comments :comments="feed.paginated_comments" />
+      </q-card>
+    </template>
   </div>
 </template>
 
 <script>
   import JokeFeed from './JokeFeed'
   import RegularFeed from './RegularFeed'
+  import Comments from './Comments'
 
   export default {
     name: 'feed',
     props: ['setupContent'],
     components: {
       JokeFeed,
-      RegularFeed
+      RegularFeed,
+      Comments
     },
     data () {
       return {
@@ -38,20 +44,20 @@
         let vm = this
         ++this.pageNumber
 
-        this.$http.get(`${this.$root.$options.restHost}/act/streams/?id=${this.$root.$options.userId}&page=${this.pageNumber}`, {})
+        this.$http.get(`${this.$root.$options.restHost}/act/actions/?id=${this.$root.$options.userId}&page=${this.pageNumber}`, {})
           .then(response => {
             vm.feeds = vm.feeds.concat(response.data['results'])
-            if (vm.bottomVisible()) {
-              vm.addFeeds()
-            }
+            // if (vm.bottomVisible()) {
+            //   vm.addFeeds()
+            // }
           })
       }
     },
     watch: {
       moreFeedsNeeded (moreFeedsNeeded) {
-        if (moreFeedsNeeded) {
-          this.addFeeds()
-        }
+        // if (moreFeedsNeeded) {
+        //   this.addFeeds()
+        // }
       }
     },
     created () {

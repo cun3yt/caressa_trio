@@ -1,5 +1,5 @@
 <template>
-  <q-card>
+  <div>
     <q-card-title class="row">
       <q-item-side avatar="/statics/grandma-avatar.png" class="col-1" />
       <div class="col-11">{{ statement }}</div>
@@ -14,7 +14,7 @@
       <q-btn class="action-btn" flat color="primary">That's funny!</q-btn>
       <q-btn class="action-btn" flat color="secondary">Tell me another joke</q-btn>
     </q-card-actions>
-  </q-card>
+  </div>
 </template>
 
 <script>
