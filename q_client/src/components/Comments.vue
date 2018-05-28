@@ -2,7 +2,11 @@
   <div class="main">
 
     <q-list no-border separator class="q-mt-md">
-      <div v-if="comments.count===0">Be first to comment</div>
+      <q-item v-if="comments.count===0">
+        <q-item-main>
+          <div>Be first to comment</div>
+        </q-item-main>
+      </q-item>
       <q-item v-else v-for="comment in comments.results" :key="comment.id">
         <q-item-side avatar="/statics/man-avatar.png" />
         <q-item-main :label="comment.commenter" :sublabel="comment.comment" label-lines="1" />

@@ -2,18 +2,18 @@
   <div>
     <q-card-title class="row">
       <q-item-side avatar="/statics/grandma-avatar.png" class="col-1" />
-      <div class="col-11">{{ statement }}</div>
+      <div class="col-11">{{ statement }}.</div>
 
     </q-card-title>
     <q-card-main class="row">
-      <div>
+      <blockquote>
         <p>{{ joke.main }}</p>
         <p>{{ joke.punchline }} </p>
-      </div>
+      </blockquote>
     </q-card-main>
     <q-card-separator />
     <q-card-actions>
-      <q-btn class="action-btn" flat color="primary">That's funny!</q-btn>
+      <q-btn class="action-btn" flat color="primary" v-on:click="markFunny()">{{funnyMsg}}</q-btn>
       <q-btn class="action-btn" flat color="secondary">Tell me another joke</q-btn>
     </q-card-actions>
   </div>
