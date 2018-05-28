@@ -92,8 +92,6 @@
         </div>
       </q-card-main>
     </q-card>
-
-
   </div>
 </template>
 
@@ -113,29 +111,29 @@
         title: 'Status'
       })
 
-      this.$http.get(this.$root.$options.apiHost + '/a_user_medical_state?measurement=eq.blood_pressure&order=created', {
-        // 'measurement_0': 'blood_pressure'
-      }).then(response => {
+      let bloodPressureURL = this.$root.$options.restHost + '/flat-api/medical-state?m-type=blood_pressure&page_size=100'
+
+      this.$http.get(bloodPressureURL, {}).then(response => {
         let fetchLabels = d => moment(d.created).format('MM/DD')
         let fetchSystolic = d => d.data['systolic']
         let fetchDiastolic = d => d.data['diastolic']
 
-        this.bloodPressureChart.data.labels = response.data.map(fetchLabels)
-        this.bloodPressureChart.data.datasets[0].data = response.data.map(fetchSystolic)
-        this.bloodPressureChart.data.datasets[1].data = response.data.map(fetchDiastolic)
+        this.bloodPressureChart.data.labels = response.data.results.map(fetchLabels)
+        this.bloodPressureChart.data.datasets[0].data = response.data.results.map(fetchSystolic)
+        this.bloodPressureChart.data.datasets[1].data = response.data.results.map(fetchDiastolic)
 
         this.bloodPressureChart.data.lastMeasurement = this.lastBloodPressure()
         this.$refs.bloodPressure.update()
       })
 
-      this.$http.get(this.$root.$options.apiHost + '/a_user_medical_state?measurement=eq.weight&order=created', {
-        // 'measurement_0': 'blood_pressure'
-      }).then(response => {
+      let weightURL = this.$root.$options.restHost + '/flat-api/medical-state?m-type=weight&page_size=100'
+
+      this.$http.get(weightURL, {}).then(response => {
         let fetchLabels = d => moment(d.created).format('MM/DD')
         let fetchWeight = d => d.data['amount']
 
-        this.weightChart.data.labels = response.data.map(fetchLabels)
-        this.weightChart.data.datasets[0].data = response.data.map(fetchWeight)
+        this.weightChart.data.labels = response.data.results.map(fetchLabels)
+        this.weightChart.data.datasets[0].data = response.data.results.map(fetchWeight)
 
         this.weightChart.data.lastMeasurement = this.lastBodyWeight()
         this.$refs.weight.update()
@@ -263,7 +261,7 @@
               }]
             }
           }
-        } // here
+        }
       }
     }
   }

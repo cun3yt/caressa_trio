@@ -6,7 +6,7 @@
                    v-if="feed.action_object_type==='Joke'" />
         <regular-feed :statement="feed.statement" v-else />
         <q-card-separator />
-        <comments :comments="feed.paginated_comments" />
+        <comments :actionId="feed.id" :comments="feed.paginated_comments" />
       </q-card>
     </template>
   </div>

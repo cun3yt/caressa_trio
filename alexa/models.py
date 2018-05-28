@@ -194,6 +194,9 @@ class AUserMedicalState(TimeStampedModel):
     data = JSONField(default={})
 
 
+AUserMedicalState._meta.get_field('created').db_index = True
+
+
 class Request(TimeStampedModel):
     class Meta:
         db_table = 'a_request'

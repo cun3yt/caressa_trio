@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import include, path
 from alexa.views import main_view, alexa_io
 from actions.api.views import ActionViewSet, CommentViewSet
+from alexa.api.views import MedicalViewSet
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
@@ -29,10 +30,10 @@ router = ExtendedSimpleRouter()
                     parents_query_lookups=['content'])
 )
 
-
 flat_router = routers.DefaultRouter()
 flat_router.register(r'streams', ActionViewSet, 'stream')
 flat_router.register(r'comments', CommentViewSet, 'comment')
+flat_router.register(r'medical-state', MedicalViewSet, 'medical-state')
 
 urlpatterns = [
     path('', main_view),

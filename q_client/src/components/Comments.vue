@@ -12,8 +12,12 @@
 
     <q-btn v-if="comments.results.length < comments.count"
            v-on:click="loadMore()" flat color="secondary">Load More</q-btn>
-    <q-input v-model="new_comment" type="textarea" name="new-comment" placeholder="Write your comment" />
-    <q-btn class="action-btn" flat color="primary">Post</q-btn>
+    <q-item>
+      <q-item-main>
+        <q-input v-model="new_comment" type="textarea" name="new-comment" placeholder="Write your comment" />
+      </q-item-main>
+    </q-item>
+    <q-btn @click="post()" class="action-btn" flat color="primary">Post</q-btn>
   </div>
 </template>
 
@@ -22,7 +26,7 @@
 
   export default {
     name: 'Comments',
-    props: ['comments'],
+    props: ['comments', 'actionId'],
     data () {
       return {
         next_url: '',
@@ -33,21 +37,40 @@
       this.next_url = this.comments.next
     },
     methods: {
+      refresh () {
+        let vm = this
+
+        this.$http.get(`${this.$root.$options.restHost}/act/actions/${this.actionId}/comments/`, {}).then(
+          response => {
+            vm.comments = response.data
+            vm.next_url = response.data['next']
+          }
+        )
+      },
       loadMore () {
         let vm = this
 
         this.$http.get(this.next_url, {})
           .then(response => {
-
-            debugger
             vm.comments.results = vm.comments.results.concat(response.data['results'])
-            // if (vm.bottomVisible()) {
-            //   vm.addFeeds()
-            // }
+            this.next_url = response.data['next']
           })
       },
       timePasted (comment) {
         return moment(comment.created).fromNow()
+      },
+      post () {
+        let vm = this
+
+        this.$http.post(`${this.$root.$options.restHost}/act/actions/${this.actionId}/comments/`, {'comment': this.new_comment})
+          .then(
+            response => {
+              console.log('success')
+              vm.new_comment = ''
+              vm.refresh()
+            }, response => {
+              console.log('error')
+            })
       }
     }
   }

@@ -37,3 +37,8 @@ class Comment(TimeStampedModel):
 
     def __str__(self):
         return "{} commented on {}: {}".format(self.owner, self.content, self.comment)
+
+
+Comment._meta.get_field('created').db_index = True
+
+

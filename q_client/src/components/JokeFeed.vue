@@ -6,8 +6,10 @@
 
     </q-card-title>
     <q-card-main class="row">
-      <p>{{ joke.main }}</p>
-      <p> {{ joke.punchline }} </p>
+      <div>
+        <p>{{ joke.main }}</p>
+        <p>{{ joke.punchline }} </p>
+      </div>
     </q-card-main>
     <q-card-separator />
     <q-card-actions>
@@ -23,14 +25,17 @@
       props: ['joke', 'statement'],
       data () {
         return {}
+      },
+      methods: {
+        markFunny () {},
+        getAnotherJoke () {
+          console.log('another joke...')
+        }
       }
     }
 </script>
 
 <style scoped>
-  #actor {
-    font-weight: bold;
-  }
   .action-btn {
     text-transform: capitalize;
     font-weight: normal;
