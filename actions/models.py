@@ -14,20 +14,14 @@ class UserAction(Action):
 
     def __init__(self, *args, **kwargs):
         super(UserAction, self).__init__(*args, **kwargs)
-        self.target = None
 
     def __str__(self):
         ctx = {
             'actor': self.actor,
             'verb': self.verb,
             'action_object': self.action_object,
-            'target': self.target,
             'timesince': self.timesince()
         }
-        if self.target:
-            if self.action_object:
-                return _('%(actor)s %(verb)s %(action_object)s on %(target)s %(timesince)s ago') % ctx
-            return _('%(actor)s %(verb)s %(target)s %(timesince)s ago') % ctx
         if self.action_object:
             return _('%(actor)s %(verb)s %(action_object)s %(timesince)s ago') % ctx
         return _('%(actor)s %(verb)s %(timesince)s ago') % ctx
