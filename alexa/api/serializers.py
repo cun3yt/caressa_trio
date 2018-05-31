@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import AUserMedicalState
+from alexa.models import AUserMedicalState, Joke
 from rest_framework.pagination import PageNumberPagination
 
 
@@ -14,3 +14,11 @@ class MedicalStateSerializer(serializers.ModelSerializer):
         fields = ('user', 'measurement', 'data', 'created', )
 
     data = serializers.JSONField()
+
+
+class JokeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Joke
+        fields = ('id',
+                  'main',
+                  'punchline', )

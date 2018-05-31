@@ -241,10 +241,16 @@ class Joke(TimeStampedModel):
     punchline = models.TextField(null=False, blank=False)
 
     @staticmethod
-    def fetch_random():
-        count = Joke.objects.all().count()
+    def fetch_random(exclude_list=None):
+        exclude_list = [] if exclude_list is None else exclude_list
+        exclude_count = len(exclude_list)
+        count = Joke.objects.all().count() - exclude_count
+
+        if count <= 0:
+            return None
+
         random_slice = randint(0, count-1)
-        joke_set = Joke.objects.all()[random_slice: random_slice+1]
+        joke_set = Joke.objects.exclude(id__in=exclude_list).all()[random_slice: random_slice+1]
         return joke_set[0]
 
     def __repr__(self):

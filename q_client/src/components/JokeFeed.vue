@@ -16,6 +16,16 @@
       <q-btn class="action-btn" flat v-bind:color="funnyState ? 'tertiary' : 'primary'" @click="markFunny(true)">{{funnyMsg}}</q-btn>
       <q-btn class="action-btn" flat color="secondary" @click="getAnotherJoke()">Tell me another joke</q-btn>
     </q-card-actions>
+
+    <template v-for="additionalJoke in additionalJokes">
+      <q-card-separator />
+      <q-card-main class="row">
+        <blockquote>
+          <p>{{ additionalJoke.main }}</p>
+          <p>{{ additionalJoke.punchline }} </p>
+        </blockquote>
+      </q-card-main>
+    </template>
   </div>
 </template>
 
@@ -27,7 +37,8 @@
         return {
           funnyState: false,
           funnyId: null,
-          funnyMsg: 'That\'s funny!'
+          funnyMsg: 'That\'s funny!',
+          additionalJokes: []
         }
       },
       created () {
@@ -67,6 +78,25 @@
           }
         },
         getAnotherJoke () {
+          let excludeStr = ''
+          let excludeList = [this.joke.id]
+          let vm = this
+
+          excludeList = excludeList.concat(this.additionalJokes.map(joke => joke['id']))
+          excludeStr = `?exclude=${excludeList.join(',')}`
+
+          debugger
+
+          this.$http.get(`${this.$root.$options.restHost}/flat-api/jokes/0/${excludeStr}`, {})
+            .then(response => {
+              debugger
+              let joke = response.data
+              vm.additionalJokes = vm.additionalJokes.concat(joke)
+            })
+            .then(response => {
+              debugger
+              console.log('error')
+            })
           console.log('another joke...')
         }
       }
