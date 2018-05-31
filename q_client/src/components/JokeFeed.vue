@@ -31,11 +31,11 @@
         }
       },
       created () {
-        let laughed_reactions = this.reactions.filter(obj => obj['reaction'] === 'laughed')
+        let laughedReactions = this.reactions.filter(obj => obj['reaction'] === 'laughed')
 
-        if (laughed_reactions.length > 0) {
+        if (laughedReactions.length > 0) {
           this.markFunny(false)
-          this.funnyId = laughed_reactions[0].id
+          this.funnyId = laughedReactions[0].id
         }
       },
       methods: {
