@@ -13,8 +13,8 @@
     </q-card-main>
     <q-card-separator />
     <q-card-actions>
-      <q-btn class="action-btn" flat color="primary" v-on:click="markFunny()">{{funnyMsg}}</q-btn>
-      <q-btn class="action-btn" flat color="secondary">Tell me another joke</q-btn>
+      <q-btn class="action-btn" flat v-bind:color="funnyState ? 'tertiary' : 'primary'" @click="markFunny(true)">{{funnyMsg}}</q-btn>
+      <q-btn class="action-btn" flat color="secondary" @click="getAnotherJoke()">Tell me another joke</q-btn>
     </q-card-actions>
   </div>
 </template>
@@ -22,12 +22,50 @@
 <script>
     export default {
       name: 'joke-feed',
-      props: ['joke', 'statement'],
+      props: ['joke', 'statement', 'reactions', 'feedId'],
       data () {
-        return {}
+        return {
+          funnyState: false,
+          funnyId: null,
+          funnyMsg: 'That\'s funny!'
+        }
+      },
+      created () {
+        let laughed_reactions = this.reactions.filter(obj => obj['reaction'] === 'laughed')
+
+        if (laughed_reactions.length > 0) {
+          this.markFunny(false)
+          this.funnyId = laughed_reactions[0].id
+        }
       },
       methods: {
-        markFunny () {},
+        markFunny (apiCall) {
+          this.funnyState = !this.funnyState
+          this.funnyMsg = this.funnyState ? 'You found it funny' : 'That\'s funny!'
+
+          let vm = this
+
+          if (apiCall && this.funnyState) {
+            this.$http.post(`${this.$root.$options.restHost}/act/actions/${this.feedId}/reactions/`, {
+              'reaction': 'laughed',
+              'owner': this.$root.$options.userId,
+              'content': this.feedId
+            })
+              .then(response => {
+                vm.funnyId = response.data['id']
+                console.log('success')
+              })
+              .then(response => { console.log('failure') })
+          }
+
+          if (apiCall && !this.funnyState) {
+            this.$http.delete(`${this.$root.$options.restHost}/act/actions/${this.feedId}/reactions/${this.funnyId}/`, {
+              'reaction': 'laughed',
+              'owner': this.$root.$options.userId,
+              'content': this.feedId
+            })
+          }
+        },
         getAnotherJoke () {
           console.log('another joke...')
         }

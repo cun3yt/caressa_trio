@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from actions.models import UserAction, Comment
+from actions.models import UserAction, Comment, UserReaction
 from caressa.settings import REST_FRAMEWORK
 from alexa.models import Joke, User
-from actions.models import UserAction
 from generic_relations.relations import GenericRelatedField
 
 
@@ -29,6 +28,21 @@ class CommentSerializer(serializers.ModelSerializer):
         return super(CommentSerializer, self).create(validated_data)
 
 
+class ReactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserReaction
+        fields = ('id',
+                  'reaction',
+                  'owner',
+                  'content', )
+
+    def create(self, validated_data):
+        validated_data['owner'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
+        content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
+        validated_data['content'] = UserAction.objects.get(id=content_id)
+        return super(ReactionSerializer, self).create(validated_data)
+
+
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAction
@@ -37,9 +51,11 @@ class ActionSerializer(serializers.ModelSerializer):
                   'action_object_type',
                   'paginated_comments',
                   'data',
-                  'action_object', )
+                  'action_object',
+                  'user_reactions', )
 
     paginated_comments = serializers.SerializerMethodField()
+    user_reactions = serializers.SerializerMethodField()
     data = serializers.JSONField()
     action_object = GenericRelatedField({
         Joke: JokeSerializer(),
@@ -57,3 +73,9 @@ class ActionSerializer(serializers.ModelSerializer):
             'previous': None,
             'results': CommentSerializer(comments, many=True).data,
         }
+
+    def get_user_reactions(self, user_action: UserAction):
+        # todo IMPLEMENT THIS TO FETCH USER ACTIONS
+        user_id = 2     # todo move to `hard-coding`
+        reactions = user_action.action_reactions.filter(owner_id__exact=user_id).all()
+        return ReactionSerializer(reactions, many=True).data

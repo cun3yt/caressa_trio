@@ -2,7 +2,10 @@
   <div class="main-content">
     <template v-for="feed in feeds">
       <q-card>
-        <joke-feed :statement="feed.statement" :joke="feed.action_object"
+        <joke-feed :statement="feed.statement"
+                   :joke="feed.action_object"
+                   :reactions="feed.user_reactions"
+                   :feedId="feed.id"
                    v-if="feed.action_object_type==='Joke'" />
         <regular-feed :statement="feed.statement" v-else />
         <q-card-separator />

@@ -17,18 +17,25 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from alexa.views import main_view, alexa_io
-from actions.api.views import ActionViewSet, CommentViewSet
+from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet
 from alexa.api.views import MedicalViewSet
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
 
 router = ExtendedSimpleRouter()
-(
-    router.register(r'actions', ActionViewSet, base_name='action')
-          .register(r'comments', CommentViewSet, base_name='actions-comment',
-                    parents_query_lookups=['content'])
-)
+
+action_router = router.register(r'actions',
+                                ActionViewSet,
+                                base_name='action', )
+action_router.register(r'comments',
+                       CommentViewSet,
+                       base_name='actions-comment',
+                       parents_query_lookups=['content'], )
+action_router.register(r'reactions',
+                       ReactionViewSet,
+                       base_name='actions-reaction',
+                       parents_query_lookups=['content'], )
 
 flat_router = routers.DefaultRouter()
 flat_router.register(r'streams', ActionViewSet, 'stream')

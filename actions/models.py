@@ -43,9 +43,14 @@ class Comment(TimeStampedModel):
     class Meta:
         db_table = 'action_comment'
 
-    comment = models.TextField(null=False, blank=False)
-    owner = models.ForeignKey(to=User, on_delete=models.DO_NOTHING, related_name='comments')
-    content = models.ForeignKey(to=UserAction, on_delete=models.DO_NOTHING, related_name='action_comments')
+    comment = models.TextField(null=False,
+                               blank=False, )
+    owner = models.ForeignKey(to=User,
+                              on_delete=models.DO_NOTHING,
+                              related_name='comments', )
+    content = models.ForeignKey(to=UserAction,
+                                on_delete=models.DO_NOTHING,
+                                related_name='action_comments', )
 
     def __repr__(self):
         return "Comment({}) by {}: {}".format(self.id, self.owner, self.comment)
@@ -57,3 +62,24 @@ class Comment(TimeStampedModel):
 Comment._meta.get_field('created').db_index = True
 
 
+class UserReaction(TimeStampedModel):
+    class Meta:
+        db_table = 'user_reaction'
+
+    reaction = models.CharField(max_length=100,
+                                db_index=True,
+                                default='like', )
+    owner = models.ForeignKey(to=User,
+                              on_delete=models.DO_NOTHING,
+                              related_name='reactions',
+                              db_index=True, )
+    content = models.ForeignKey(to=UserAction,
+                                on_delete=models.DO_NOTHING,
+                                related_name='action_reactions',
+                                db_index=True, )
+
+    def __repr__(self):
+        return "Reaction({}) by {}: {}".format(self.id, self.owner, self.reaction)
+
+    def __str__(self):
+        return "{} did reaction '{}' on {}".format(self.owner, self.reaction, self.content)
