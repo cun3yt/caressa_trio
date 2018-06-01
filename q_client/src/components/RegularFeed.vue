@@ -1,5 +1,7 @@
 <template>
-  <q-card-main class="row">{{ statement }}.</q-card-main>
+  <q-card-title class="row">
+    {{ statement }}.
+  </q-card-title>
 </template>
 
 <script>
