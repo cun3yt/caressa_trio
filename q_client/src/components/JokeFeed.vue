@@ -12,11 +12,13 @@
       </blockquote>
     </q-card-main>
 
-    <q-card-separator />
-
     <q-card-actions>
       <q-btn class="action-btn" flat v-bind:color="funnyState ? 'tertiary' : 'primary'" @click="markFunny(true)">{{funnyMsg}}</q-btn>
-      <q-btn class="action-btn" flat color="secondary" @click="getAnotherJoke()">Tell me another joke</q-btn>
+      <q-btn v-if="latestJokeId==joke.id"
+             class="action-btn"
+             flat
+             color="secondary"
+             @click="getAnotherJoke()">Tell me another joke</q-btn>
     </q-card-actions>
 
     <template v-for="additionalJoke in additionalJokes">
@@ -27,6 +29,16 @@
           <p>{{ additionalJoke.punchline }} </p>
         </blockquote>
       </q-card-main>
+
+      <q-card-actions>
+        <q-btn class="action-btn" flat color="primary">That's funny!</q-btn>
+        <!--<q-btn class="action-btn" flat v-bind:color="funnyState ? 'tertiary' : 'primary'" @click="markFunny(true)">{{funnyMsg}}</q-btn>-->
+        <q-btn v-if="latestJokeId==additionalJoke.id && additionalJokes.length < 3"
+               class="action-btn"
+               flat
+               color="secondary"
+               @click="getAnotherJoke()">Tell me another joke</q-btn>
+      </q-card-actions>
     </template>
   </div>
 </template>
@@ -40,11 +52,13 @@
           funnyState: false,
           funnyId: null,
           funnyMsg: 'That\'s funny!',
+          latestJokeId: null,
           additionalJokes: []
         }
       },
       created () {
         let laughedReactions = this.reactions.filter(obj => obj['reaction'] === 'laughed')
+        this.latestJokeId = this.joke.id
 
         if (laughedReactions.length > 0) {
           this.markFunny(false)
@@ -94,6 +108,7 @@
               debugger
               let joke = response.data
               vm.additionalJokes = vm.additionalJokes.concat(joke)
+              vm.latestJokeId = joke.id
             })
             .then(response => {
               debugger
