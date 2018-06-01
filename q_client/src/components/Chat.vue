@@ -63,14 +63,14 @@
             name: 'Maggy',
             text: ['Perfect!', 'Caressa is so cool that we can keep up with little to no effort!'],
             avatar: 'statics/grandma-avatar.png',
-            stamp: 'Yesterday at 13:51'
+            stamp: 'Yesterday at 13:52'
           },
           {
             name: 'John',
             text: ['I know ma!', 'I love you.'],
             sent: true,
             avatar: 'statics/man-avatar.png',
-            stamp: 'Yesterday at 13:50'
+            stamp: 'Yesterday at 13:53'
           },
 
           {
@@ -81,20 +81,20 @@
             text: ['Nice weather here today. How is it over there?'],
             sent: true,
             avatar: 'statics/man-avatar.png',
-            stamp: 'Yesterday at 13:50'
+            stamp: 'Yesterday at 11:13'
           },
           {
             name: '',
             text: ['Pretty good.', 'By the way, my caregiver is with me now. We\'ll take a walk now'],
             avatar: 'statics/grandma-avatar.png',
-            stamp: 'Yesterday at 13:50'
+            stamp: 'Yesterday at 11:18'
           },
           {
             name: 'John',
             text: ['That\'s great! Talk to you later mom'],
             sent: true,
             avatar: 'statics/man-avatar.png',
-            stamp: 'Yesterday at 13:50'
+            stamp: 'Yesterday at 11:19'
           }
         ]
       }
