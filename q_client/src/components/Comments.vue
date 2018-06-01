@@ -1,6 +1,8 @@
 <template>
   <div class="main">
-
+    <q-card-title class="row">
+      Comments
+    </q-card-title>
     <q-list no-border separator class="q-mt-md">
       <q-item v-if="comments.count===0">
         <q-item-main>
