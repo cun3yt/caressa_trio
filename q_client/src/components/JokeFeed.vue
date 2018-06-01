@@ -21,6 +21,8 @@
              @click="getAnotherJoke()">Tell me another joke</q-btn>
     </q-card-actions>
 
+    <slot></slot>
+
     <template v-for="additionalJoke in additionalJokes">
       <q-card-separator />
       <q-card-main class="row">

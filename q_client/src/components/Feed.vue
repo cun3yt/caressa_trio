@@ -6,10 +6,15 @@
                    :joke="feed.action_object"
                    :reactions="feed.user_reactions"
                    :feedId="feed.id"
-                   v-if="feed.action_object_type==='Joke'" />
-        <regular-feed :statement="feed.statement" v-else />
+                   v-if="feed.action_object_type==='Joke'">
+          <comments :actionId="feed.id" :comments="feed.paginated_comments" />
+        </joke-feed>
+
+        <regular-feed :statement="feed.statement" v-else>
+          <comments :actionId="feed.id" :comments="feed.paginated_comments" />
+        </regular-feed>
+
         <q-card-separator />
-        <comments :actionId="feed.id" :comments="feed.paginated_comments" />
       </q-card>
     </template>
   </div>

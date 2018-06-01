@@ -1,7 +1,10 @@
 <template>
-  <q-card-title class="row">
-    {{ statement }}.
-  </q-card-title>
+  <div>
+    <q-card-title class="row">
+      {{ statement }}.
+    </q-card-title>
+    <slot></slot>
+  </div>
 </template>
 
 <script>

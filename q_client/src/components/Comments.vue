@@ -3,13 +3,8 @@
     <q-card-title class="row">
       Comments
     </q-card-title>
-    <q-list no-border separator class="q-mt-md">
-      <q-item v-if="comments.count===0">
-        <q-item-main>
-          <div>Be first to comment</div>
-        </q-item-main>
-      </q-item>
-      <q-item v-else v-for="comment in comments.results" :key="comment.id">
+    <q-list v-if="comments.count > 0" no-border separator class="q-mt-md">
+      <q-item v-for="comment in comments.results" :key="comment.id">
         <q-item-side avatar="/statics/man-avatar.png" />
         <q-item-main :label="comment.commenter" :sublabel="comment.comment" label-lines="1" />
         <q-item-side right :stamp="timePasted(comment)" />
@@ -20,7 +15,8 @@
            v-on:click="loadMore()" flat color="secondary">Load More</q-btn>
     <q-item>
       <q-item-main>
-        <q-input v-model="new_comment" type="textarea" name="new-comment" placeholder="Write your comment" />
+        <q-input v-if="comments.count===0" v-model="new_comment" type="textarea" name="new-comment" placeholder="Be first to comment" />
+        <q-input v-else v-model="new_comment" type="textarea" name="new-comment" placeholder="Write your comment" />
       </q-item-main>
     </q-item>
     <q-btn @click="post()" class="action-btn" flat color="primary">Post</q-btn>
