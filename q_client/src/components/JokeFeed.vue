@@ -13,7 +13,10 @@
     </q-card-main>
 
     <q-card-actions>
-      <q-btn class="action-btn" flat v-bind:color="funnyState ? 'tertiary' : 'primary'" @click="markFunny(true)">{{funnyMsg}}</q-btn>
+      <q-btn class="action-btn"
+             flat
+             v-bind:color="funnyState ? 'tertiary' : 'primary'"
+             @click="markFunny(true)">{{funnyMsg}}</q-btn>
       <q-btn v-if="latestJokeId==joke.id"
              class="action-btn"
              flat
@@ -33,9 +36,11 @@
       </q-card-main>
 
       <q-card-actions>
-        <q-btn class="action-btn" flat color="primary">That's funny!</q-btn>
-        <!--<q-btn class="action-btn" flat v-bind:color="funnyState ? 'tertiary' : 'primary'" @click="markFunny(true)">{{funnyMsg}}</q-btn>-->
-        <q-btn v-if="latestJokeId==additionalJoke.id && additionalJokes.length < 3"
+        <q-btn class="action-btn"
+               flat
+               v-bind:color="additionalJoke.funny ? 'tertiary' : 'primary'"
+               @click="markAdditionalJokeFunny(additionalJoke)">{{ additionalJoke.funny ? 'You found it funny' : 'That\'s funny!' }}</q-btn>
+        <q-btn v-if="latestJokeId===additionalJoke.id && additionalJokes.length < 3"
                class="action-btn"
                flat
                color="secondary"
@@ -103,20 +108,22 @@
           excludeList = excludeList.concat(this.additionalJokes.map(joke => joke['id']))
           excludeStr = `?exclude=${excludeList.join(',')}`
 
-          debugger
-
           this.$http.get(`${this.$root.$options.restHost}/flat-api/jokes/0/${excludeStr}`, {})
             .then(response => {
-              debugger
               let joke = response.data
               vm.additionalJokes = vm.additionalJokes.concat(joke)
               vm.latestJokeId = joke.id
             })
             .then(response => {
-              debugger
-              console.log('error')
+              console.log('error') // todo This is called no matter if it is successful or not!
             })
-          console.log('another joke...')
+        },
+        markAdditionalJokeFunny (joke) {
+          if (!('funny' in joke)) {
+            joke.funny = true
+            return
+          }
+          joke.funny = !joke.funny
         }
       }
     }
