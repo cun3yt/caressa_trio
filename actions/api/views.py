@@ -10,7 +10,13 @@ from actstream.models import action_object_stream
 
 class ActionViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = ActionSerializer
-    queryset = UserAction.objects.all().order_by('-timestamp')
+
+    def get_queryset(self):
+        user_id = 2     # todo move to `hard-coding`
+        user = User.objects.get(id=user_id)
+        circle = user.circle_set.all()[0]
+        queryset = UserAction.objects.mystream(user, circle).all().order_by('-timestamp')
+        return queryset
 
 
 class CommentViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
