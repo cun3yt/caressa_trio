@@ -148,10 +148,6 @@ STATICFILES_DIRS = (
     os.path.join(PROJECT_ROOT, 'static'),
 )
 
-STREAM_API_KEY = os.environ.get('STREAM_API_KEY')
-STREAM_API_SECRET = os.environ.get('STREAM_API_SECRET')
-STREAM_NEWS_FEEDS = {'timeline':'timeline'}
-
 SITE_ID = 1
 
 ACTSTREAM_SETTINGS = {
