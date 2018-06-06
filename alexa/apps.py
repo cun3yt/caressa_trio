@@ -9,3 +9,4 @@ class AlexaConfig(AppConfig):
         registry.register(self.get_model('UserActOnContent'))
         registry.register(self.get_model('Joke'))
         registry.register(self.get_model('User'))
+        registry.register(self.get_model('Circle'))

@@ -39,7 +39,7 @@
         <q-btn class="action-btn"
                flat
                v-bind:color="additionalJoke.funny ? 'tertiary' : 'primary'"
-               @click="markAdditionalJokeFunny(additionalJoke)">{{ additionalJoke.funny ? 'You found it funny' : 'That\'s funny!' }}</q-btn>
+               @click="markAdditionalJokeFunny(additionalJoke)">{{ additionaJokeStatement(additionalJoke) }}</q-btn>
         <q-btn v-if="latestJokeId===additionalJoke.id && additionalJokes.length < 3"
                class="action-btn"
                flat
@@ -53,7 +53,12 @@
 <script>
     export default {
       name: 'joke-feed',
-      props: ['joke', 'statement', 'reactions', 'feedId'],
+      props: [
+        'joke',
+        'statement',
+        'reactions',
+        'feedId'
+      ],
       data () {
         return {
           funnyState: false,
@@ -73,6 +78,12 @@
         }
       },
       methods: {
+        additionaJokeStatement (joke) {
+          if (!('funny' in joke) || !joke.funny) {
+            return 'That\'s funny'
+          }
+          return 'You found it funny'
+        },
         markFunny (apiCall) {
           this.funnyState = !this.funnyState
           this.funnyMsg = this.funnyState ? 'You found it funny' : 'That\'s funny!'
@@ -111,7 +122,8 @@
           this.$http.get(`${this.$root.$options.restHost}/flat-api/jokes/0/${excludeStr}`, {})
             .then(response => {
               let joke = response.data
-              vm.additionalJokes = vm.additionalJokes.concat(joke)
+              joke.funny = response.data.user_actions.length > 0
+              vm.$set(vm.additionalJokes, vm.additionalJokes.length, joke)
               vm.latestJokeId = joke.id
             })
             .then(response => {
@@ -119,11 +131,14 @@
             })
         },
         markAdditionalJokeFunny (joke) {
-          if (!('funny' in joke)) {
-            joke.funny = true
-            return
-          }
           joke.funny = !joke.funny
+
+          this.$http.post(`${this.$root.$options.restHost}/laugh/`, {
+            'joke_id': joke.id,
+            'set_to': (joke.funny ? 'true' : 'false')
+          }).then(response => {
+            console.log('success bro!')
+          })
         }
       }
     }

@@ -55,17 +55,17 @@
         this.$http.get(`${this.$root.$options.restHost}/act/actions/?id=${this.$root.$options.userId}&page=${this.pageNumber}`, {})
           .then(response => {
             vm.feeds = vm.feeds.concat(response.data['results'])
-            // if (vm.bottomVisible()) {
-            //   vm.addFeeds()
-            // }
+            if (vm.bottomVisible()) {
+              vm.addFeeds()
+            }
           })
       }
     },
     watch: {
       moreFeedsNeeded (moreFeedsNeeded) {
-        // if (moreFeedsNeeded) {
-        //   this.addFeeds()
-        // }
+        if (moreFeedsNeeded) {
+          this.addFeeds()
+        }
       }
     },
     created () {
