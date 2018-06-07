@@ -1,14 +1,18 @@
 <template>
   <div>
-    <q-card-title class="row">
-      <q-item-side v-bind:avatar="feed.actor.profile_pic" class="col-1" />
-      <div class="col-11">{{ feed.statement }}.</div>
-    </q-card-title>
+    <q-item class="header">
+      <q-item-side>
+        <q-item-tile avatar>
+          <img v-bind:src="feed.actor.profile_pic">
+        </q-item-tile>
+      </q-item-side>
+      <q-item-main v-bind:label="feed.statement" />
+    </q-item>
 
     <q-card-main class="row">
       <blockquote>
         <p>{{ joke.main }}</p>
-        <p>{{ joke.punchline }} </p>
+        <p>{{ joke.punchline }}</p>
       </blockquote>
     </q-card-main>
 
@@ -146,5 +150,8 @@
   .action-btn {
     text-transform: capitalize;
     font-weight: normal;
+  }
+  .header {
+    padding-top: 20px;
   }
 </style>
