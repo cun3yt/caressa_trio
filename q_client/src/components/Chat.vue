@@ -50,7 +50,6 @@
           '1': this.$root.$options.circleCenter.profilePic,
           '2': this.$root.$options.userProfilePic
         },
-        message: '',
         messages: [
           {
             label: 'Friday, 18th'
