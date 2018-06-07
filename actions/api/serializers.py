@@ -50,13 +50,13 @@ class ActionSerializer(serializers.ModelSerializer):
                   'statement',
                   'action_object_type',
                   'paginated_comments',
-                  'data',
+                  # 'data',
                   'action_object',
                   'user_reactions', )
 
     paginated_comments = serializers.SerializerMethodField()
     user_reactions = serializers.SerializerMethodField()
-    data = serializers.JSONField()
+    # data = serializers.JSONField()
     action_object = GenericRelatedField({
         Joke: JokeSerializer(),
     })

@@ -38,6 +38,10 @@ class User(AbstractUser, TimeStampedModel):
     )
 
     phone_number = PhoneNumberField(db_index=True, blank=True)
+    profile_pic = models.TextField(blank=True, default='')
+
+    def get_profile_pic(self):
+        return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None
 
     def is_senior(self):
         return self.user_type == self.CARETAKER
