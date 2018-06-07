@@ -48,18 +48,25 @@ class ActionSerializer(serializers.ModelSerializer):
         model = UserAction
         fields = ('id',
                   'statement',
+                  'actor',
                   'action_object_type',
                   'paginated_comments',
-                  # 'data',
                   'action_object',
                   'user_reactions', )
 
+    actor = serializers.SerializerMethodField()
     paginated_comments = serializers.SerializerMethodField()
     user_reactions = serializers.SerializerMethodField()
-    # data = serializers.JSONField()
     action_object = GenericRelatedField({
         Joke: JokeSerializer(),
     })
+
+    def get_actor(self, user_action: UserAction):
+        user = user_action.actor
+        return {
+            'id': user.id,
+            'profile_pic': user.get_profile_pic()
+        }
 
     def get_paginated_comments(self, user_action: UserAction):
         page_size = REST_FRAMEWORK.get('PAGE_SIZE', 5)

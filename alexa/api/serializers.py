@@ -51,3 +51,12 @@ class UserActOnContentSerializer(serializers.ModelSerializer):
             'verb',
             'object',
         )
+
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, user_act_on_content: UserActOnContent):
+        user = user_act_on_content.user
+        return {
+            'id': user.id,
+            'profile_pic': user.get_profile_pic(),
+        }

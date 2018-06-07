@@ -1,7 +1,8 @@
 <template>
   <div>
     <q-card-title class="row">
-      {{ statement }}.
+      <q-item-side v-bind:avatar="feed.actor.profile_pic" class="col-1" />
+      <div class="col-11">{{ feed.statement }}.</div>
     </q-card-title>
     <slot></slot>
   </div>
@@ -10,7 +11,7 @@
 <script>
 export default {
   name: 'regular-feed',
-  props: ['statement'],
+  props: ['feed'],
   data () {
     return {}
   }

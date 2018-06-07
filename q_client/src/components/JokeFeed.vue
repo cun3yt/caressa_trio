@@ -1,8 +1,8 @@
 <template>
   <div>
     <q-card-title class="row">
-      <q-item-side avatar="/statics/grandma-avatar.png" class="col-1" />
-      <div class="col-11">{{ statement }}.</div>
+      <q-item-side v-bind:avatar="feed.actor.profile_pic" class="col-1" />
+      <div class="col-11">{{ feed.statement }}.</div>
     </q-card-title>
 
     <q-card-main class="row">
@@ -55,9 +55,7 @@
       name: 'joke-feed',
       props: [
         'joke',
-        'statement',
-        'reactions',
-        'feedId'
+        'feed'
       ],
       data () {
         return {
@@ -69,7 +67,7 @@
         }
       },
       created () {
-        let laughedReactions = this.reactions.filter(obj => obj['reaction'] === 'laughed')
+        let laughedReactions = this.feed.user_reactions.filter(obj => obj['reaction'] === 'laughed')
         this.latestJokeId = this.joke.id
 
         if (laughedReactions.length > 0) {
@@ -91,10 +89,10 @@
           let vm = this
 
           if (apiCall && this.funnyState) {
-            this.$http.post(`${this.$root.$options.restHost}/act/actions/${this.feedId}/reactions/`, {
+            this.$http.post(`${this.$root.$options.restHost}/act/actions/${this.feed.id}/reactions/`, {
               'reaction': 'laughed',
               'owner': this.$root.$options.userId,
-              'content': this.feedId
+              'content': this.feed.id
             })
               .then(response => {
                 vm.funnyId = response.data['id']
@@ -104,10 +102,10 @@
           }
 
           if (apiCall && !this.funnyState) {
-            this.$http.delete(`${this.$root.$options.restHost}/act/actions/${this.feedId}/reactions/${this.funnyId}/`, {
+            this.$http.delete(`${this.$root.$options.restHost}/act/actions/${this.feed.id}/reactions/${this.funnyId}/`, {
               'reaction': 'laughed',
               'owner': this.$root.$options.userId,
-              'content': this.feedId
+              'content': this.feed.id
             })
           }
         },

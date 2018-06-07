@@ -5,7 +5,7 @@
     </q-card-title>
     <q-list v-if="comments.count > 0" no-border separator class="q-mt-md">
       <q-item v-for="comment in comments.results" :key="comment.id">
-        <q-item-side avatar="/statics/man-avatar.png" />
+        <q-item-side v-bind:avatar="$root.$options.userProfilePic" />
         <q-item-main :label="comment.commenter" :sublabel="comment.comment" label-lines="1" />
         <q-item-side right :stamp="timePasted(comment)" />
       </q-item>

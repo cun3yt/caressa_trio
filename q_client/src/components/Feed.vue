@@ -2,15 +2,13 @@
   <div class="main-content">
     <template v-for="feed in feeds">
       <q-card>
-        <joke-feed :statement="feed.statement"
+        <joke-feed :feed="feed"
                    :joke="feed.action_object"
-                   :reactions="feed.user_reactions"
-                   :feedId="feed.id"
                    v-if="feed.action_object_type==='Joke'">
           <comments :actionId="feed.id" :comments="feed.paginated_comments" />
         </joke-feed>
 
-        <regular-feed :statement="feed.statement" v-else>
+        <regular-feed :feed="feed" v-else>
           <comments :actionId="feed.id" :comments="feed.paginated_comments" />
         </regular-feed>
 
