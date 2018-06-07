@@ -1,10 +1,114 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.contrib.postgres.fields import JSONField
+from jsonfield import JSONField
 from model_utils.models import TimeStampedModel, StatusField
 from model_utils import Choices
-from task_list.models import User
+from phonenumber_field.modelfields import PhoneNumberField
+
 from utilities.dictionaries import deep_get, deep_set
+from utilities.logger import log
 from random import randint
+from django.db.models import signals
+from actstream import action
+from actstream.actions import follow as act_follow
+from actstream.models import Action
+
+from django.contrib.contenttypes.models import ContentType
+
+
+class User(AbstractUser, TimeStampedModel):
+    class Meta:
+        db_table = 'user'
+
+    CARETAKER = 'SENIOR'
+    FAMILY = 'FAMILY'
+    CAREGIVER = 'CAREGIVER'
+    CAREGIVER_ORG = 'CAREGIVER_ORG'
+
+    TYPE_SET = (
+        (CARETAKER, 'Senior'),
+        (FAMILY, 'Family Member'),
+        (CAREGIVER, 'Caregiver'),
+        (CAREGIVER_ORG, 'Caregiver Organization'),
+    )
+
+    user_type = models.TextField(
+        choices=TYPE_SET,
+        default=CARETAKER,
+    )
+
+    phone_number = PhoneNumberField(db_index=True, blank=True)
+    profile_pic = models.TextField(blank=True, default='')
+
+    def get_profile_pic(self):
+        return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None
+
+    def is_senior(self):
+        return self.user_type == self.CARETAKER
+
+    def is_family(self):
+        return self.user_type == self.FAMILY
+
+    def is_provider(self):
+        return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
+
+    def __repr__(self):
+        return self.first_name.title()
+
+    def __str__(self):
+        return self.first_name.title()
+
+
+class Circle(TimeStampedModel):
+    class Meta:
+        db_table = 'circle'
+
+    members = models.ManyToManyField(User, through='CircleMembership', through_fields=('circle', 'member', ), )
+    person_of_interest = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=False, related_name='main_circle')
+
+    def __repr__(self):
+        circle_owner = self.person_of_interest
+        member_count = self.members.count()
+        return 'Circle of [{circle_owner}] with {count} member(s)'.format(circle_owner=circle_owner,
+                                                                          count=member_count)
+
+    def add_member(self, member: User, is_admin: bool):
+        CircleMembership.add_member(self, member=member, is_admin=is_admin)
+
+    def is_member(self, member: User):
+        return CircleMembership.is_member(self, member)
+
+
+class CircleMembership(TimeStampedModel):
+    class Meta:
+        db_table = 'circle_membership'
+        unique_together = ('circle', 'member', )
+
+    circle = models.ForeignKey(Circle, on_delete=models.DO_NOTHING, related_name='circle')
+    member = models.ForeignKey(User, on_delete=models.DO_NOTHING, related_name='circle_memberships')
+    is_admin = models.BooleanField(default=False)
+
+    @classmethod
+    def add_member(cls, circle: Circle, member: User, is_admin: bool) -> None:
+        if cls.objects.filter(circle=circle, member=member).count() > 0:
+            log("{member} is already a member of circle: {circle}\n"\
+                "Other parameters are ignored even if "\
+                "they are different from the current object".format(member=member, circle=circle))
+            return
+        cls.objects.create(circle=circle, member=member, is_admin=is_admin)
+
+        # Setting follows relationship from the circle POI to the added member
+        act_follow(circle.person_of_interest, member, send_action=False, actor_only=False)
+        action.send(member, verb='joined the circle')
+
+    @classmethod
+    def is_member(cls, circle: Circle, member: User) -> bool:
+        return cls.objects.filter(circle=circle, member=member).count() > 0
+
+    def __repr__(self):
+        return 'CircleMembership ({id}): {member} in {circle} with admin: {admin} and POI: {poi}'\
+            .format(id=self.id, member=self.member, circle=self.circle, admin=self.is_admin,
+                    poi=(self.circle.person_of_interest == self.member))
 
 
 class AUser(TimeStampedModel):
@@ -94,6 +198,9 @@ class AUserMedicalState(TimeStampedModel):
     data = JSONField(default={})
 
 
+AUserMedicalState._meta.get_field('created').db_index = True
+
+
 class Request(TimeStampedModel):
     class Meta:
         db_table = 'a_request'
@@ -138,8 +245,49 @@ class Joke(TimeStampedModel):
     punchline = models.TextField(null=False, blank=False)
 
     @staticmethod
-    def fetch_random():
-        count = Joke.objects.all().count()
+    def fetch_random(exclude_list=None):
+        exclude_list = [] if exclude_list is None else exclude_list
+        exclude_count = len(exclude_list)
+        count = Joke.objects.all().count() - exclude_count
+
+        if count <= 0:
+            return None
+
         random_slice = randint(0, count-1)
-        joke_set = Joke.objects.all()[random_slice: random_slice+1]
+        joke_set = Joke.objects.exclude(id__in=exclude_list).all()[random_slice: random_slice+1]
         return joke_set[0]
+
+    def __repr__(self):
+        return "Joke({id}, {main}-{punchline})".format(id=self.id,
+                                                       main=self.main,
+                                                       punchline=self.punchline)
+
+    def __str__(self):
+        return "a joke"
+
+
+class UserActOnContent(TimeStampedModel):
+    class Meta:
+        db_table = 'user_act_on_content'
+
+    user = models.ForeignKey(to=User,
+                             null=True,
+                             on_delete=models.DO_NOTHING,
+                             related_name='contents_user_acted_on')
+    verb = models.TextField(db_index=True)
+    object = models.ForeignKey(Joke, # todo this needs to be generic!
+                               null=True,
+                               on_delete=models.DO_NOTHING,
+                               related_name='user_actions_on_content')
+
+
+def user_act_on_content_activity_save(sender, instance, created, **kwargs):
+    action.send(instance.user,
+                verb=instance.verb,
+                description=kwargs.get('description', ''),
+                action_object=instance.object,
+                target=Circle.objects.get(id=1),     # todo: Move to `hard-coding`
+                )
+
+
+signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)

@@ -46,15 +46,17 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'django.contrib.sites',
     'django.contrib.staticfiles',
     'django_extensions',
     'rest_framework',
     'reversion',                # package `django-reversion`
     'phonenumber_field',        # package `django-phonenumber-field`
-    'task_list',
     'corsheaders',
     'utilities',
+    'actstream',    # package `django activity stream`
     'alexa',
+    'actions',
 ]
 
 MIDDLEWARE = [
@@ -97,7 +99,7 @@ DATABASES = {
     'default': dj_database_url.config(conn_max_age=600)
 }
 
-AUTH_USER_MODEL = 'task_list.User'
+AUTH_USER_MODEL = 'alexa.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -145,3 +147,21 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(PROJECT_ROOT, 'static'),
 )
+
+SITE_ID = 1
+
+ACTSTREAM_SETTINGS = {
+    'MANAGER': 'alexa.managers.ActionManagerByCircle',
+    'FETCH_RELATIONS': True,
+    'USE_PREFETCH': True,
+    'USE_JSONFIELD': True,
+    'GFK_FETCH_DEPTH': 1,
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'alexa.api.configuration.pagination.ExtendedPageNumberPagination',
+    'PAGE_SIZE': 5,
+}

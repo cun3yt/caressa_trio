@@ -46,33 +46,3 @@ def dict_merge(dct, merge_dct):
             dict_merge(dct[k], merge_dct[k])
         else:
             dct[k] = merge_dct[k]
-
-
-def deep_set2(dict_, key, val):
-    keys = key.split('.')
-    iterative_dict = dict_
-    n = len(keys)
-
-    import ipdb
-    ipdb.set_trace()
-
-    for k in keys[:(n-1)]:
-        try:
-            iterative_dict = iterative_dict[k]
-        except (KeyError, AttributeError):  # except (KeyError, AttributeError) as e
-            iterative_dict[k] = {}
-            iterative_dict = iterative_dict[k]
-        except TypeError:
-            iterative_dict = {
-                k: {}
-            }
-            iterative_dict = iterative_dict[k]
-
-    last_key = keys[-1]
-
-    try:
-        iterative_dict[last_key] = val
-    except TypeError:
-        iterative_dict = {
-            last_key: val
-        }

@@ -39,6 +39,12 @@ Quasar.start(() => {
   new Vue({
     el: '#q-app',
     apiHost: 'http://127.0.0.1:3000',
+    restHost: 'http://127.0.0.1:9900',
+    userId: 2, // todo move to hard-coding
+    userProfilePic: '/statics/man-avatar.png', // todo move to hard-coding
+    circleCenter: {
+      profilePic: '/statics/grandma-avatar.png' // todo move to hard-coding
+    },
     router,
     render: h => h(require('./App').default)
   })
