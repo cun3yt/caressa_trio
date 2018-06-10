@@ -6,8 +6,18 @@
         Master Page is here...
       </div>
       <div class="row">
-        <q-btn outline color="primary col-5" @click="selected='activity'" label="Activity">Activity</q-btn>
-        <q-btn outline color="primary col-5" @click="selected='activity'" label="Something Else">Something Else</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Watching...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Reading...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Listening to...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Drinking...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send" align="right">Eating...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Playing...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Traveling to...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Looking for...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Attending...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Supporting...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Celebrating...</q-btn>
+        <q-btn outline color="primary col-5" @click="selected='activity'" icon-right="send">Meeting...</q-btn>
       </div>
     </div>
   </div>
