@@ -19,7 +19,11 @@ class CommentSerializer(serializers.ModelSerializer):
     commenter = serializers.SerializerMethodField()
 
     def get_commenter(self, comment: Comment):
-        return comment.owner.get_full_name()
+        owner = comment.owner
+        return {
+            'full_name': owner.get_full_name(),
+            'profile_pic': owner.get_profile_pic()
+        }
 
     def create(self, validated_data):
         validated_data['owner'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
