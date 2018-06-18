@@ -24,6 +24,7 @@ This setup is written for Mac OS.
 1. Install Postico (visual database client)
     * Install Homebrew if you don't have already: https://brew.sh/
     * `brew cask install postico`
+    * Click `Initialize` button
 1. PyEnv, Python and VirtualEnv Setup
     * Install Homebrew if you don't have already: https://brew.sh/
     * Install Pyenv for python environment management:
@@ -36,6 +37,9 @@ This setup is written for Mac OS.
         * `brew install pyenv-virtualenv`
     * Create a virtual environment with Python3.6.4:
         * `pyenv virtualenv 3.6.4 caressa`
+        * Add the following lines to profile file:
+            * `eval "$(pyenv init -)"`
+            * `eval "$(pyenv virtualenv-init -)"`
 1. Activate Virtual Environment
     * Run `source ~/.pyenv/versions/caressa/bin/activate`
 1. Installing Requirements
@@ -72,6 +76,7 @@ This setup is written for Mac OS.
 In order to do development against an Alexa skill each developer will need one Alexa project initiated on Amazon servers. The steps to get that done:
 
 1. Create an Amazon developer account if you haven't already: https://developer.amazon.com/alexa/console
+1. Create a skill named "caressa-dev" as a custom skill
 1. Create environment variables `ALEXA_MESSAGING_CLIENT_ID` and `ALEXA_MESSAGING_CLIENT_SECRET` by copying the values from the Alexa web dashboard.
 1. Open JSON editor on Alexa web dashboard and insert the seed skill info (ask to a colleague if it is not available somewhere yet).
 1. Alexa skill expects an HTTPS endpoint to reach to the skill. In order to make it work on the local machine you need to create a world-wide accessible HTTP server. There are two alternatives that we have identified so far without going through lots of configurations for firewalls etc:
