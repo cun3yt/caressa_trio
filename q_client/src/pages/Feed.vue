@@ -50,7 +50,7 @@ export default {
       let vm = this
       ++this.pageNumber
 
-      this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.userId}&page=${this.pageNumber}`, {})
+      this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`, {})
         .then(response => {
           vm.feeds = vm.feeds.concat(response.data['results'])
           if (vm.bottomVisible()) {
