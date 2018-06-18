@@ -2,11 +2,11 @@
 
 Welcome to Caressa's code repository. Currently it includes two main repositories in this central location:
 
-0. Django codebase including 
+1. Django codebase including 
     * Data (ORM) models
     * HTTP endpoints for Voice devices (currently only Alexa)
     * REST API for mobile clients
-0. Quasar codebase for targeting iOS and Android builds
+1. Quasar codebase for targeting iOS and Android builds
 
 Please note that this file is super shaky, please consider contributing it if you see something dramatically wrong. Thanks for your patience!
 
@@ -16,15 +16,15 @@ Please note that this file is super shaky, please consider contributing it if yo
 
 This setup is written for Mac OS.
 
-0. Install PostgreSQL (Current running version for the product: 9.6)
+1. Install PostgreSQL (Current running version for the product: 9.6)
     * Install Homebrew if you don't have already: https://brew.sh/
     * Run `brew cask install postgres`
     * Postgres is a visual postgreSQL server
     * You can start/stop from the toolbar
-0. Install Postico (visual database client)
+1. Install Postico (visual database client)
     * Install Homebrew if you don't have already: https://brew.sh/
     * `brew cask install postico`
-0. PyEnv, Python and VirtualEnv Setup
+1. PyEnv, Python and VirtualEnv Setup
     * Install Homebrew if you don't have already: https://brew.sh/
     * Install Pyenv for python environment management:
         * `brew update`
@@ -36,19 +36,19 @@ This setup is written for Mac OS.
         * `brew install pyenv-virtualenv`
     * Create a virtual environment with Python3.6.4:
         * `pyenv virtualenv 3.6.4 caressa`
-0. Activate Virtual Environment
+1. Activate Virtual Environment
     * Run `source ~/.pyenv/versions/caressa/bin/activate`
-0. Installing Requirements
+1. Installing Requirements
     * Go to project root
     * Run `pip install -r requirements`
-0. Run Database Migrations
+1. Run Database Migrations
     * Go to project root
     * Run `./manage.py migrate`
-0. Export these environment variables. You may consider using `direnv` for project-based environment variables' management:
+1. Export these environment variables. You may consider using `direnv` for project-based environment variables' management:
     * ENV set to 'dev': `export ENV='dev'`
     * ENV_KEY set to some long string: `export ENV_KEY='some-long-random-string'`
     * DATABASE_URL set to the local database instance, e.g.: `export DATABASE_URL='postgres://cuneyt:@localhost:5432/caressa_django'`
-0. Development Server
+1. Development Server
     * Run `./manage.py runserver 9900`
     * Hit: `http://localhost:9900/act/actions/` If you see a meaningful page that's great. If not try to solve the problem and if you cannot get some help from other folks.
     * For easier debugging: JetBrain IDEs providing Django Run/Debug configuration which eases the pain.
@@ -61,15 +61,23 @@ This setup is written for Mac OS.
 
 This setup is written for Mac OS.
 
-0. Install [`node`](https://nodejs.org/en/) if you don't have it already. If you have a super old version of node consider updating it. You may consider using `homebrew` for the installation/update.
-0. Go to `q_client` folder
-0. Install `vue-cli` globally: `npm install -g vue-cli`
-0. Run `npm install`
-0. Start dev server: `quasar dev`. If build is successful hit to `http://localhost:8080/main/health-numbers`. If you see meaningful app-like looking page you're done. Congrats.
+1. Install [`node`](https://nodejs.org/en/) if you don't have it already. If you have a super old version of node consider updating it. You may consider using `homebrew` for the installation/update.
+1. Go to `q_client` folder
+1. Install `vue-cli` globally: `npm install -g vue-cli`
+1. Run `npm install`
+1. Start dev server: `quasar dev`. If build is successful hit to `http://localhost:8080/main/health-numbers`. If you see meaningful app-like looking page you're done. Congrats.
 
 # Setting Alexa Skill for Development
 
 In order to do development against an Alexa skill each developer will need one Alexa project initiated on Amazon servers. The steps to get that done:
 
-0. Create an Amazon developer account if you haven't already: https://developer.amazon.com/alexa/console
-0. ...More to come...
+1. Create an Amazon developer account if you haven't already: https://developer.amazon.com/alexa/console
+1. Create environment variables `ALEXA_MESSAGING_CLIENT_ID` and `ALEXA_MESSAGING_CLIENT_SECRET` by copying the values from the Alexa web dashboard.
+1. Open JSON editor on Alexa web dashboard and insert the seed skill info (ask to a colleague if it is not available somewhere yet).
+1. Alexa skill expects an HTTPS endpoint to reach to the skill. In order to make it work on the local machine you need to create a world-wide accessible HTTP server. There are two alternatives that we have identified so far without going through lots of configurations for firewalls etc:
+    * Install `ngrok` (available on Homebrew as a cask: `brew cask install ngrok`) and run it: 
+    @todo ... specs will be here... 
+    The free account generates a different URL for each run.
+    * Create reverse SSH for global-local server via service Serveo. Example run is like this: `ssh -R letatio.serveo.net:80:localhost:9900 serveo.net`. The good thing about Serveo is that it tries to stick with the URL based on the IP and it is for free. It is not always available so keep `ngrok` in mind, too.
+1. Once you have worldwide accessible HTTP server you'll need to tell it to the Alexa on its web dashboard, it must be under endpoints.
+1. Open the test tab on Alexa web dashboard and write `open Caressa` to test the connection to your local machine.
