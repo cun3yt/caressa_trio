@@ -66,8 +66,8 @@ This setup is written for Mac OS.
 This setup is written for Mac OS.
 
 1. Install [`node`](https://nodejs.org/en/) if you don't have it already. If you have a super old version of node consider updating it. You may consider using `homebrew` for the installation/update.
-1. Go to `q_client` folder
 1. Install `vue-cli` globally: `npm install -g vue-cli`
+1. Go to `q_client` folder
 1. Run `npm install`
 1. Start dev server: `quasar dev`. If build is successful hit to `http://localhost:8080/main/health-numbers`. If you see meaningful app-like looking page you're done. Congrats.
 
