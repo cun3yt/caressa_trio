@@ -41,13 +41,13 @@ This setup is written for Mac OS.
 1. Installing Requirements
     * Go to project root
     * Run `pip install -r requirements`
-1. Run Database Migrations
-    * Go to project root
-    * Run `./manage.py migrate`
 1. Export these environment variables. You may consider using `direnv` for project-based environment variables' management:
     * ENV set to 'dev': `export ENV='dev'`
     * ENV_KEY set to some long string: `export ENV_KEY='some-long-random-string'`
     * DATABASE_URL set to the local database instance, e.g.: `export DATABASE_URL='postgres://cuneyt:@localhost:5432/caressa_django'`
+1. Run Database Migrations
+    * Go to project root
+    * Run `./manage.py migrate`
 1. Development Server
     * Run `./manage.py runserver 9900`
     * Hit: `http://localhost:9900/act/actions/` If you see a meaningful page that's great. If not try to solve the problem and if you cannot get some help from other folks.
