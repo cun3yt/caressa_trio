@@ -8,7 +8,7 @@ Welcome to Caressa's code repository. Currently it includes two main repositorie
     * REST API for mobile clients
 1. Quasar codebase for targeting iOS and Android builds
 
-Please note that this file is super shaky, please consider contributing it if you see something dramatically wrong. Thanks for your patience!
+Please note that this file is super shaky and consider contributing if you see something dramatically wrong. Thanks for your patience!
 
 # Django Codebase
 
@@ -57,6 +57,12 @@ This setup is written for Mac OS.
     * Hit: `http://localhost:9900/act/actions/` If you see a meaningful page that's great. If not try to solve the problem and if you cannot get some help from other folks.
     * For easier debugging: JetBrain IDEs providing Django Run/Debug configuration which eases the pain.
 
+## Specific to PyCharm & Possibly IntelliJ
+
+* PyCharm's debug server is extremely useful for debugging. In order to use it is needed to specify the Python interpreter properly: The one that is available in the virtual environment. It can be set under `PyCharm > Preferences > Project: xxx > Project Interpreter > Project Interpreter`
+* Make sure that the IDE is set properly for Django: Go to `PyCharm > Preferences > Language & Frameworks > Django`. Mark `Enable Django Support` checked, set the "Django Project Root" to the folder where `settings.py` file is in (absolute url of the directory), set "Settings" to `settings.py` (just file name), specify the Manage script to the absolute url of `manage.py` file.
+ 
+
 # Quasar Codebase
 
 [Quasar](https://quasar-framework.org/) is a VueJS-based framework that provides hybrid mobile apps, web apps and more with the same codebase.
@@ -77,8 +83,7 @@ In order to do development against an Alexa skill each developer will need one A
 
 1. Create an Amazon developer account if you haven't already: https://developer.amazon.com/alexa/console
 1. Create a skill named "caressa-dev" as a custom skill
-1. Create environment variables `ALEXA_MESSAGING_CLIENT_ID` and `ALEXA_MESSAGING_CLIENT_SECRET` by copying the values from the Alexa web dashboard.
-1. Open JSON editor on Alexa web dashboard and insert the seed skill info (ask to a colleague if it is not available somewhere yet).
+1. Open JSON editor on Alexa web dashboard and insert the seed skill info (ask to a coworker if it is not available somewhere yet).
 1. Alexa skill expects an HTTPS endpoint to reach to the skill. In order to make it work on the local machine you need to create a world-wide accessible HTTP server. There are two alternatives that we have identified so far without going through lots of configurations for firewalls etc:
     * Install `ngrok` (available on Homebrew as a cask: `brew cask install ngrok`) and run it: 
     @todo ... specs will be here... 
