@@ -7,7 +7,6 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from utilities.dictionaries import deep_get, deep_set
 from utilities.logger import log
-from random import randint
 from django.db.models import signals
 from actstream import action
 from actstream.actions import follow as act_follow
@@ -245,10 +244,6 @@ class Joke(TimeStampedModel, FetchRandomMixin):
     main = models.TextField(null=False, blank=False)
     punchline = models.TextField(null=False, blank=False)
 
-    @classmethod
-    def fetch_random(cls, exclude_list=None):
-        return cls.fetch_random_item(Joke.objects, exclude_list)
-
     def __repr__(self):
         return "Joke({id}, {main}-{punchline})".format(id=self.id,
                                                        main=self.main,
@@ -264,10 +259,6 @@ class News(TimeStampedModel, FetchRandomMixin):
 
     headline = models.TextField(null=False, blank=False)
     content = models.TextField(null=False, blank=False)
-
-    @classmethod
-    def fetch_random(cls, exclude_list=None):  # todo how to rid of this func with using proper queryset, also joke
-        return cls.fetch_random_item(News.objects, exclude_list)
 
     def __repr__(self):
         return "News({id}, {headline})".format(id=self.id, headline=self.headline)
