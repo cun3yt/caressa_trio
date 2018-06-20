@@ -266,6 +266,32 @@ class Joke(TimeStampedModel):
         return "a joke"
 
 
+class News(TimeStampedModel):
+    class Meta:
+        db_table = 'news'
+
+    headline = models.TextField(null=False, blank=False)
+    content = models.TextField(null=False, blank=False)
+
+    @staticmethod
+    def fetch_random(exclude_list=None):
+        exclude_list = [] if exclude_list is None else exclude_list
+        exclude_count = len(exclude_list)
+        count = News.objects.all().count() - exclude_count
+
+        if count <= 0:
+            return None
+        random_slice = randint(0, count-1)
+        news_set = News.objects.exclude(id__in=exclude_list).all()[random_slice: random_slice+1]
+        return news_set[0]
+
+    def __repr__(self):
+        return "News({id}, {headline})".format(id=self.id, headline=self.headline)
+
+    def __str__(self):
+        return "sample news"
+
+
 class UserActOnContent(TimeStampedModel):
     class Meta:
         db_table = 'user_act_on_content'
