@@ -127,7 +127,6 @@ class NewsEngine(Engine):
                                               process_fn=self.save_news_like),
                                           NoIntent(response_set=['OK']),
                                       ]),
-                    # profile_builder=ProfileBuilderForJoke(alexa_user=alexa_user),
                 ),
                 NoIntent(response_set=['Maybe later!', ])
             ]

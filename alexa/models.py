@@ -14,6 +14,7 @@ from actstream.actions import follow as act_follow
 from actstream.models import Action
 
 from django.contrib.contenttypes.models import ContentType
+from alexa.mixins import FetchRandomMixin
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -237,25 +238,16 @@ Request._meta.get_field('created').db_index = True
 Request._meta.get_field('modified').db_index = True
 
 
-class Joke(TimeStampedModel):
+class Joke(TimeStampedModel, FetchRandomMixin):
     class Meta:
         db_table = 'joke'
 
     main = models.TextField(null=False, blank=False)
     punchline = models.TextField(null=False, blank=False)
 
-    @staticmethod
-    def fetch_random(exclude_list=None):
-        exclude_list = [] if exclude_list is None else exclude_list
-        exclude_count = len(exclude_list)
-        count = Joke.objects.all().count() - exclude_count
-
-        if count <= 0:
-            return None
-
-        random_slice = randint(0, count-1)
-        joke_set = Joke.objects.exclude(id__in=exclude_list).all()[random_slice: random_slice+1]
-        return joke_set[0]
+    @classmethod
+    def fetch_random(cls, exclude_list=None):
+        return cls.fetch_random_item(Joke.objects, exclude_list)
 
     def __repr__(self):
         return "Joke({id}, {main}-{punchline})".format(id=self.id,
@@ -266,24 +258,16 @@ class Joke(TimeStampedModel):
         return "a joke"
 
 
-class News(TimeStampedModel):
+class News(TimeStampedModel, FetchRandomMixin):
     class Meta:
         db_table = 'news'
 
     headline = models.TextField(null=False, blank=False)
     content = models.TextField(null=False, blank=False)
 
-    @staticmethod
-    def fetch_random(exclude_list=None):
-        exclude_list = [] if exclude_list is None else exclude_list
-        exclude_count = len(exclude_list)
-        count = News.objects.all().count() - exclude_count
-
-        if count <= 0:
-            return None
-        random_slice = randint(0, count-1)
-        news_set = News.objects.exclude(id__in=exclude_list).all()[random_slice: random_slice+1]
-        return news_set[0]
+    @classmethod
+    def fetch_random(cls, exclude_list=None):  # todo how to rid of this func with using proper queryset, also joke
+        return cls.fetch_random_item(News.objects, exclude_list)
 
     def __repr__(self):
         return "News({id}, {headline})".format(id=self.id, headline=self.headline)
@@ -317,3 +301,5 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
 
 
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)
+
+
