@@ -1,5 +1,5 @@
 from random import sample
-from alexa.models import AUser, Joke
+from alexa.models import AUser, Joke, News
 from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent
 from utilities.dictionaries import deep_get
 
@@ -7,7 +7,7 @@ from utilities.dictionaries import deep_get
 class Question:
     def __init__(self, versions, intent_list, reprompt=None):
         self.versions = versions
-        self.reprompt = reprompt    # todo Reprompt can be built based on what is available in intent_list!!
+        self.reprompt = reprompt  # todo Reprompt can be built based on what is available in intent_list!!
         self.intents = {intent.intent_identifier(): intent for intent in intent_list}
         self.asked_question = self._get_random_version()
 
@@ -84,7 +84,7 @@ class JokeEngine(Engine):
                 YesIntent(
                     response_set=self.fetch_random_joke,
                     question=Question(versions=['Was it funny?',
-                                                'Did you like this joke?',],
+                                                'Did you like this joke?', ],
                                       intent_list=[
                                           YesIntent(
                                               response_set=['Thanks!'],
@@ -108,7 +108,43 @@ class JokeEngine(Engine):
         from alexa.models import UserActOnContent
         act = UserActOnContent(user=self.alexa_user.user,
                                verb='laughed at',
-                               object=Joke.objects.get(id=2)) # hardcoded for now..
+                               object=Joke.objects.get(id=2))  # hardcoded for now..
+        act.save()
+
+
+class NewsEngine(Engine):
+    def __init__(self, alexa_user: AUser):
+        init_question = Question(
+            versions=['Would you like to hear popular news around you?', ],  # todo should end headline
+            reprompt=['Do you want to listen recent news?', ],
+            intent_list=[
+                YesIntent(
+                    response_set=self.fetch_random_news,
+                    question=Question(versions=['Did you like this news?', ],
+                                      intent_list=[
+                                          YesIntent(
+                                              response_set=['Thanks!'],
+                                              process_fn=self.save_news_like),
+                                          NoIntent(response_set=['OK']),
+                                      ]),
+                    # profile_builder=ProfileBuilderForJoke(alexa_user=alexa_user),
+                ),
+                NoIntent(response_set=['Maybe later!', ])
+            ]
+        )
+
+        super(NewsEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+
+    @staticmethod
+    def fetch_random_news():
+        news = News.fetch_random()
+        return '{headline}<break time="1s"/>{content}'.format(headline=news.headline, content=news.content)
+
+    def save_news_like(self, **kwargs):
+        from alexa.models import UserActOnContent
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='liked the',
+                               object=Joke.objects.get(id=4))  # todo leads to joke FK, needs to content type management
         act.save()
 
 
@@ -122,7 +158,8 @@ class MedicalEngine(Engine):
             reprompt=["Have you taken your blood pressure measurements? Yes or no?"],
             intent_list=[
                 YesIntent(question=Question(versions=['What are your measurements?'],
-                                            reprompt=['Please tell me with systolic over diastolic such as 120 over 80'],
+                                            reprompt=[
+                                                'Please tell me with systolic over diastolic such as 120 over 80'],
                                             intent_list=[
                                                 BloodPressureIntent(process_fn=self.save_blood_pressure)
                                             ])),
