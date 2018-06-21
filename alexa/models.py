@@ -7,13 +7,13 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from utilities.dictionaries import deep_get, deep_set
 from utilities.logger import log
-from random import randint
 from django.db.models import signals
 from actstream import action
 from actstream.actions import follow as act_follow
 from actstream.models import Action
 
 from django.contrib.contenttypes.models import ContentType
+from alexa.mixins import FetchRandomMixin
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -237,25 +237,12 @@ Request._meta.get_field('created').db_index = True
 Request._meta.get_field('modified').db_index = True
 
 
-class Joke(TimeStampedModel):
+class Joke(TimeStampedModel, FetchRandomMixin):
     class Meta:
         db_table = 'joke'
 
     main = models.TextField(null=False, blank=False)
     punchline = models.TextField(null=False, blank=False)
-
-    @staticmethod
-    def fetch_random(exclude_list=None):
-        exclude_list = [] if exclude_list is None else exclude_list
-        exclude_count = len(exclude_list)
-        count = Joke.objects.all().count() - exclude_count
-
-        if count <= 0:
-            return None
-
-        random_slice = randint(0, count-1)
-        joke_set = Joke.objects.exclude(id__in=exclude_list).all()[random_slice: random_slice+1]
-        return joke_set[0]
 
     def __repr__(self):
         return "Joke({id}, {main}-{punchline})".format(id=self.id,
@@ -264,6 +251,20 @@ class Joke(TimeStampedModel):
 
     def __str__(self):
         return "a joke"
+
+
+class News(TimeStampedModel, FetchRandomMixin):
+    class Meta:
+        db_table = 'news'
+
+    headline = models.TextField(null=False, blank=False)
+    content = models.TextField(null=False, blank=False)
+
+    def __repr__(self):
+        return "News({id}, {headline})".format(id=self.id, headline=self.headline)
+
+    def __str__(self):
+        return "sample news"
 
 
 class UserActOnContent(TimeStampedModel):
@@ -291,3 +292,5 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
 
 
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)
+
+
