@@ -142,8 +142,8 @@ class NewsEngine(Engine):
     def save_news_like(self, **kwargs):
         from alexa.models import UserActOnContent
         act = UserActOnContent(user=self.alexa_user.user,
-                               verb='liked the',
-                               object=Joke.objects.get(id=4))  # todo leads to joke FK, needs to content type management
+                               verb='found interesting',
+                               object=News.objects.get(id=6))
         act.save()
 
 
