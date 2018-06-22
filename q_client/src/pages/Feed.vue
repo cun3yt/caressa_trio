@@ -2,16 +2,23 @@
   <q-page padding class="row justify-center">
     <div class="main-content">
       <q-card class="q-ma-sm" v-for="feed in feeds" v-bind:key="feed.id">
-        <joke-feed :feed="feed"
-                   :joke="feed.action_object"
-                   v-if="feed.action_object_type==='Joke'">
-          <comments :actionId="feed.id" :comments="feed.paginated_comments" />
-        </joke-feed>
-
-        <regular-feed :feed="feed" v-else>
-          <comments :actionId="feed.id" :comments="feed.paginated_comments" />
-        </regular-feed>
-
+        <template v-if="feed.action_object_type==='Joke'">
+          <joke-feed :feed="feed"
+                     :joke="feed.action_object"
+                     >
+            <comments :actionId="feed.id" :comments="feed.paginated_comments" />
+          </joke-feed>
+        </template>
+        <template v-if="feed.action_object_type==='News'">
+          <news-feed>
+            TEST NEWS
+          </news-feed>
+        </template>
+        <template v-else>
+          <regular-feed :feed="feed">
+            <comments :actionId="feed.id" :comments="feed.paginated_comments" />
+          </regular-feed>
+        </template>
         <q-card-separator />
       </q-card>
     </div>
@@ -20,6 +27,7 @@
 
 <script>
 import JokeFeed from 'components/JokeFeed'
+import NewsFeed from 'components/NewsFeed'
 import RegularFeed from 'components/RegularFeed'
 import Comments from 'components/Comments'
 
@@ -28,6 +36,7 @@ export default {
   props: ['setupContent'],
   components: {
     JokeFeed,
+    NewsFeed,
     RegularFeed,
     Comments
   },

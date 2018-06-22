@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import AUserMedicalState, Joke, User, UserActOnContent
+from alexa.models import AUserMedicalState, Joke, News, User, UserActOnContent
 from actions.models import UserAction
 from rest_framework.pagination import PageNumberPagination
 from actions.api.serializers import ActionSerializer
@@ -39,6 +39,30 @@ class JokeSerializer(serializers.ModelSerializer):
 
         user_id = 2 # todo move to `hard-coding`
         actions = action_object_stream(joke).filter(actor_object_id=user_id)
+        user_actions = UserAction.objects.all().filter(id__in=[action.id for action in actions])
+        return ActionSerializer(user_actions, many=True).data
+
+
+class NewsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = News
+        fields = ('id',
+                  'headline',
+                  'content',
+                  'user_actions', )
+
+    user_actions = serializers.SerializerMethodField()
+
+    def get_user_actions(self, news: News):
+        """
+        This is the actions on the News object from the user in the request.
+
+        :param news:
+        :return:
+        """
+
+        user_id = 2 # todo move to `hard-coding`
+        actions = action_object_stream(news).filter(actor_object_id=user_id)
         user_actions = UserAction.objects.all().filter(id__in=[action.id for action in actions])
         return ActionSerializer(user_actions, many=True).data
 
