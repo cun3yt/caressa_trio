@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.db import models
 from jsonfield import JSONField
 from model_utils.models import TimeStampedModel, StatusField
@@ -276,10 +277,9 @@ class UserActOnContent(TimeStampedModel):
                              on_delete=models.DO_NOTHING,
                              related_name='contents_user_acted_on')
     verb = models.TextField(db_index=True)
-    object = models.ForeignKey(Joke, # todo this needs to be generic!
-                               null=True,
-                               on_delete=models.DO_NOTHING,
-                               related_name='user_actions_on_content')
+    content_type = models.ForeignKey(ContentType, on_delete=models.DO_NOTHING)
+    object_id = models.PositiveIntegerField()
+    object = GenericForeignKey()
 
 
 def user_act_on_content_activity_save(sender, instance, created, **kwargs):

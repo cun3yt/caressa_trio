@@ -39,11 +39,11 @@ def get_engine_from_schedule(alexa_user: AUser):
     log("get_engine_from_schedule with AUser::{}".format(alexa_user.id))
 
     schedule = alexa_user.engine_schedule.encode(encoding='UTF-8')
-    events = query_events(string_content=schedule, start=datetime.now(), end=(datetime.now() + timedelta(minutes=10)), fix_apple=True)
+    events = [] #query_events(string_content=schedule, start=datetime.now(), end=(datetime.now() + timedelta(minutes=10)), fix_apple=True)
 
     # filler or info-collector engines will come here..
-    # engine_name = 'EmotionalEngine'
-    engine_name = None
+    engine_name = 'NewsEngine'
+    #engine_name = None
 
     log("# events fetched from schedule: {}".format(len(events)))
 

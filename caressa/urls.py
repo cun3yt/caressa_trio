@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import include, path
 from alexa.views import main_view, alexa_io
 from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, laugh_at_joke
-from alexa.api.views import MedicalViewSet, JokeViewSet, UserActOnContentViewSet
+from alexa.api.views import MedicalViewSet, JokeViewSet, NewsViewSet, UserActOnContentViewSet
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 
@@ -50,6 +50,7 @@ flat_router.register(r'streams', ActionViewSet, 'stream')
 flat_router.register(r'comments', CommentViewSet, 'comment')
 flat_router.register(r'medical-state', MedicalViewSet, 'medical-state')
 flat_router.register(r'jokes', JokeViewSet, 'joke')
+flat_router.register(r'news', NewsViewSet, 'news')
 flat_router.register(r'user-act-on-content', UserActOnContentViewSet, 'user-act-on-content')
 
 urlpatterns = [
