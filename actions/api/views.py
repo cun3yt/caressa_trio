@@ -45,4 +45,4 @@ def laugh_at_joke(request):
     elif not set_to and action.count() > 0:
         action.delete()
 
-    return Response({"message": "Noldu lepistes, olmuyo mu?"})
+    return Response({"message": "Something went wrong.."})

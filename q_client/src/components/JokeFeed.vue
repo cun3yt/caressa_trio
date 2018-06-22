@@ -139,7 +139,7 @@ export default {
         'joke_id': joke.id,
         'set_to': (joke.funny ? 'true' : 'false')
       }).then(response => {
-        console.log('success bro!')
+        console.log('success!')
       })
     }
   }

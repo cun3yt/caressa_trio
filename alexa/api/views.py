@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
-from alexa.api.serializers import MedicalStateSerializer, JokeSerializer, UserActOnContentSerializer
-from alexa.models import AUserMedicalState, Joke, UserActOnContent
+from alexa.api.serializers import MedicalStateSerializer, JokeSerializer, NewsSerializer, UserActOnContentSerializer
+from alexa.models import AUserMedicalState, Joke, News, UserActOnContent
 
 
 class MedicalViewSet(viewsets.ModelViewSet):
@@ -23,6 +23,28 @@ class JokeViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         else:
             return super(JokeViewSet, self).retrieve(request, args, kwargs)
+
+    @classmethod
+    def fetch_random_joke(cls, request):
+        exclusion_list = [
+            int(x) for x
+            in request.query_params.get('exclude', '').split(',')
+            if len(x) > 0
+        ]
+        return Joke.fetch_random(exclusion_list)
+
+
+class NewsViewSet(viewsets.ModelViewSet):
+    serializer_class = NewsSerializer
+    queryset = News.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        if kwargs['pk'] == '0':
+            news = self.fetch_random_joke(request)
+            serializer = NewsSerializer(news)
+            return Response(serializer.data)
+        else:
+            return super(NewsViewSet, self).retrieve(request, args, kwargs)
 
     @classmethod
     def fetch_random_joke(cls, request):
