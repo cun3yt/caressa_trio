@@ -10,8 +10,10 @@
           </joke-feed>
         </template>
         <template v-if="feed.action_object_type==='News'">
-          <news-feed>
-            TEST NEWS
+          <news-feed :feed="feed"
+                     :news="feed.action_object"
+                     >
+            <comments :actionId="feed.id" :comment="feed.paginated_comments" />
           </news-feed>
         </template>
         <template v-else>

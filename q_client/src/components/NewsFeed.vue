@@ -30,7 +30,7 @@
 
     <slot></slot>
 
-    <template v-for="additionalNews in additionalNews">
+    <template v-for="additionalNews in additionalNewsList">
       <q-card-separator v-bind:key="additionalNews.id" />
       <q-card-main class="row" v-bind:key="additionalNews.id">
         <blockquote>
@@ -44,7 +44,7 @@
                flat
                v-bind:color="additionalNews.interesting ? 'tertiary' : 'primary'"
                @click="markAdditionalNewsFunny(additionalNews)">{{ additionalNewsStatement(additionalNews)}}</q-btn>
-        <q-btn v-if="latestNewsId===additionalNews.id && additionalNews.length < 3"
+        <q-btn v-if="latestNewsId===additionalNews.id && additionalNewsList.length < 3"
                class="action-btn"
                flat
                color="secondary"
@@ -67,11 +67,11 @@ export default {
       interestingId: null,
       interestingMsg: 'Really Interesting!',
       latestNewsId: null,
-      additionalNews: ['']
+      additionalNewsList: []
     }
   },
   created () {
-    let foundInterestingReactions = this.feed.user_reactions.filter(obj => obj['reaction'] === 'interesting')
+    let foundInterestingReactions = this.feed.user_reactions.filter(obj => obj['reaction'] === 'found-interesting')
     this.latestNewsId = this.news.id
 
     if (foundInterestingReactions.length > 0) {
@@ -92,9 +92,9 @@ export default {
 
       let vm = this
 
-      if (apiCall && this.interestingState){
+      if (apiCall && this.interestingState) {
         this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
-          'reaction': 'interesting',
+          'reaction': 'found-interesting',
           'owner': this.$root.$options.userId,
           'content': this.feed.id
         })
@@ -107,9 +107,9 @@ export default {
 
       if (apiCall && !this.interestingState) {
         this.$http.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.interestingId}/`, {
-          'reaction': 'interesting',
+          'reaction': 'found-interesting',
           'owner': this.$root.$options.userId,
-          'content' : this.feed.id
+          'content': this.feed.id
         })
       }
     },
@@ -118,10 +118,29 @@ export default {
       let excludeList = [this.news.id]
       let vm = this
 
-      excludeList = excludeList.concat(this.additionalNews.map(news => joke['id']))
+      excludeList = excludeList.concat(this.additionalNewsList.map(news => news['id']))
       excludeStr = `?exclude=${excludeList.join(',')}`
 
-      this.$http.get(`${this.$root.$options.hosts.rest}/flat-api/news`)
+      this.$http.get(`${this.$root.$options.hosts.rest}/flat-api/news/0/${excludeStr}`, {})
+        .then(response => {
+          let news = response.data
+          news.interesting = response.data.user_actions.length > 0
+          vm.$set(vm.additionalNewsList, vm.additionalNewsList.length, news)
+          vm.latestNewsId = news.id
+        })
+        .then(response => {
+          console.log('error') // todo same with /JokeFeed.vue ln 132
+        })
+    },
+    markAdditionalNewsInteresting (news) {
+      news.interesting = !news.interesting
+
+      this.$http.post(`${this.$root.$options.hosts.rest}/findinteresting/`, {
+        'news_id': news.id,
+        'set_to': (news.interesting ? 'true' : 'false')
+      }).then(response => {
+        console.log('success!')
+      })
     }
   }
 }
