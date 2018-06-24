@@ -55,7 +55,12 @@
 </template>
 
 <script>
+import share from '../share.js'
+
 export default {
+  mounted: function () {
+    this.getFeedObject = share.getFeedObject
+  },
   name: 'joke-feed',
   props: [
     'joke',
@@ -114,23 +119,19 @@ export default {
       }
     },
     getAnotherJoke () {
-      let excludeStr = ''
       let excludeList = [this.joke.id]
       let vm = this
-
       excludeList = excludeList.concat(this.additionalJokes.map(joke => joke['id']))
-      excludeStr = `?exclude=${excludeList.join(',')}`
-
-      this.$http.get(`${this.$root.$options.hosts.rest}/flat-api/jokes/0/${excludeStr}`, {})
-        .then(response => {
-          let joke = response.data
-          joke.funny = response.data.user_actions.length > 0
-          vm.$set(vm.additionalJokes, vm.additionalJokes.length, joke)
-          vm.latestJokeId = joke.id
-        })
-        .then(response => {
-          console.log('error') // todo This is called no matter if it is successful or not!
-        })
+      let handleFn = response => {
+        let joke = response.data
+        joke.funny = response.data.user_actions.length > 0
+        vm.$set(vm.additionalJokes, vm.additionalJokes.length, joke)
+        vm.latestJokeId = joke.id
+      }
+      let errorFn = response => {
+        console.log('error') // todo This is called no matter if it is successful or not!
+      }
+      this.getFeedObject('jokes', excludeList, handleFn, errorFn)
     },
     markAdditionalJokeFunny (joke) {
       joke.funny = !joke.funny

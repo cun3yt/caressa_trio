@@ -43,7 +43,7 @@
         <q-btn class="action-btn"
                flat
                v-bind:color="additionalNews.interesting ? 'tertiary' : 'primary'"
-               @click="markAdditionalNewsFunny(additionalNews)">{{ additionalNewsStatement(additionalNews)}}</q-btn>
+               @click="markAdditionalNewsInteresting(additionalNews)">{{ additionalNewsStatement(additionalNews)}}</q-btn>
         <q-btn v-if="latestNewsId===additionalNews.id && additionalNewsList.length < 3"
                class="action-btn"
                flat
@@ -55,7 +55,12 @@
 </template>
 
 <script>
+import share from '../share.js'
+
 export default {
+  mounted: function () {
+    this.getFeedObject = share.getFeedObject
+  },
   name: 'news-feed',
   props: [
     'news',
@@ -114,23 +119,19 @@ export default {
       }
     },
     getAnotherNews () {
-      let excludeStr = ''
       let excludeList = [this.news.id]
       let vm = this
-
       excludeList = excludeList.concat(this.additionalNewsList.map(news => news['id']))
-      excludeStr = `?exclude=${excludeList.join(',')}`
-
-      this.$http.get(`${this.$root.$options.hosts.rest}/flat-api/news/0/${excludeStr}`, {})
-        .then(response => {
-          let news = response.data
-          news.interesting = response.data.user_actions.length > 0
-          vm.$set(vm.additionalNewsList, vm.additionalNewsList.length, news)
-          vm.latestNewsId = news.id
-        })
-        .then(response => {
-          console.log('error') // todo same with /JokeFeed.vue ln 132
-        })
+      let handleFn = response => {
+        let news = response.data
+        news.interesting = response.data.user_actions.length > 0
+        vm.$set(vm.additionalNewsList, vm.additionalNewsList.length, news)
+        vm.latestNewsId = news.id
+      }
+      let errorFn = response => {
+        console.log('error') // todo same with /JokeFeed.vue ln 132
+      }
+      this.getFeedObject('news', excludeList, handleFn, errorFn)
     },
     markAdditionalNewsInteresting (news) {
       news.interesting = !news.interesting

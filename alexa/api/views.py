@@ -40,20 +40,20 @@ class NewsViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         if kwargs['pk'] == '0':
-            news = self.fetch_random_joke(request)
+            news = self.fetch_random_news(request)
             serializer = NewsSerializer(news)
             return Response(serializer.data)
         else:
             return super(NewsViewSet, self).retrieve(request, args, kwargs)
 
     @classmethod
-    def fetch_random_joke(cls, request):
+    def fetch_random_news(cls, request):
         exclusion_list = [
             int(x) for x
             in request.query_params.get('exclude', '').split(',')
             if len(x) > 0
         ]
-        return Joke.fetch_random(exclusion_list)
+        return News.fetch_random(exclusion_list)
 
 
 class UserActOnContentViewSet(viewsets.ModelViewSet):
