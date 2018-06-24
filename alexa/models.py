@@ -267,6 +267,7 @@ class News(TimeStampedModel, FetchRandomMixin):
     def __str__(self):
         return "sample news"
 
+
 class UserActOnContent(TimeStampedModel):
     class Meta:
         db_table = 'user_act_on_content'
