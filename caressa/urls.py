@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from alexa.views import main_view, alexa_io
-from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, laugh_at_joke
+from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, laugh_at_joke, find_interesting_at_news
 from alexa.api.views import MedicalViewSet, JokeViewSet, NewsViewSet, UserActOnContentViewSet
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
@@ -45,6 +45,15 @@ joke_router.register(r'actions',
                      base_name='action',
                      parents_query_lookups=['action_object_object_id'], )
 
+news_router = router.register(r'news',
+                              NewsViewSet,
+                              base_name='news')
+news_router.register(r'actions',
+                     ActionViewSet,
+                     base_name='action',
+                     parents_query_lookups=['action_object_object_id'], )
+
+
 flat_router = routers.DefaultRouter()
 flat_router.register(r'streams', ActionViewSet, 'stream')
 flat_router.register(r'comments', CommentViewSet, 'comment')
@@ -61,4 +70,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
     path('laugh/', laugh_at_joke),
+    path('find-interesting/', find_interesting_at_news)
 ]

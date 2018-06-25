@@ -1,7 +1,7 @@
 from django.db import models
 from actstream.models import Action
 from model_utils.models import TimeStampedModel
-from alexa.models import User, Joke
+from alexa.models import User, Joke, News
 from django.utils.translation import ugettext as _
 from django.contrib.contenttypes.fields import GenericRelation
 
