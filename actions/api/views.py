@@ -47,8 +47,9 @@ def laugh_at_joke(request):
 
     return Response({"message": "Something went wrong.."})
 
+
 @api_view(['POST'])
-def findinteresting_at_news(request):
+def find_interesting_at_news(request):
     news_id = request.data['news_id']
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
