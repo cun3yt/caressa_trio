@@ -53,6 +53,10 @@ export default {
 
       this.$http.get(this.next_url, {})
         .then(response => {
+          // todo 1. Fix the warning: Avoid mutating a prop directly since the value will be overwritten whenever
+          // the parent component re-renders. Instead, use a data or computed property based on the prop's value.
+          // Prop being mutated: "comments"
+          // todo 2. Add loader for loading more.
           vm.comments.results = vm.comments.results.concat(response.data['results'])
           this.next_url = response.data['next']
         })

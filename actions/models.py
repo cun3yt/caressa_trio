@@ -4,6 +4,7 @@ from model_utils.models import TimeStampedModel
 from alexa.models import User, Joke, News
 from django.utils.translation import ugettext as _
 from django.contrib.contenttypes.fields import GenericRelation
+from jsonfield import JSONField
 
 
 class UserAction(Action):
@@ -84,3 +85,20 @@ class UserReaction(TimeStampedModel):
 
     def __str__(self):
         return "{} did reaction '{}' on {}".format(self.owner, self.reaction, self.content)
+
+
+class UserPost(TimeStampedModel):
+    class Meta:
+        db_table = 'user_post'
+
+    user = models.ForeignKey(to=User,
+                             on_delete=models.DO_NOTHING,
+                             related_name='posts',
+                             db_index=True, )
+    data = JSONField(default=[])
+    '''
+    data is a JSON array of actions, e.g.
+    [{"verb": "watch", "target": "Star Wars"},
+     {"verb": "drink", "target": "Latte"},
+     {"verb": "listen", "target": "Jazz"}]
+    '''
