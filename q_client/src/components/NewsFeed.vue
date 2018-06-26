@@ -136,7 +136,7 @@ export default {
     markAdditionalNewsInteresting (news) {
       news.interesting = !news.interesting
 
-      this.$http.post(`${this.$root.$options.hosts.rest}/findinteresting/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/find-interesting/`, {
         'news_id': news.id,
         'set_to': (news.interesting ? 'true' : 'false')
       }).then(response => {
