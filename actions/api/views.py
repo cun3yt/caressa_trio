@@ -65,3 +65,16 @@ def find_interesting_at_news(request):
         action.delete()
 
     return Response({"message": "Something went wrong.."})
+
+
+@api_view(['POST'])
+def new_post(request):
+    from actions.models import UserPost
+
+    user_id = 2  # todo move to `hard-coding`
+    user = User.objects.get(id=user_id)
+
+    post = UserPost(user=user, data=request.data['selections'])
+    post.save()
+
+    return Response({'message': 'Saved...'})

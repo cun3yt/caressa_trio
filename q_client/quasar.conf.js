@@ -73,7 +73,9 @@ module.exports = function (ctx) {
         'QInput',
         'QSpinnerDots',
         'QSlider',
-        'QCardActions'
+        'QCardActions',
+        'QChip',
+        'QScrollArea'
       ],
       directives: [
         'Ripple'
