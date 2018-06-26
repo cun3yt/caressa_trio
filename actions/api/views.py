@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.decorators import api_view
 from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer
-from actions.models import UserAction, Comment, UserReaction, Joke, News
+from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 
@@ -69,8 +69,6 @@ def find_interesting_at_news(request):
 
 @api_view(['POST'])
 def new_post(request):
-    from actions.models import UserPost
-
     user_id = 2  # todo move to `hard-coding`
     user = User.objects.get(id=user_id)
 
