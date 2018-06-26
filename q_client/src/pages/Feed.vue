@@ -9,7 +9,7 @@
             <comments :actionId="feed.id" :comments="feed.paginated_comments" />
           </joke-feed>
         </template>
-        <template v-if="feed.action_object_type==='News'">
+        <template v-else-if="feed.action_object_type==='News'">
           <news-feed :feed="feed"
                      :news="feed.action_object"
                      >
