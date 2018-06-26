@@ -122,6 +122,7 @@ AUTH_PASSWORD_VALIDATORS = [
 CORS_ORIGIN_WHITELIST = (
     '127.0.0.1:8080',
     'localhost:8080',
+    # '10.0.1.169:8080' todo this line needed configured for each developers according to their local requirements
 )
 
 # Internationalization
