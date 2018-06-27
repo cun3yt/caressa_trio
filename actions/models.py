@@ -1,7 +1,9 @@
 from django.db import models
+from django.db.models import signals
+from actstream import action
 from actstream.models import Action
 from model_utils.models import TimeStampedModel
-from alexa.models import User, Joke, News
+from alexa.models import User, Joke, News, Circle
 from django.utils.translation import ugettext as _
 from django.contrib.contenttypes.fields import GenericRelation
 from jsonfield import JSONField
@@ -102,3 +104,15 @@ class UserPost(TimeStampedModel):
      {"verb": "drink", "target": "Latte"},
      {"verb": "listen", "target": "Jazz"}]
     '''
+
+
+def user_post_activity_save(sender, instance, created, **kwargs):
+    action.send(instance.user,
+                verb='created a post',
+                description=kwargs.get('description', ''),
+                action_object=instance,
+                target=Circle.objects.get(id=1),     # todo: Move to `hard-coding`
+                )
+
+
+signals.post_save.connect(receiver=user_post_activity_save, sender=UserPost)
