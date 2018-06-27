@@ -3,8 +3,7 @@ import VueResource from 'vue-resource'
 export default ({ app, router, Vue }) => {
   Vue.use(VueResource)
   app.hosts = {
-    api: 'http://127.0.0.1:3000',
-    rest: 'http://127.0.0.1:9900'
+    rest:'http://127.0.0.1:9900' // todo this line needed change when debugging in ios build
   }
 
   app.user = { // todo these items need to go to `hard-coding`

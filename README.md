@@ -77,6 +77,33 @@ This setup is written for Mac OS.
 1. Run `npm install`
 1. Start dev server: `quasar dev`. If build is successful hit to `http://localhost:8080/main/health-numbers`. If you see meaningful app-like looking page you're done. Congrats.
 
+## IOS Build
+
+
+1. You need to sign your development team in project. I think there is a better way to do that but I did it like this, first open the project in Xcode and choose the development team as yourself manually in Xcode.
+1. q_client/src/plugins/resource.js 
+```
+app.hosts = {
+    rest:'http://127.0.0.1:9900'
+}
+``` 
+changed to 
+```
+app.hosts = {
+    rest:'https://yourserver.serveo.net'
+}
+```
+where you are serving your REST globally. Check it out [Serveo](serveo.net). Your phone need to be able to reach that url so it is better to have something global. 
+1. You need to config CORS: Caressa > settings.py > CORS_ORIGIN_WHITELIST add your IP that is trying to reach resources you can see in debugger configured at Debugging your IOS Build section.
+1. Start dev server: `quasar dev -m cordova -T ios`. If build is successful application will automatically open in your phone. Well in most cases..
+1. If any problem occurs you can check debugging feature.  
+
+
+## Debugging Your IOS Build.  
+1. IOS Device: Go to Settings > Safari > Advanced > Enable : Web Inspector / Javascript
+1. Safari Browser : Preferences > Advanced > Enable : Show Develop Menu Bar
+1. Safari Browser : Menu Bar >  Develop >  Your IOS Device > Index is your debugger
+
 # Setting Alexa Skill for Development
 
 In order to do development against an Alexa skill each developer will need one Alexa project initiated on Amazon servers. The steps to get that done:

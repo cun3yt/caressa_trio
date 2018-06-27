@@ -2,7 +2,7 @@ console.log('routes.js is running...')
 
 export default [
   {
-    path: '/main',
+    path: '/',
     component: () => import('layouts/Main'),
     children: [
       {
