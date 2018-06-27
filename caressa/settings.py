@@ -122,7 +122,8 @@ AUTH_PASSWORD_VALIDATORS = [
 CORS_ORIGIN_WHITELIST = (
     '127.0.0.1:8080',
     'localhost:8080',
-    # '10.0.1.169:8080' todo this line needed configured for each developers according to their local requirements
+    # '10.0.1.169:8080' todo this line needed to be configured for each developer who is trying to debug the app in
+    # his/her phone according to their local requirements
 )
 
 # Internationalization

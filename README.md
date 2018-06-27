@@ -93,7 +93,7 @@ app.hosts = {
     rest:'https://yourserver.serveo.net'
 }
 ```
-where you are serving your REST globally. Check it out [Serveo](serveo.net). Your phone need to be able reach that url so it is better to have something global. 
+where you are serving your REST globally. Check it out [Serveo](serveo.net). Your phone need to be able to reach that url so it is better to have something global. 
 1. You need to config CORS: Caressa > settings.py > CORS_ORIGIN_WHITELIST add your IP that is trying to reach resources you can see in debugger configured at Debugging your IOS Build section.
 1. Start dev server: `quasar dev -m cordova -T ios`. If build is successful application will automatically open in your phone. Well in most cases..
 1. If any problem occurs you can check debugging feature.  
