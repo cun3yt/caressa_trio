@@ -3,7 +3,6 @@ export default {
     {
       label: 'Watching',
       name: 'watching',
-      verb: 'watch',
       icon: 'theaters',
       category: 'activity',
       creativeDir: 'watching',
@@ -113,7 +112,6 @@ export default {
     {
       label: 'Reading',
       name: 'reading',
-      verb: 'read',
       icon: 'book',
       category: 'activity',
       creativeDir: 'reading',
@@ -203,7 +201,6 @@ export default {
     {
       label: 'Listening to',
       name: 'listening-to',
-      verb: 'listen to',
       category: 'activity',
       icon: 'music_note',
       creativeDir: 'listening-to',
@@ -288,7 +285,6 @@ export default {
     {
       label: 'Drinking',
       name: 'drinking',
-      verb: 'drink',
       category: 'drinking',
       icon: 'local_cafe',
       creativeDir: 'drinking',
@@ -388,7 +384,6 @@ export default {
     {
       label: 'Eating',
       name: 'eating',
-      verb: 'eat',
       category: 'eating',
       icon: 'local_dining',
       creativeDir: 'eating',
@@ -468,7 +463,6 @@ export default {
     {
       label: 'Playing',
       name: 'playing',
-      verb: 'play',
       category: 'activity',
       icon: 'gamepad',
       creativeDir: 'playing',
@@ -518,7 +512,6 @@ export default {
     {
       label: 'Traveling to',
       name: 'traveling-to',
-      verb: 'travel to',
       category: 'activity',
       icon: 'airplanemode_active',
       creativeDir: 'traveling-to',
@@ -583,7 +576,6 @@ export default {
     {
       label: 'Looking for',
       name: 'looking-for',
-      verb: 'look for',
       category: 'activity',
       icon: 'search',
       creativeDir: 'looking-for',
@@ -592,7 +584,6 @@ export default {
     {
       label: 'Attending',
       name: 'attending',
-      verb: 'attend',
       category: 'activity',
       icon: 'calendar_today',
       creativeDir: 'attending',
@@ -601,7 +592,6 @@ export default {
     {
       label: 'Supporting',
       name: 'supporting',
-      verb: 'support',
       category: 'activity',
       icon: 'favorite_border',
       creativeDir: 'supporting',
@@ -610,7 +600,6 @@ export default {
     {
       label: 'Celebrating',
       name: 'celebrating',
-      verb: 'celebrate',
       category: 'activity',
       icon: 'party_mode',
       creativeDir: 'celebrating',
@@ -619,7 +608,6 @@ export default {
     {
       label: 'Meeting',
       name: 'meeting',
-      verb: 'meet',
       category: 'activity',
       icon: 'meeting_room',
       creativeDir: 'meeting',
@@ -628,7 +616,6 @@ export default {
     {
       label: 'Getting',
       name: 'getting',
-      verb: 'get',
       category: 'activity',
       icon: 'shopping_basket',
       creativeDir: 'getting',
@@ -637,7 +624,6 @@ export default {
     {
       label: 'Making',
       name: 'making',
-      verb: 'make',
       category: 'activity',
       icon: 'meeting_room',
       creativeDir: 'making',
@@ -646,7 +632,6 @@ export default {
     {
       label: 'Thinking about',
       name: 'thinking-about',
-      verb: 'think about',
       category: 'thought',
       icon: 'cloud',
       creativeDir: 'thinking-about',
@@ -736,7 +721,6 @@ export default {
     {
       label: 'Remembering',
       name: 'remembering',
-      verb: 'remember',
       category: 'thought',
       icon: 'toys',
       creativeDir: 'remembering',
