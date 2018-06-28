@@ -1,7 +1,13 @@
+from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
 from random import sample
-from alexa.models import AUser, Joke, News
+from alexa.models import AUser, Joke, News, User
 from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent
+from actions.models import UserAction
 from utilities.dictionaries import deep_get
+from actions.models import UserPost
+from datetime import timedelta, datetime
+import pytz
 
 
 class Question:
@@ -253,6 +259,45 @@ class AdEngine(Engine):
             ]
         )
         super(AdEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+
+
+class TalkBitEngine(Engine):
+    """
+    Talking about somebody's user post
+    """
+    def __init__(self, alexa_user: AUser):
+        user = alexa_user.user
+        user_post = self.fetch_user_post(user).action_object
+        statement = "{}. Isn't it cool?".format(user_post)
+
+        init_question = Question(
+            versions=[statement, ],
+            reprompt=[statement, ],
+            intent_list=[
+                YesIntent(
+                    response_set=['Yes, right!', ],
+                ),
+                NoIntent(
+                    response_set=['OK!', ],
+                )
+            ]
+        )
+
+        super(TalkBitEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+
+    @staticmethod
+    def fetch_user_post(user: User):
+        user_post_ct = ContentType.objects.get_for_model(UserPost)
+        circle = user.circle_set.all()[0]
+
+        all_actions = UserAction.objects.mystream(user, circle)
+
+        # Returning the latest not listened `UserPost` that happened in the last `affinity_in_days` number of days
+        affinity_in_days = 5
+        return all_actions.filter(Q(userlistened__id=None)
+                                  & Q(action_object_content_type=user_post_ct)
+                                  & Q(timestamp__gte=(datetime.now(tz=pytz.utc) - timedelta(days=affinity_in_days))))\
+            .order_by('-timestamp')[0]
 
 
 engine_registration = {
