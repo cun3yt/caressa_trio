@@ -26,8 +26,6 @@ class UserAction(Action):
             'action_object': self.action_object,
             'timesince': self.timesince()
         }
-        if self.action_object:
-            return _('%(actor)s %(verb)s %(action_object)s %(timesince)s ago') % ctx
         return _('%(actor)s %(verb)s %(timesince)s ago') % ctx
 
     @property
@@ -110,7 +108,7 @@ class UserPost(TimeStampedModel):
         lst = ["{} {}".format(obj.get('verb', ''), obj.get('target', '')) for obj in self.data]
         if len(lst) <= 1:
             return "{} is {}".format(username, lst[0])
-        return "{} is {} and {}".format(username, ', '.join(lst[:-1]), lst[-1])
+        return "I am {} and {}".format(', '.join(lst[:-1]), lst[-1])
 
 
 def user_post_activity_save(sender, instance, created, **kwargs):
