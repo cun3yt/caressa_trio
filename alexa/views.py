@@ -5,7 +5,7 @@ from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
 from alexa.engines import Question, EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
-    engine_registration, NewsEngine
+    engine_registration, NewsEngine, TalkBitEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render

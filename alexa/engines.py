@@ -1,13 +1,14 @@
 from django.db.models import Q
 from django.contrib.contenttypes.models import ContentType
+from django.utils.timesince import timesince as djtimesince
+from django.utils import timezone
+from datetime import timedelta, datetime
 from random import sample
+import pytz
 from alexa.models import AUser, Joke, News, User
 from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent
-from actions.models import UserAction
+from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
-from actions.models import UserPost
-from datetime import timedelta, datetime
-import pytz
 
 
 class Question:
@@ -264,11 +265,20 @@ class AdEngine(Engine):
 class TalkBitEngine(Engine):
     """
     Talking about somebody's user post
+    The model class for the user post is "UserPost"
     """
     def __init__(self, alexa_user: AUser):
         user = alexa_user.user
-        user_post = self.fetch_user_post(user).action_object
-        statement = "{}. Isn't it cool?".format(user_post)
+        self.user_action = self.fetch_user_post(user)
+        user_post = self.user_action.action_object
+
+        time_past = djtimesince(user_post.created, timezone.now())\
+            .encode('utf8').replace(b'\xc2\xa0', b' ').decode('utf8')
+
+        statement = '{username} said this {time} ago:<break time="1s"/> {post_content}. Isn\'t it cool?'\
+            .format(username=user_post.user.username,
+                    time=time_past,
+                    post_content=user_post)
 
         init_question = Question(
             versions=[statement, ],
@@ -276,14 +286,20 @@ class TalkBitEngine(Engine):
             intent_list=[
                 YesIntent(
                     response_set=['Yes, right!', ],
+                    process_fn=self.mark_as_listened,
                 ),
                 NoIntent(
                     response_set=['OK!', ],
+                    process_fn=self.mark_as_listened,
                 )
             ]
         )
 
         super(TalkBitEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+
+    def mark_as_listened(self, **kwargs):
+        user_listened = UserListened(action=self.user_action)
+        user_listened.save()
 
     @staticmethod
     def fetch_user_post(user: User):
