@@ -1,7 +1,9 @@
 from django.db import models
+from django.db.models import signals
+from actstream import action
 from actstream.models import Action
 from model_utils.models import TimeStampedModel
-from alexa.models import User, Joke, News
+from alexa.models import User, Joke, News, Circle
 from django.utils.translation import ugettext as _
 from django.contrib.contenttypes.fields import GenericRelation
 from jsonfield import JSONField
@@ -24,8 +26,6 @@ class UserAction(Action):
             'action_object': self.action_object,
             'timesince': self.timesince()
         }
-        if self.action_object:
-            return _('%(actor)s %(verb)s %(action_object)s %(timesince)s ago') % ctx
         return _('%(actor)s %(verb)s %(timesince)s ago') % ctx
 
     @property
@@ -102,3 +102,29 @@ class UserPost(TimeStampedModel):
      {"verb": "drink", "target": "Latte"},
      {"verb": "listen", "target": "Jazz"}]
     '''
+
+    def __str__(self):
+        username = self.user.first_name
+        lst = ["{} {}".format(obj.get('verb', ''), obj.get('target', '')) for obj in self.data]
+        if len(lst) <= 1:
+            return "{} is {}".format(username, lst[0])
+        return "I am {} and {}".format(', '.join(lst[:-1]), lst[-1])
+
+
+def user_post_activity_save(sender, instance, created, **kwargs):
+    action.send(instance.user,
+                verb='created a post',
+                description=kwargs.get('description', ''),
+                action_object=instance,
+                target=Circle.objects.get(id=1),     # todo: Move to `hard-coding`
+                )
+
+
+signals.post_save.connect(receiver=user_post_activity_save, sender=UserPost)
+
+
+class UserListened(TimeStampedModel):
+    class Meta:
+        db_table = 'user_listened'
+
+    action = models.ForeignKey(UserAction, on_delete=models.DO_NOTHING)

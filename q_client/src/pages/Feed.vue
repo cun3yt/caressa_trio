@@ -16,6 +16,11 @@
             <comments :actionId="feed.id" :comment="feed.paginated_comments" />
           </news-feed>
         </template>
+        <template v-else-if="feed.action_object_type==='UserPost'">
+          <user-post-feed :feed="feed">
+            <comments :actionId="feed.id" :comments="feed.paginated_comments" />
+          </user-post-feed>
+        </template>
         <template v-else>
           <regular-feed :feed="feed">
             <comments :actionId="feed.id" :comments="feed.paginated_comments" />
@@ -30,6 +35,7 @@
 <script>
 import JokeFeed from 'components/JokeFeed'
 import NewsFeed from 'components/NewsFeed'
+import UserPostFeed from 'components/UserPostFeed'
 import RegularFeed from 'components/RegularFeed'
 import Comments from 'components/Comments'
 
@@ -37,6 +43,7 @@ export default {
   name: 'feed',
   props: ['setupContent'],
   components: {
+    UserPostFeed,
     JokeFeed,
     NewsFeed,
     RegularFeed,
@@ -64,6 +71,7 @@ export default {
       this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`, {})
         .then(response => {
           vm.feeds = vm.feeds.concat(response.data['results'])
+
           if (vm.bottomVisible()) {
             vm.addFeeds()
           }

@@ -32,7 +32,7 @@
                      @click="addSelectedItem(displayLogic.selectedPostItem,
                                              subItemIndex,
                                              postItems[displayLogic.selectedPostItem].category,
-                                             postItems[displayLogic.selectedPostItem].verb,
+                                             postItems[displayLogic.selectedPostItem].label.toLowerCase(),
                                              subItem.name)">
                 <img class="creative col-1 q-mr-sm q-my-none q-py-none"
                      :src="`/statics/creatives/${postItems[displayLogic.selectedPostItem].creativeDir}/${subItem.creative}`">
@@ -93,9 +93,9 @@ export default {
       let itemsSelectedMapping = this.postItems.map(obj => this.selectedCategories.includes(obj.category))
       return itemsSelectedMapping.indexOf(false)
     },
-    addSelectedItem (itemId, subItemId, category, verb, target) {
+    addSelectedItem (itemId, subItemId, category, verbLabel, target) {
       let obj = { // object to be sent to the API endpoint
-        'verb': verb,
+        'verb': verbLabel,
         'target': target
       }
       this.displayLogic.selectedItems.push([itemId, subItemId, category, obj])

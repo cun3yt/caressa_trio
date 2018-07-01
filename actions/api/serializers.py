@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from actions.models import UserAction, Comment, UserReaction
+from actions.models import UserAction, Comment, UserReaction, UserPost
 from caressa.settings import REST_FRAMEWORK
 from alexa.models import Joke, User, News
 from generic_relations.relations import GenericRelatedField
@@ -53,6 +53,19 @@ class ReactionSerializer(serializers.ModelSerializer):
         return super(ReactionSerializer, self).create(validated_data)
 
 
+class UserPostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserPost
+        fields = ('id',
+                  'content', )
+
+    content = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_content(user_post: UserPost):
+        return str(user_post)
+
+
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAction
@@ -70,6 +83,7 @@ class ActionSerializer(serializers.ModelSerializer):
     action_object = GenericRelatedField({
         Joke: JokeSerializer(),
         News: NewsSerializer(),
+        UserPost: UserPostSerializer(),
     })
 
     def get_actor(self, user_action: UserAction):
