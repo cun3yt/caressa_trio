@@ -230,8 +230,46 @@ class EngineSession(TimeStampedModel):
 
     user = models.ForeignKey(AUser, null=False, related_name='engine_sessions', on_delete=models.DO_NOTHING)
     name = models.TextField(null=False, blank=False)
-    state = models.TextField(blank=True)    # continue, done (postpone-next-session, postpone-indefinite, expired)
+    state = models.TextField(blank=True, db_index=True)
+    # Possible `state`s: continue, done (postpone-next-session, postpone-indefinite, expired)
     data = JSONField(default={})
+
+    @property
+    def is_continuing(self):
+        return self.state == 'continue'
+
+    def set_state_continue(self, additional_level=None, start_level=None, asked_question=None):
+        self._set_state('continue',
+                        additional_level=additional_level,
+                        start_level=start_level,
+                        asked_question=asked_question)
+
+    def set_state_done(self, additional_level=None, start_level=None, asked_question=None):
+        self._set_state('done',
+                        additional_level=additional_level,
+                        start_level=start_level,
+                        asked_question=asked_question)
+
+    def _add_asked_question(self, question):
+        self.data['asked_questions'].append(question)
+
+    def _set_state(self, state, additional_level=None, start_level=None, asked_question=None):
+        if additional_level is not None:
+            self._add_level(additional_level)
+        elif start_level is not None:
+            self._set_level(start_level)
+
+        if asked_question is not None:
+            self._add_asked_question(asked_question)
+
+        self.state = state
+
+    def _set_level(self, level):
+        self.data['level'] = level
+
+    def _add_level(self, additional_level):
+        self.data['level'] = '{current_level}.{additional_level}'.format(current_level=self.data['level'],
+                                                                         additional_level=additional_level)
 
 
 Request._meta.get_field('created').db_index = True

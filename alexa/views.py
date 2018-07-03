@@ -43,9 +43,13 @@ def get_engine_from_cascade(alexa_user: AUser):
 def get_engine_from_schedule(alexa_user: AUser):
     log("get_engine_from_schedule with AUser::{}".format(alexa_user.id))
 
-    schedule = alexa_user.engine_schedule.encode(encoding='UTF-8')
     events = []
-    # events = query_events(string_content=schedule, start=datetime.now(), end=(datetime.now() + timedelta(minutes=10)), fix_apple=True)
+    
+    # schedule = alexa_user.engine_schedule.encode(encoding='UTF-8')
+    # events = query_events(string_content=schedule,
+    #                       start=datetime.now(),
+    #                       end=(datetime.now() + timedelta(minutes=10)),
+    #                       fix_apple=True)
 
     # filler or info-collector engines will come here..
     engine_name = 'NewsEngine'
@@ -86,7 +90,6 @@ def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_na
     traverser = engine
 
     for lev in levels:
-        # traverser = traverser.question if lev == 'question' else traverser.intents.get(lev)
         if lev == 'question':
             traverser = traverser.question
         elif lev == 'profile_builder':
@@ -102,7 +105,7 @@ def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_na
     return intent.get_random_response(), intent
 
 
-class Conversation():
+class Conversation:
     def __init__(self, request):
         req_body = json.loads(request.body)
         session_id = deep_get(req_body, 'session.sessionId', '')
@@ -136,8 +139,8 @@ class Conversation():
         }
 
     @property
-    def is_an_engine_session_going_on(self):
-        return self.engine_session and self.engine_session.state == 'continue'
+    def is_the_engine_session_going_on(self):
+        return self.engine_session and self.engine_session.is_continuing
 
     @property
     def is_there_an_intent(self):
@@ -148,42 +151,45 @@ class Conversation():
             # if the intent has specific direction on engine session it takes precedence
             self.engine_session.state = engine_intent_object.engine_session
         else:
-            self.engine_session.state = 'done' if engine_intent_object.is_end_state() else 'continue'
+            if engine_intent_object.is_end_state():
+                self.engine_session.set_state_done()
+            else:
+                self.engine_session.set_state_continue()
 
         if engine_intent_object.end_session:  # end the alexa session
-            self.engine_session.data['level'] = 'question'   # start over in the next session
+            self.engine_session.set_state_continue(start_level='question')
             self.engine_session.save()
             self.response['should_session_end'] = True
             return
 
         # "profile builder execution" if the user don't have it in her profile.
         if engine_intent_object.profile_builder and (self.alexa_user.profile_get(engine_intent_object.profile_builder.key) is None):
-            self.engine_session.data['level'] = '{level}.{intent_name}.profile_builder'.format(level=self.engine_session.data['level'],
-                                                                                          intent_name=self.req.get('intent_name'))
-            self.engine_session.data['asked_questions'].append(engine_intent_object.profile_builder.asked_question)
-            self.engine_session.state = 'continue'
+            self.engine_session.set_state_continue(
+                additional_level='{intent}.profile_builder'.format(intent=self.req.get('intent_name')),
+                asked_question=engine_intent_object.profile_builder.asked_question
+            )
             self.engine_session.save()
             self.response['text'] = '{} {}'.format(self.response['text'],
                                                    engine_intent_object.profile_builder.asked_question)
 
         elif not engine_intent_object.is_end_state():
-            self.engine_session.data['level'] = '{level}.{intent_name}.question'.format(level=self.engine_session.data['level'],
-                                                                                   intent_name=self.req.get('intent_name'))
-            self.engine_session.data['asked_questions'].append(engine_intent_object.question.asked_question)
-            self.engine_session.state = 'continue'
+            self.engine_session.set_state_continue(
+                additional_level='{intent}.question'.format(intent=self.req.get('intent_name')),
+                asked_question=engine_intent_object.question.asked_question
+            )
             self.engine_session.save()
             self.response['text'] = '{} {}'.format(self.response['text'],
                                                    engine_intent_object.question.asked_question)
 
         else:
-            self.engine_session.data['level'] = '{level}.{intent_name}'.format(level=self.engine_session.data['level'],
-                                                                               intent_name=self.req.get('intent_name'))
-            self.engine_session.state = 'done'
+            self.engine_session.set_state_done(additional_level='{intent}'.format(intent=self.req.get('intent_name')))
             self.engine_session.save()
             follow_engine = get_engine_from_schedule(alexa_user=self.alexa_user)
             question = follow_engine.question.asked_question
 
-            e_session = EngineSession(user=self.alexa_user, name=follow_engine.__class__.__name__, state='continue')
+            e_session = EngineSession(user=self.alexa_user,
+                                      name=follow_engine.__class__.__name__,
+                                      state='continue')
             e_session.data = {'level': "question", 'asked_questions': [question]}
             e_session.save()
             self.response['text'] = '{} {}'.format(self.response['text'], question)
@@ -197,7 +203,7 @@ class Conversation():
 
         log("START: ")
 
-        if self.is_an_engine_session_going_on and self.is_there_an_intent:
+        if self.is_the_engine_session_going_on and self.is_there_an_intent:
             log(" Continuing Engine Session and there is an INTENT")
             response, engine_intent_object = continue_engine_session(self.engine_session,
                                                        self.alexa_user,
@@ -207,12 +213,12 @@ class Conversation():
 
             self._wire_brain_connections_post_intent(engine_intent_object)
 
-        elif self.is_an_engine_session_going_on:
+        elif self.is_the_engine_session_going_on:
             log(" Continuing Engine Session and there is NO intent")
             engine = get_engine_instance(self.engine_session.name, self.alexa_user)
             question = engine.question.asked_question
             self.response['text'] = '{} {}'.format(self.response['text'], question)
-            self.engine_session.data['level'] = 'question'
+            self.engine_session.set_state_continue(start_level='question')
             self.engine_session.save()
 
         else:
