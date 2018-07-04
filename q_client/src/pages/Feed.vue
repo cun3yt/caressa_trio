@@ -81,8 +81,8 @@ export default {
         })
     },
     pushFeeds () {
-      const pusher = new Pusher('PUSHER_KEY', {cluster: 'PUSHER_CLUSSTER'}) // todo this needs to be an env var
-      const channel = pusher.subscribe('carenv-development')
+      const pusher = new Pusher(this.$root.$options.pusherConfig.pusherKey, {cluster: this.$root.$options.pusherConfig.pusherCluster}) // todo this needs to be an env var
+      const channel = pusher.subscribe(this.$root.$options.pusherConfig.channelName)
       let vm = this
       channel.bind('feeds', function (data) {
         vm.feeds.unshift(data)

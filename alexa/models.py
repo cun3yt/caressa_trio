@@ -1,3 +1,4 @@
+import os
 from django.contrib.auth.models import AbstractUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -15,7 +16,6 @@ from actstream.actions import follow as act_follow
 from actstream.models import Action
 from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
-import pusher
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -298,12 +298,11 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
                 action_object=action_object,
                 target=circle,     # todo: Move to `hard-coding`
                 )
+    channel_name = 'channel-{env}-circle-{circle}'.format(env=os.environ.get('ENV'), circle=circle.id)
     user_action = UserAction.objects.my_actions(user, circle).order_by('-timestamp')[0]
     serializer = ActionSerializer(user_action)
     json = JSONRenderer().render(serializer.data).decode('utf8')
-    pusher_client.trigger('carenv-development', 'feeds', json)
+    pusher_client.trigger(channel_name, 'feeds', json)
 
 
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)
-
-

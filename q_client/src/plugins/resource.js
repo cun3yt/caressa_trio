@@ -14,4 +14,10 @@ export default ({ app, router, Vue }) => {
       profilePic: '/statics/grandma-avatar.png'
     }
   }
+  app.pusherConfig = {
+    channelName: 'channel-dev-circle-1', // todo hard coded here
+    pusherKey: 'PUSHER_KEY',
+    pusherCluster: 'PUSHER_CLUSTER'
+
+  }
 }
