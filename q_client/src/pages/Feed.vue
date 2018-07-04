@@ -38,6 +38,9 @@ import NewsFeed from 'components/NewsFeed'
 import UserPostFeed from 'components/UserPostFeed'
 import RegularFeed from 'components/RegularFeed'
 import Comments from 'components/Comments'
+import Pusher from 'pusher-js'
+
+// Pusher.logToConsole = true // for logging purpose
 
 export default {
   name: 'feed',
@@ -76,6 +79,15 @@ export default {
             vm.addFeeds()
           }
         })
+    },
+    pushFeeds () {
+      const pusher = new Pusher('PUSHER_KEY', {cluster: 'PUSHER_CLUSSTER'}) // todo this needs to be an env var
+      const channel = pusher.subscribe('carenv-development')
+      let vm = this
+      channel.bind('feeds', function (data) {
+        vm.feeds.unshift(data)
+        console.log(vm.feeds)
+      })
     }
   },
   watch: {
@@ -93,6 +105,7 @@ export default {
       this.moreFeedsNeeded = this.bottomVisible()
     })
     this.addFeeds()
+    this.pushFeeds()
   }
 }
 </script>

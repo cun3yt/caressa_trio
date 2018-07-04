@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from jsonfield import JSONField
 from model_utils.models import TimeStampedModel, StatusField
@@ -12,9 +13,9 @@ from django.db.models import signals
 from actstream import action
 from actstream.actions import follow as act_follow
 from actstream.models import Action
-
-from django.contrib.contenttypes.models import ContentType
+from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
+import pusher
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -283,12 +284,24 @@ class UserActOnContent(TimeStampedModel):
 
 
 def user_act_on_content_activity_save(sender, instance, created, **kwargs):
-    action.send(instance.user,
-                verb=instance.verb,
+    from actions.api.serializers import ActionSerializer
+    from actions.models import UserAction
+    from rest_framework.renderers import JSONRenderer
+    # todo move these imports up. Stays here for now because crashing the app for some reason.
+    user = instance.user
+    verb = instance.verb
+    action_object = instance.object
+    circle = Circle.objects.get(id=1)  # todo: Move to `hard-coding`
+    action.send(user,
+                verb=verb,
                 description=kwargs.get('description', ''),
-                action_object=instance.object,
-                target=Circle.objects.get(id=1),     # todo: Move to `hard-coding`
+                action_object=action_object,
+                target=circle,     # todo: Move to `hard-coding`
                 )
+    user_action = UserAction.objects.my_actions(user, circle).order_by('-timestamp')[0]
+    serializer = ActionSerializer(user_action)
+    json = JSONRenderer().render(serializer.data).decode('utf8')
+    pusher_client.trigger('carenv-development', 'feeds', json)
 
 
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)
