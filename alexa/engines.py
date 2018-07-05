@@ -22,10 +22,17 @@ class Question:
         return sample(self.versions, 1)[0]
 
 
+class EndState(Question):
+    pass
+
+
 class Engine:
-    def __init__(self, question: Question, alexa_user: AUser):
+    default_ttl = 10*60     # time to live is 10 minutes by default
+
+    def __init__(self, question: Question, alexa_user: AUser, ttl=None):
         self.question = question
         self.alexa_user = alexa_user
+        self.ttl = Engine.default_ttl if ttl is None else ttl
 
     def render(self, render_type='json'):
         pass
@@ -40,19 +47,18 @@ class EmotionalEngine(Engine):
             reprompt=["How do you feel?",
                       ],
             intent_list=[
-                GoodIntent(question=Question(versions=['so is it good?'],
-                                             intent_list=[
-                                                 GoodIntent(
-                                                     process_fn=self.update_on_good_intent
-                                                 )
-                                             ])),
+                GoodIntent(
+                    process_fn=self.update_on_good_intent
+                ),
                 BadIntent(
                     process_fn=self.update_on_bad_intent
                 )
             ],
         )
 
-        super(EmotionalEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+        super(EmotionalEngine, self).__init__(question=init_question,
+                                              alexa_user=alexa_user,
+                                              ttl=30)
 
     def update_on_good_intent(self, **kwargs):
         self.alexa_user.update_emotion('happiness', percentage=0.1, max_value=75)
@@ -104,7 +110,7 @@ class JokeEngine(Engine):
             ]
         )
 
-        super(JokeEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+        super(JokeEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60)
 
     @staticmethod
     def fetch_random_joke():
@@ -139,7 +145,7 @@ class NewsEngine(Engine):
             ]
         )
 
-        super(NewsEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+        super(NewsEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60)
 
     @staticmethod
     def fetch_random_news():
@@ -185,7 +191,7 @@ class MedicalEngine(Engine):
             ],
         )
 
-        super(MedicalEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+        super(MedicalEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60)
 
     def save_blood_pressure(self, **kwargs):
         self.alexa_user.set_medical_state('blood_pressure', {
@@ -316,18 +322,36 @@ class TalkBitEngine(Engine):
             .order_by('-timestamp')[0]
 
 
-engine_registration = {
-    'critical': [
-        'EmotionalEngine',
-    ],
-    'schedule-based': [
-        'MedicalEngine',
-        'WeightEngine',
-    ],
-    'filler': [
-        'JokeEngine',
-    ],
-    'sponsored': [
-        'AdEngine',
-    ]
-}
+class OutroEngine(Engine):
+    def __init__(self, alexa_user: AUser):
+        self.closings = [
+            'That\'s it for now. Don\'t forget to come back by saying "Alexa, open Caressa"',
+
+            'That\'s all for now. Not that I will miss you here.',
+
+            'I\'m sorry to say that but I got to go now. Remember that I will be back with more soon. '
+            'Call me with saying "Alexa, open Caressa"',
+
+            'I gotta go now, but I will have more updates for you. '
+            'Remember to call me saying "Alexa, open Caressa". Bye for now!',
+
+            '{}, I am sorry but that\'s it for now. I will be back with more content the next time '
+            'you say "Alexa, open Caressa".'.format(alexa_user.user.first_name),
+        ]
+        super(OutroEngine, self).__init__(
+            question=EndState(intent_list=[], versions=[]),
+            alexa_user=alexa_user, ttl=1
+        )
+
+    def get_random_closing(self):
+        return sample(self.closings, 1)[0]
+
+
+engine_registration = [
+    'EmotionalEngine',
+    'MedicalEngine',
+    'WeightEngine',
+    'JokeEngine',
+    'NewsEngine',
+    'AdEngine',
+]
