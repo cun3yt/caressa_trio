@@ -81,7 +81,7 @@ export default {
         })
     },
     pushFeeds () {
-      const pusher = new Pusher(this.$root.$options.pusherConfig.pusherKey, {cluster: this.$root.$options.pusherConfig.pusherCluster}) // todo this needs to be an env var
+      const pusher = new Pusher(this.$root.$options.pusherConfig.pusherKey, {cluster: this.$root.$options.pusherConfig.pusherCluster})
       const channel = pusher.subscribe(this.$root.$options.pusherConfig.channelName)
       let vm = this
       channel.bind('feeds', function (data) {

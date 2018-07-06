@@ -169,9 +169,9 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 5,
 }
 
-pusher_client = pusher.Pusher(  # todo create env var and update readme.md
-    app_id="PUSHER_APP_ID",
-    key="PUSHER_KEY",
-    secret="PUSHER_SECRET",
-    cluster="PUSHER_CLUSTER"
-)
+# Pusher ENV variables
+pusher_app_id = os.environ.get('PUSHER_APP_ID')
+pusher_key_id = os.environ.get('PUSHER_KEY')
+pusher_secret = os.environ.get('PUSHER_SECRET')
+pusher_cluster = os.environ.get('PUSHER_CLUSTER')
+pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pusher_secret, cluster=pusher_cluster)

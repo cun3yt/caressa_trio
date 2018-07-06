@@ -1,4 +1,4 @@
-import os
+from caressa.settings import ENV as SETTINGS_ENV
 from django.contrib.auth.models import AbstractUser
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -298,7 +298,7 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
                 action_object=action_object,
                 target=circle,     # todo: Move to `hard-coding`
                 )
-    channel_name = 'channel-{env}-circle-{circle}'.format(env=os.environ.get('ENV'), circle=circle.id)
+    channel_name = 'channel-{env}-circle-{circle}'.format(env=SETTINGS_ENV, circle=circle.id)
     user_action = UserAction.objects.my_actions(user, circle).order_by('-timestamp')[0]
     serializer = ActionSerializer(user_action)
     json = JSONRenderer().render(serializer.data).decode('utf8')
