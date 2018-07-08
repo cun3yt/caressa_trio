@@ -56,7 +56,8 @@ export default {
     return {
       pageNumber: 0,
       feeds: [],
-      moreFeedsNeeded: false
+      moreFeedsNeeded: false,
+      feedPushed: false
     }
   },
   methods: {
@@ -86,7 +87,17 @@ export default {
       let vm = this
       channel.bind('feeds', function (data) {
         vm.feeds.unshift(data)
+        this.pushNotif()
         console.log(vm.feeds)
+      })
+    },
+    pushNotif () {
+      this.$q.notify({
+        color: 'secondary',
+        message: 'You post is submitted.',
+        position: 'top-right',
+        icon: 'check_circle_outline',
+        detail: 'testing purpose'
       })
     }
   },

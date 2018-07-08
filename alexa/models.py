@@ -7,7 +7,7 @@ from jsonfield import JSONField
 from model_utils.models import TimeStampedModel, StatusField
 from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
-
+from django.apps import apps
 from utilities.dictionaries import deep_get, deep_set
 from utilities.logger import log
 from django.db.models import signals
@@ -16,6 +16,7 @@ from actstream.actions import follow as act_follow
 from actstream.models import Action
 from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
+from rest_framework.renderers import JSONRenderer
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -284,10 +285,8 @@ class UserActOnContent(TimeStampedModel):
 
 
 def user_act_on_content_activity_save(sender, instance, created, **kwargs):
-    from actions.api.serializers import ActionSerializer
-    from actions.models import UserAction
-    from rest_framework.renderers import JSONRenderer
-    # todo move these imports up. Stays here for now because crashing the app for some reason.
+    from actions.api.serializers import ActionSerializer # todo move this up
+    user_action_model = apps.get_model('actions', 'UserAction')
     user = instance.user
     verb = instance.verb
     action_object = instance.object
@@ -299,7 +298,7 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
                 target=circle,     # todo: Move to `hard-coding`
                 )
     channel_name = 'channel-{env}-circle-{circle}'.format(env=SETTINGS_ENV, circle=circle.id)
-    user_action = UserAction.objects.my_actions(user, circle).order_by('-timestamp')[0]
+    user_action = user_action_model.objects.my_actions(user, circle).order_by('-timestamp')[0]
     serializer = ActionSerializer(user_action)
     json = JSONRenderer().render(serializer.data).decode('utf8')
     pusher_client.trigger(channel_name, 'feeds', json)
