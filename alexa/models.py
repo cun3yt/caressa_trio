@@ -15,6 +15,9 @@ from actstream.models import Action
 
 from django.contrib.contenttypes.models import ContentType
 from alexa.mixins import FetchRandomMixin
+from caressa.settings import CONVERSATION_ENGINES
+from datetime import timedelta
+from django.utils import timezone
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -233,10 +236,22 @@ class EngineSession(TimeStampedModel):
     state = models.TextField(blank=True, db_index=True)
     # Possible `state`s: continue, done (postpone-next-session, postpone-indefinite, expired)
     data = JSONField(default={})
+    ttl = models.PositiveIntegerField(default=CONVERSATION_ENGINES['ttl'])
 
     @property
     def is_continuing(self):
+        self._expire_if_ttl_past()
         return self.state == 'continue'
+
+    @property
+    def is_ttl_past(self):
+        return (self.modified + timedelta(seconds=self.ttl)) < timezone.now()
+
+    def _expire_if_ttl_past(self):
+        if self.state != 'continue':
+            return
+        if self.is_ttl_past:
+            self.state = 'expired'
 
     def set_state_continue(self, additional_level=None, start_level=None, asked_question=None):
         self._set_state('continue',

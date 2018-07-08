@@ -167,3 +167,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'alexa.api.configuration.pagination.ExtendedPageNumberPagination',
     'PAGE_SIZE': 5,
 }
+
+CONVERSATION_ENGINES = {
+    'ttl': 10*60,
+}

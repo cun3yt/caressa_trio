@@ -10,7 +10,7 @@ from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render
 from utilities.logger import log
-from random import sample
+from random import sample, random
 
 
 def main_view(request):
@@ -58,7 +58,9 @@ class BasicEngineSpawner:
 
         for event in events:
             log(" >> event in question: {}".format(event.summary))
-            if EngineSession.objects.filter(created__range=(event.start, event.end), state='done').count() == 0:
+            if EngineSession.objects.filter(created__range=(event.start, event.end),
+                                            state='done',
+                                            name=event.summary).count() == 0:
                 log("  This is being EXECUTED: {}".format(event.summary))
                 engine_name = event.summary
                 break
@@ -71,12 +73,10 @@ class BasicEngineSpawner:
 
     def _get_available_timed_engines(self):
         engine_name = self._get_engine_from_schedule()
-        return [engine_name]
+        return [] if engine_name is None else [engine_name]
 
     def _get_available_notif_engines(self):
-        if TalkBitEngine.fetch_user_post(self.a_user.user):
-            return ['TalkBitEngine']
-        return []
+        return ['TalkBitEngine'] if TalkBitEngine.fetch_user_post(self.a_user.user) else []
 
     @staticmethod
     def _random_select(engine_list):
@@ -90,11 +90,22 @@ class BasicEngineSpawner:
     def _select_filler_engine(self):
         """
         todo Usage statistics and user preferences will play role here, stats including last run time of engines
+        expected length is set to 2 with probability
+        [ computation: sum of n*p^n (for n: 1 to inf) ]
         :return:
         """
+        probability = 0.5
+
+        if random() < probability:
+            return None
+
         return sample(self.filler_engines, 1)[0]
 
     def spawn(self):
+        """
+        engine selection flow: https://screencast.com/t/jPMr2bcaZb
+        :return:
+        """
         if self.is_new_session:
             engine_name = self.greeting_engine
             return get_engine_instance(engine_name, self.a_user)
@@ -133,7 +144,11 @@ class Conversation:
             'intent_name': deep_get(req_body, 'request.intent.name'),
         }
 
-        self.spawner = BasicEngineSpawner(self.alexa_user, self.is_new_session, self.engine_session, self.req['type'], self.req['intent_name'])
+        self.spawner = BasicEngineSpawner(self.alexa_user,
+                                          self.is_new_session,
+                                          self.engine_session,
+                                          self.req['type'],
+                                          self.req['intent_name'])
 
         log('-----')
         log(" TYPE: {}\n INTENT: {}".format(self.req.get('type'), self.req.get('intent_name')))
@@ -151,6 +166,7 @@ class Conversation:
 
     @property
     def is_the_engine_session_going_on(self):
+        # if self.engine_session
         return self.engine_session and self.engine_session.is_continuing
 
     @property
@@ -225,7 +241,8 @@ class Conversation:
                 closing = follow_engine.get_random_closing()
                 e_session = EngineSession(user=self.alexa_user,
                                           name=follow_engine.__class__.__name__,
-                                          state='done')
+                                          state='done',
+                                          ttl=follow_engine.ttl)
                 e_session.data = {'closing': closing}
                 e_session.save()
                 self.response['text'] = '{}. By the way {}'.format(self.response['text'], closing)
@@ -236,7 +253,8 @@ class Conversation:
 
             e_session = EngineSession(user=self.alexa_user,
                                       name=follow_engine.__class__.__name__,
-                                      state='continue')
+                                      state='continue',
+                                      ttl=follow_engine.ttl)
             e_session.data = {'level': "question", 'asked_questions': [question]}
             e_session.save()
             self.response['text'] = '{} {}'.format(self.response['text'], question)
@@ -251,7 +269,7 @@ class Conversation:
         log("START: ")
 
         if self.is_the_engine_session_going_on and self.is_there_an_intent:
-            log(" Continuing Engine Session and there is an INTENT")
+            log(" (1) Continuing Engine Session and there is an INTENT")
             response, engine_intent_object = self.continue_engine_session(self.engine_session,
                                                                           self.alexa_user,
                                                                           self.req.get('intent_name'),
@@ -261,7 +279,7 @@ class Conversation:
             self._wire_brain_connections_post_intent(engine_intent_object)
 
         elif self.is_the_engine_session_going_on:
-            log(" Continuing Engine Session and there is NO intent")
+            log(" (2) Continuing Engine Session and there is NO intent")
             engine = get_engine_instance(self.engine_session.name, self.alexa_user)
             question = engine.question.asked_question
             self.response['text'] = '{} {}'.format(self.response['text'], question)
@@ -269,10 +287,11 @@ class Conversation:
             self.engine_session.save()
 
         else:
-            log(" No continuing engine session (must be 'open caressa')")
+            log(" (3) No continuing engine session (must be 'open caressa')")
             engine = self.spawner.spawn()
             question = engine.question.asked_question
-            e_session = EngineSession(user=self.alexa_user, name=engine.__class__.__name__, state='continue')
+            e_session = EngineSession(user=self.alexa_user, name=engine.__class__.__name__, state='continue',
+                                      ttl=engine.ttl)
             e_session.data = {'level': 'question', 'asked_questions': [question]}
             e_session.save()
             self.response['text'] = '{} {}'.format(self.response['text'], question)

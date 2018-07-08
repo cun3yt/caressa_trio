@@ -9,16 +9,20 @@ from alexa.models import AUser, Joke, News, User
 from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent
 from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
+from caressa.settings import CONVERSATION_ENGINES
 
 
 class Question:
-    def __init__(self, versions, intent_list, reprompt=None):
+    def __init__(self, versions=None, intent_list=None, reprompt=None):
         self.versions = versions
         self.reprompt = reprompt  # todo Reprompt can be built based on what is available in intent_list!!
         self.intents = {intent.intent_identifier(): intent for intent in intent_list}
         self.asked_question = self._get_random_version()
 
     def _get_random_version(self):
+        if self.versions is None:
+            return ''
+
         return sample(self.versions, 1)[0]
 
 
@@ -27,7 +31,7 @@ class EndState(Question):
 
 
 class Engine:
-    default_ttl = 10*60     # time to live is 10 minutes by default
+    default_ttl = CONVERSATION_ENGINES['ttl']     # time to live is 10 minutes by default
 
     def __init__(self, question: Question, alexa_user: AUser, ttl=None):
         self.question = question
@@ -121,7 +125,7 @@ class JokeEngine(Engine):
         from alexa.models import UserActOnContent
         act = UserActOnContent(user=self.alexa_user.user,
                                verb='laughed at',
-                               object=Joke.objects.get(id=2))  # hardcoded for now..
+                               object=Joke.objects.get(id=2))  # todo how to save the target object??
         act.save()
 
 
@@ -156,7 +160,7 @@ class NewsEngine(Engine):
         from alexa.models import UserActOnContent
         act = UserActOnContent(user=self.alexa_user.user,
                                verb='found interesting',
-                               object=News.objects.get(id=6))
+                               object=News.objects.get(id=6))   # todo remove hard coding
         act.save()
 
 
@@ -191,7 +195,7 @@ class MedicalEngine(Engine):
             ],
         )
 
-        super(MedicalEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60)
+        super(MedicalEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=15*60)
 
     def save_blood_pressure(self, **kwargs):
         self.alexa_user.set_medical_state('blood_pressure', {
@@ -316,10 +320,13 @@ class TalkBitEngine(Engine):
 
         # Returning the latest not listened `UserPost` that happened in the last `affinity_in_days` number of days
         affinity_in_days = 5
-        return all_actions.filter(Q(userlistened__id=None)
+        actions = all_actions.filter(Q(userlistened__id=None)
                                   & Q(action_object_content_type=user_post_ct)
                                   & Q(timestamp__gte=(datetime.now(tz=pytz.utc) - timedelta(days=affinity_in_days))))\
-            .order_by('-timestamp')[0]
+            .order_by('-timestamp')
+        if actions.count() < 1:
+            return None
+        return actions[0]
 
 
 class OutroEngine(Engine):
@@ -339,7 +346,7 @@ class OutroEngine(Engine):
             'you say "Alexa, open Caressa".'.format(alexa_user.user.first_name),
         ]
         super(OutroEngine, self).__init__(
-            question=EndState(intent_list=[], versions=[]),
+            question=EndState(intent_list=[]),
             alexa_user=alexa_user, ttl=1
         )
 
