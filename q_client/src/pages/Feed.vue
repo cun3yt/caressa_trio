@@ -87,17 +87,16 @@ export default {
       let vm = this
       channel.bind('feeds', function (data) {
         vm.feeds.unshift(data)
-        this.pushNotif()
+        vm.pushNotif()
         console.log(vm.feeds)
       })
     },
     pushNotif () {
       this.$q.notify({
-        color: 'secondary',
-        message: 'You post is submitted.',
-        position: 'top-right',
-        icon: 'check_circle_outline',
-        detail: 'testing purpose'
+        color: 'positive',
+        message: 'One New Feed Arrived',
+        position: 'bottom-left',
+        icon: 'offline_bolt'
       })
     }
   },
