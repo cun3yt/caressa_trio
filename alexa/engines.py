@@ -97,13 +97,13 @@ class JokeEngine(Engine):
             reprompt=["Do you want a joke?", ],
             intent_list=[
                 YesIntent(
-                    response_set=self.get_joke_and_render,
+                    response_set=self._get_joke_and_render,
                     question=Question(versions=['Was it funny?',
                                                 'Did you like this joke?', ],
                                       intent_list=[
                                           YesIntent(
                                               response_set=['Thanks!'],
-                                              process_fn=self.save_joke_like),
+                                              process_fn=self._save_joke_like),
                                           NoIntent(response_set=['OK']),
                                       ]),
                     # profile_builder=ProfileBuilderForJoke(alexa_user=alexa_user),
@@ -114,7 +114,7 @@ class JokeEngine(Engine):
 
         super(JokeEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60, **kwargs)
 
-    def get_joke(self):
+    def _get_joke(self):
         if self.engine_session and self.engine_session.get_target_object_id():
             joke_id = self.engine_session.get_target_object_id()
             joke = Joke.objects.get(id=joke_id)
@@ -127,13 +127,13 @@ class JokeEngine(Engine):
 
         return joke
 
-    def get_joke_and_render(self):
-        joke = self.get_joke()
+    def _get_joke_and_render(self):
+        joke = self._get_joke()
         return '{main}<break time="1s"/>{punchline}'.format(main=joke.main, punchline=joke.punchline)
 
-    def save_joke_like(self, **kwargs):
+    def _save_joke_like(self, **kwargs):
         from alexa.models import UserActOnContent
-        joke = self.get_joke()
+        joke = self._get_joke()
         act = UserActOnContent(user=self.alexa_user.user,
                                verb='laughed at',
                                object=joke)
@@ -141,18 +141,21 @@ class JokeEngine(Engine):
 
 
 class NewsEngine(Engine):
+    """
+    todo consider dropping some functions by generalizing with the other similar engines.
+    """
     def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=['Would you like to hear popular news around you?', ],  # todo should end headline
             reprompt=['Do you want to listen recent news?', ],
             intent_list=[
                 YesIntent(
-                    response_set=self.fetch_random_news,
+                    response_set=self._get_obj_and_render,
                     question=Question(versions=['Did you like this news?', ],
                                       intent_list=[
                                           YesIntent(
                                               response_set=['Thanks!'],
-                                              process_fn=self.save_news_like),
+                                              process_fn=self._save_obj_like),
                                           NoIntent(response_set=['OK']),
                                       ]),
                 ),
@@ -162,16 +165,29 @@ class NewsEngine(Engine):
 
         super(NewsEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60, **kwargs)
 
-    @staticmethod
-    def fetch_random_news():
-        news = News.fetch_random()
-        return '{headline}<break time="1s"/>{content}'.format(headline=news.headline, content=news.content)
+    def _get_obj(self):
+        if self.engine_session and self.engine_session.get_target_object_id():
+            obj_id = self.engine_session.get_target_object_id()
+            obj = News.objects.get(id=obj_id)
+            return obj
 
-    def save_news_like(self, **kwargs):
+        obj = News.fetch_random()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(obj.id)
+
+        return obj
+
+    def _get_obj_and_render(self):
+        obj = self._get_obj()
+        return '{headline}<break time="1s"/>{content}'.format(headline=obj.headline, content=obj.content)
+
+    def _save_obj_like(self, **kwargs):
         from alexa.models import UserActOnContent
+        obj = self._get_obj()
         act = UserActOnContent(user=self.alexa_user.user,
                                verb='found interesting',
-                               object=News.objects.get(id=6))   # todo remove hard coding
+                               object=obj)
         act.save()
 
 
