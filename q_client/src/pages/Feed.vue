@@ -88,15 +88,24 @@ export default {
       channel.bind('feeds', function (data) {
         vm.feeds.unshift(data)
         vm.pushNotif()
-        console.log(vm.feeds)
       })
     },
     pushNotif () {
       this.$q.notify({
         color: 'positive',
-        message: 'One New Feed Arrived',
         position: 'bottom-left',
-        icon: 'offline_bolt'
+        actions: [
+          {
+            label: 'One New Feed Arrived',
+            icon: 'arrow_upward',
+            handler: () => {
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+              })
+            }
+          }
+        ]
       })
     }
   },
