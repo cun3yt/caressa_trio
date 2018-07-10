@@ -26,24 +26,22 @@ class Question:
         return sample(self.versions, 1)[0]
 
 
-class EndState(Question):
-    pass
-
-
 class Engine:
     default_ttl = CONVERSATION_ENGINES['ttl']     # time to live is 10 minutes by default
 
-    def __init__(self, question: Question, alexa_user: AUser, ttl=None):
+    def __init__(self, question: Question, alexa_user: AUser, engine_session=None,
+                 ttl=None):
         self.question = question
         self.alexa_user = alexa_user
         self.ttl = Engine.default_ttl if ttl is None else ttl
+        self.engine_session = engine_session
 
     def render(self, render_type='json'):
         pass
 
 
 class EmotionalEngine(Engine):
-    def __init__(self, alexa_user: AUser):
+    def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=["How are you?",
                       "How are you today?",
@@ -62,7 +60,7 @@ class EmotionalEngine(Engine):
 
         super(EmotionalEngine, self).__init__(question=init_question,
                                               alexa_user=alexa_user,
-                                              ttl=30)
+                                              ttl=30, **kwargs)
 
     def update_on_good_intent(self, **kwargs):
         self.alexa_user.update_emotion('happiness', percentage=0.1, max_value=75)
@@ -93,13 +91,13 @@ class ProfileBuilderForJoke(Question):
 
 
 class JokeEngine(Engine):
-    def __init__(self, alexa_user: AUser):
+    def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=['Would you like to hear a joke?', ],
             reprompt=["Do you want a joke?", ],
             intent_list=[
                 YesIntent(
-                    response_set=self.fetch_random_joke,
+                    response_set=self.get_joke_and_render,
                     question=Question(versions=['Was it funny?',
                                                 'Did you like this joke?', ],
                                       intent_list=[
@@ -114,23 +112,36 @@ class JokeEngine(Engine):
             ]
         )
 
-        super(JokeEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60)
+        super(JokeEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60, **kwargs)
 
-    @staticmethod
-    def fetch_random_joke():
+    def get_joke(self):
+        if self.engine_session and self.engine_session.get_target_object_id():
+            joke_id = self.engine_session.get_target_object_id()
+            joke = Joke.objects.get(id=joke_id)
+            return joke
+
         joke = Joke.fetch_random()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(joke.id)
+
+        return joke
+
+    def get_joke_and_render(self):
+        joke = self.get_joke()
         return '{main}<break time="1s"/>{punchline}'.format(main=joke.main, punchline=joke.punchline)
 
     def save_joke_like(self, **kwargs):
         from alexa.models import UserActOnContent
+        joke = self.get_joke()
         act = UserActOnContent(user=self.alexa_user.user,
                                verb='laughed at',
-                               object=Joke.objects.get(id=2))  # todo how to save the target object??
+                               object=joke)
         act.save()
 
 
 class NewsEngine(Engine):
-    def __init__(self, alexa_user: AUser):
+    def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=['Would you like to hear popular news around you?', ],  # todo should end headline
             reprompt=['Do you want to listen recent news?', ],
@@ -149,7 +160,7 @@ class NewsEngine(Engine):
             ]
         )
 
-        super(NewsEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60)
+        super(NewsEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=1*60, **kwargs)
 
     @staticmethod
     def fetch_random_news():
@@ -165,7 +176,7 @@ class NewsEngine(Engine):
 
 
 class MedicalEngine(Engine):
-    def __init__(self, alexa_user: AUser):
+    def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=[
                 "Have you taken your blood pressure measurements yet?",
@@ -195,7 +206,7 @@ class MedicalEngine(Engine):
             ],
         )
 
-        super(MedicalEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=15*60)
+        super(MedicalEngine, self).__init__(question=init_question, alexa_user=alexa_user, ttl=15*60, **kwargs)
 
     def save_blood_pressure(self, **kwargs):
         self.alexa_user.set_medical_state('blood_pressure', {
@@ -206,7 +217,7 @@ class MedicalEngine(Engine):
 
 
 class WeightEngine(Engine):
-    def __init__(self, alexa_user: AUser):
+    def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=[
                 "Have you taken your weight measurement yet?",
@@ -234,7 +245,7 @@ class WeightEngine(Engine):
             ],
         )
 
-        super(WeightEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+        super(WeightEngine, self).__init__(question=init_question, alexa_user=alexa_user, **kwargs)
 
     def save_weight(self, **kwargs):
         self.alexa_user.set_medical_state('weight', {
@@ -245,7 +256,7 @@ class WeightEngine(Engine):
 
 
 class AdEngine(Engine):
-    def __init__(self, alexa_user: AUser):
+    def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=[
                 "So, many seniors suffer from night-time leg cramps. Have you had one recently?",
@@ -269,7 +280,7 @@ class AdEngine(Engine):
 
             ]
         )
-        super(AdEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+        super(AdEngine, self).__init__(question=init_question, alexa_user=alexa_user, **kwargs)
 
 
 class TalkBitEngine(Engine):
@@ -277,7 +288,7 @@ class TalkBitEngine(Engine):
     Talking about somebody's user post
     The model class for the user post is "UserPost"
     """
-    def __init__(self, alexa_user: AUser):
+    def __init__(self, alexa_user: AUser, **kwargs):
         user = alexa_user.user
         self.user_action = self.fetch_user_post(user)
         user_post = self.user_action.action_object
@@ -305,7 +316,7 @@ class TalkBitEngine(Engine):
             ]
         )
 
-        super(TalkBitEngine, self).__init__(question=init_question, alexa_user=alexa_user)
+        super(TalkBitEngine, self).__init__(question=init_question, alexa_user=alexa_user, **kwargs)
 
     def mark_as_listened(self, **kwargs):
         user_listened = UserListened(action=self.user_action)
@@ -330,7 +341,7 @@ class TalkBitEngine(Engine):
 
 
 class OutroEngine(Engine):
-    def __init__(self, alexa_user: AUser):
+    def __init__(self, alexa_user: AUser, **kwargs):
         self.closings = [
             'That\'s it for now. Don\'t forget to come back by saying "Alexa, open Caressa"',
 
@@ -346,8 +357,7 @@ class OutroEngine(Engine):
             'you say "Alexa, open Caressa".'.format(alexa_user.user.first_name),
         ]
         super(OutroEngine, self).__init__(
-            question=EndState(intent_list=[]),
-            alexa_user=alexa_user, ttl=1
+            question=Question(intent_list=[]), alexa_user=alexa_user, ttl=1, **kwargs
         )
 
     def get_random_closing(self):

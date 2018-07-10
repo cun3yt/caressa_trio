@@ -252,6 +252,7 @@ class EngineSession(TimeStampedModel):
             return
         if self.is_ttl_past:
             self.state = 'expired'
+            self.save()
 
     def set_state_continue(self, additional_level=None, start_level=None, asked_question=None):
         self._set_state('continue',
@@ -264,6 +265,12 @@ class EngineSession(TimeStampedModel):
                         additional_level=additional_level,
                         start_level=start_level,
                         asked_question=asked_question)
+
+    def set_target_object_id(self, id):
+        self.data['target_object_id'] = id
+
+    def get_target_object_id(self):
+        return self.data.get('target_object_id', None)
 
     def _add_asked_question(self, question):
         self.data['asked_questions'].append(question)

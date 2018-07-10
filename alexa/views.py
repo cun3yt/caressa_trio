@@ -5,7 +5,7 @@ from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
 from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
-    engine_registration, NewsEngine, TalkBitEngine, EndState, OutroEngine
+    engine_registration, NewsEngine, TalkBitEngine, OutroEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render
@@ -15,6 +15,19 @@ from random import sample, random
 
 def main_view(request):
     return render(request, 'main.html')
+
+
+class TestSpawner:
+    """
+    This is intended for manually testing single engines
+    """
+    def __init__(self, a_user: AUser, *args, **kwargs):
+        self.a_user = a_user
+        pass
+
+    def spawn(self):
+        engine_name = 'JokeEngine'
+        return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user, engine_session=None)
 
 
 class BasicEngineSpawner:
@@ -94,9 +107,9 @@ class BasicEngineSpawner:
         [ computation: sum of n*p^n (for n: 1 to inf) ]
         :return:
         """
-        probability = 0.5
+        probability = 0.5   # probability of selecting
 
-        if random() < probability:
+        if random() < (1 - probability):
             return None
 
         return sample(self.filler_engines, 1)[0]
@@ -108,28 +121,36 @@ class BasicEngineSpawner:
         """
         if self.is_new_session:
             engine_name = self.greeting_engine
-            return get_engine_instance(engine_name, self.a_user)
+            return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user,
+                                       engine_session=None)
 
         available_timed_engines = self._get_available_timed_engines()
         available_notif_engines = self._get_available_notif_engines()
 
         if len(available_timed_engines) > 0 or len(available_notif_engines) > 0:
             engine_name = self._random_select(available_timed_engines + available_notif_engines)
-            return get_engine_instance(engine_name, self.a_user)
+            return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user, engine_session=None)
 
         engine_name = self._select_filler_engine()
         engine_name = self.outro_engine if engine_name is None else engine_name
 
-        return get_engine_instance(engine_name, self.a_user)
+        return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user, engine_session=None)
 
 
-def get_engine_instance(engine_name, alexa_user: AUser):
+def get_engine_instance(engine_name, alexa_user: AUser, engine_session: EngineSession=None):
+    """
+    :param engine_name:
+    :param alexa_user:
+    :param engine_session: Storage for the engine
+    :return: EngineSession
+    """
     engine_class = globals()[engine_name]
-    return engine_class(alexa_user=alexa_user)
+    engine_object = engine_class(alexa_user=alexa_user, engine_session=engine_session)
+    return engine_object
 
 
 class Conversation:
-    def __init__(self, request):
+    def __init__(self, request, spawner_class_name):
         req_body = json.loads(request.body)
         session_id = deep_get(req_body, 'session.sessionId', '')
         user_id = deep_get(req_body, 'context.System.user.userId', '')
@@ -144,11 +165,12 @@ class Conversation:
             'intent_name': deep_get(req_body, 'request.intent.name'),
         }
 
-        self.spawner = BasicEngineSpawner(self.alexa_user,
-                                          self.is_new_session,
-                                          self.engine_session,
-                                          self.req['type'],
-                                          self.req['intent_name'])
+        spawner_class = globals()[spawner_class_name]
+        self.spawner = spawner_class(self.alexa_user,
+                                     self.is_new_session,
+                                     self.engine_session,
+                                     self.req['type'],
+                                     self.req['intent_name'])
 
         log('-----')
         log(" TYPE: {}\n INTENT: {}".format(self.req.get('type'), self.req.get('intent_name')))
@@ -176,7 +198,7 @@ class Conversation:
     @staticmethod
     def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_name, request_intent):
         __level = session.data.get('level')
-        engine = get_engine_instance(session.name, alexa_user)
+        engine = get_engine_instance(engine_name=session.name, alexa_user=alexa_user, engine_session=session)
 
         levels = __level.split('.')
 
@@ -245,6 +267,7 @@ class Conversation:
                                           ttl=follow_engine.ttl)
                 e_session.data = {'closing': closing}
                 e_session.save()
+                follow_engine.engine_session = e_session
                 self.response['text'] = '{}. By the way {}'.format(self.response['text'], closing)
                 self.response['should_session_end'] = True
                 return
@@ -257,6 +280,7 @@ class Conversation:
                                       ttl=follow_engine.ttl)
             e_session.data = {'level': "question", 'asked_questions': [question]}
             e_session.save()
+            follow_engine.engine_session = e_session
             self.response['text'] = '{} {}'.format(self.response['text'], question)
 
     def run(self):
@@ -280,7 +304,9 @@ class Conversation:
 
         elif self.is_the_engine_session_going_on:
             log(" (2) Continuing Engine Session and there is NO intent")
-            engine = get_engine_instance(self.engine_session.name, self.alexa_user)
+            engine = get_engine_instance(engine_name=self.engine_session.name,
+                                         alexa_user=self.alexa_user,
+                                         engine_session=self.engine_session)
             question = engine.question.asked_question
             self.response['text'] = '{} {}'.format(self.response['text'], question)
             self.engine_session.set_state_continue(start_level='question')
@@ -294,15 +320,15 @@ class Conversation:
                                       ttl=engine.ttl)
             e_session.data = {'level': 'question', 'asked_questions': [question]}
             e_session.save()
+            engine.engine_session = e_session
             self.response['text'] = '{} {}'.format(self.response['text'], question)
             log(" Response: {}".format(self.response['text']))
 
 
-# todo 1. Engine triggering another engine
-# todo 2. Value (slot) confirmation
 @csrf_exempt
 def alexa_io(request):
-    conversation = Conversation(request)
+    conversation = Conversation(request, 'BasicEngineSpawner')
+    # conversation = Conversation(request, 'TestSpawner')
     conversation.run()
     text_response = conversation.response['text']
     return JsonResponse(alexa_render(speech=text_response,
