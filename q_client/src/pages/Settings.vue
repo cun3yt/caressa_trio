@@ -2,144 +2,215 @@
   <q-page padding class="row justify-center">
     <div class="main-content">
       <q-list>
-        <q-list-header>User controls</q-list-header>
-        <q-item>
-          <q-item-main>
-            <q-item-tile label>Content filtering</q-item-tile>
-            <q-item-tile sublabel>Set the content filtering level to restrict apps that can be downloaded</q-item-tile>
-          </q-item-main>
-        </q-item>
-        <q-item>
-          <q-item-main>
-            <q-item-tile label>Password</q-item-tile>
-            <q-item-tile sublabel>Require password for purchase or use password to restrict purchase</q-item-tile>
-          </q-item-main>
-        </q-item>
-        <q-item-separator />
         <q-list-header>General</q-list-header>
-        <q-item tag="label">
+        <q-item>
           <q-item-side>
-            <q-checkbox v-model="checked_one" />
+            <q-item-tile icon="person outline" color="primary" />
           </q-item-side>
           <q-item-main>
-            <q-item-tile label>Notifications</q-item-tile>
-            <q-item-tile sublabel>Notify me about updates to apps or games that I downloaded</q-item-tile>
+            <q-item-tile label>Edit Profile</q-item-tile>
+            <q-item-tile sublabel>Change your circle profile</q-item-tile>
           </q-item-main>
-        </q-item>
-        <q-item tag="label">
           <q-item-side>
-            <q-checkbox v-model="checked_two" color="secondary" />
+            <q-btn
+              color="primary"
+              size="sm"
+              icon="create"
+            />
+          </q-item-side>
+        </q-item>
+        <q-item>
+          <q-item-side>
+            <q-item-tile icon="help outline" color="primary" />
           </q-item-side>
           <q-item-main>
-            <q-item-tile label>Sound</q-item-tile>
-            <q-item-tile sublabel>Auto-update apps at anytime. Data charges may apply</q-item-tile>
+            <q-item-tile label>Help</q-item-tile>
+            <q-item-tile sublabel>Ask us anything</q-item-tile>
           </q-item-main>
-        </q-item>
-        <q-item tag="label">
           <q-item-side>
-            <q-checkbox v-model="checked_three" color="red" />
+            <q-btn
+              color="primary"
+              size="sm"
+              icon="dialpad"
+            />
           </q-item-side>
-          <q-item-main>
-            <q-item-tile label>Auto-add widgets</q-item-tile>
-            <q-item-tile sublabel>Automatically add home screen widgets</q-item-tile>
-          </q-item-main>
         </q-item>
+        <q-collapsible highlight>
+          <template slot="header">
+            <q-item-side icon="feedback" color="primary" small>
+            </q-item-side>
+            <q-item-main label="Submit Feedback" />
+          </template>
+            <textarea placeholder="What went wrong?" class="full-width no-border"></textarea>
+        </q-collapsible>
       </q-list>
-
+      <div class="q-pa-sm"></div>
       <q-list>
-        <q-list-header>Radios</q-list-header>
-        <q-item link tag="label">
-          <q-item-side>
-            <q-radio v-model="option" val="opt1" />
-          </q-item-side>
-          <q-item-main label="Option 1" />
-        </q-item>
-        <q-item link tag="label">
-          <q-item-side>
-            <q-radio color="secondary" v-model="option" val="opt2" />
-          </q-item-side>
-          <q-item-main>
-            <q-item-tile label>Option 2</q-item-tile>
-            <q-item-tile sublabel>Allows notifications</q-item-tile>
-          </q-item-main>
-        </q-item>
-        <q-item link tag="label">
-          <q-item-side>
-            <q-radio color="amber" v-model="option" val="opt3" />
-          </q-item-side>
-          <q-item-main>
-            <q-item-tile label>Option 3</q-item-tile>
-            <q-item-tile sublabel lines="3">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</q-item-tile>
-          </q-item-main>
-        </q-item>
-        <q-item-separator />
-        <q-list-header>Toggles</q-list-header>
-        <q-item link tag="label">
-          <q-item-main label="Events and reminders" />
-          <q-item-side right>
-            <q-toggle v-model="checked_one" />
-          </q-item-side>
-        </q-item>
-        <q-item link tag="label" multiline>
-          <q-item-main>
-            <q-item-tile label>Events and reminders</q-item-tile>
-            <q-item-tile sublabel>Lorem ipsum</q-item-tile>
-          </q-item-main>
-          <q-item-side right>
-            <q-toggle v-model="checked_two" color="secondary" />
-          </q-item-side>
-        </q-item>
-        <q-item link tag="label" multiline>
-          <q-item-main>
-            <q-item-tile label>Events and reminders</q-item-tile>
-            <q-item-tile sublabel lines="3">
-              Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed
-              do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-              Ut enim ad minim veniam, quis nostrud exercitation ullamco
-              laboris nisi ut aliquip ex ea commodo consequat. Duis aute
-            </q-item-tile>
-          </q-item-main>
-          <q-item-side right>
-            <q-toggle v-model="checked_three" color="amber" />
-          </q-item-side>
-        </q-item>
-        <q-item-separator />
-        <q-list-header>Selects</q-list-header>
+        <q-list-header>
+         <q-item-main label="Circle Control"></q-item-main>
+        </q-list-header>
+            <q-list highlight>
+              <q-item>
+                <q-item-side>
+                  <q-item-tile icon="email" color="primary"/>
+                </q-item-side>
+                <q-item-main>
+                  <q-input v-model="email" type="email" stack-label="New Member Mail" />
+                </q-item-main>
+              </q-item>
+              <q-item>
+                <q-item-side>
+                  <q-item-tile icon="style" color="primary" />
+                </q-item-side>
+                <q-item-main>
+                <q-btn-dropdown
+                  color="secondary"
+                  label="Pick Role"
+                >
+                  <q-list link>
+                    <q-item v-close-overlay @click.native="handlerFunction">
+                      <q-item-side icon="supervisor account" inverted color="secondary" />
+                      <q-item-main>
+                        <q-item-tile label>Family Member</q-item-tile>
+                      </q-item-main>
+                    </q-item>
+                    <q-item v-close-overlay @click.native="handlerFunction">
+                      <q-item-side icon="person outline" inverted color="secondary" />
+                      <q-item-main>
+                        <q-item-tile label>Caregiver</q-item-tile>
+                      </q-item-main>
+                    </q-item>
+                    <q-item v-close-overlay @click.native="handlerFunction">
+                      <q-item-side icon="business" inverted color="secondary" />
+                      <q-item-main>
+                        <q-item-tile label>Caregiver Org.</q-item-tile>
+                      </q-item-main>
+                    </q-item>
+                  </q-list>
+                </q-btn-dropdown>
+                  </q-item-main>
+              </q-item>
+              <q-item>
+                <q-item-main>
+                <q-btn
+                  label="Add"
+                  color="primary"
+                  size="sm"
+                  icon="add"
+                />
+              </q-item-main>
+              </q-item>
+            </q-list>
+        <q-collapsible icon="supervised_user_circle" label="Circle Members">
+            <q-list highlight inset-separator>
+              <q-item>
+                <q-item-side>
+                  <q-item-tile icon="person" color="primary" />
+                </q-item-side>
+                <q-item-main
+                  label="Marie D."
+                  label-lines="1"
+                  sublabel="Caretaker"
+                  sublabel-lines="1"
+                />
+                <q-btn
+                  color="primary"
+                  size="sm"
+                  icon="create"
+                />
+              </q-item>
+              <q-item>
+                <q-item-side>
+                  <q-item-tile icon="supervisor account" color="primary" />
+                </q-item-side>
+                <q-item-main
+                  label="Andrew D."
+                  label-lines="1"
+                  sublabel="Family"
+                  sublabel-lines="1"
+                />
+                <q-btn
+                  color="primary"
+                  size="sm"
+                  icon="create"
+                />
+              </q-item>
+              <q-item>
+                <q-item-side>
+                  <q-item-tile icon="supervisor account" color="primary" />
+                </q-item-side>
+                <q-item-main
+                  label="Lisa W."
+                  label-lines="1"
+                  sublabel="Family"
+                  sublabel-lines="1"
+                />
+                <q-btn
+                  color="primary"
+                  size="sm"
+                  icon="create"
+                />
+              </q-item>
+              <q-item>
+                <q-item-side>
+                  <q-item-tile icon="person outline" color="primary" />
+                </q-item-side>
+                <q-item-main
+                  label="Tracy S."
+                  label-lines="1"
+                  sublabel="Caregiver"
+                  sublabel-lines="1"
+                />
+                <q-btn
+                  color="primary"
+                  size="sm"
+                  icon="create"
+                />
+              </q-item>
+              <q-item>
+                <q-item-side>
+                  <q-item-tile icon="business" color="primary" />
+                </q-item-side>
+                <q-item-main
+                  label="Longevity Corp."
+                  label-lines="1"
+                  sublabel="Caregiver Org."
+                  sublabel-lines="1"
+                />
+                <q-btn
+                  color="primary"
+                  size="sm"
+                  icon="create"
+                />
+              </q-item>
+            </q-list>
+          </q-collapsible>
+      </q-list>
+      <div class="q-pa-sm"></div>
+      <q-list highlight>
+        <q-list-header>Caressa</q-list-header>
         <q-item>
-          <q-item-side icon="supervisor_account" />
           <q-item-main>
-            <q-select class="full-width" v-model="select" :options="selectOptions" />
+            <q-item-tile label>About</q-item-tile>
+            <q-item-tile sublabel>About Caressa</q-item-tile>
           </q-item-main>
         </q-item>
         <q-item>
-          <q-item-side icon="supervisor_account" />
           <q-item-main>
-            <q-select class="full-width" multiple toggle v-model="multipleSelect" :options="selectOptions" />
+            <q-item-tile label>Version</q-item-tile>
+            <q-item-tile sublabel>0.1.1</q-item-tile>
           </q-item-main>
         </q-item>
-        <q-item-separator />
-        <q-list-header>Ranges</q-list-header>
         <q-item>
-          <q-item-side icon="volume_down" />
           <q-item-main>
-            <q-slider v-model="range" :min="0" :max="50" label />
-          </q-item-main>
-          <q-item-side right icon="volume_up" />
-        </q-item>
-        <q-item>
-          <q-item-side icon="volume_down" />
-          <q-item-main>
-            <q-slider v-model="range" :min="0" :max="50" label color="amber" />
-          </q-item-main>
-          <q-item-side right icon="volume_up" />
-        </q-item>
-        <q-item>
-          <q-item-side icon="monetization_on" />
-          <q-item-main>
-            <q-range v-model="doubleRange" :min="0" :max="50" label color="secondary" />
+            <q-item-tile label>Reach Us</q-item-tile>
+            <q-item-tile sublabel>info@caressa.ai</q-item-tile>
           </q-item-main>
         </q-item>
       </q-list>
+        <q-item>
+          <q-btn style="background:white; color:red" class="full-width" label="Sign Out Caressa" />
+      </q-item>
     </div>
   </q-page>
 </template>

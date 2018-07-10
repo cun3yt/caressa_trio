@@ -75,7 +75,9 @@ module.exports = function (ctx) {
         'QSlider',
         'QCardActions',
         'QChip',
-        'QScrollArea'
+        'QScrollArea',
+        'QBtnDropdown',
+        'QCollapsible',
       ],
       directives: [
         'Ripple'
