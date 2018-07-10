@@ -13,6 +13,7 @@ django-filter==1.1.0
 markdown==2.6.11
 django-cors-headers==2.1.0
 requests==2.18.4
+pusher==2.0.1
 icalendar==4.0.1
 -e git+git://github.com/cun3yt/icalevents.git@5831b1ee1f969bf7c74a1c8a5b287ecf9b7f49ce#egg=icalevents
 daiquiri==1.3.0

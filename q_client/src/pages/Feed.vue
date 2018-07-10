@@ -38,6 +38,9 @@ import NewsFeed from 'components/NewsFeed'
 import UserPostFeed from 'components/UserPostFeed'
 import RegularFeed from 'components/RegularFeed'
 import Comments from 'components/Comments'
+import Pusher from 'pusher-js'
+
+// Pusher.logToConsole = true // for logging purpose
 
 export default {
   name: 'feed',
@@ -53,7 +56,8 @@ export default {
     return {
       pageNumber: 0,
       feeds: [],
-      moreFeedsNeeded: false
+      moreFeedsNeeded: false,
+      feedPushed: false
     }
   },
   methods: {
@@ -76,6 +80,33 @@ export default {
             vm.addFeeds()
           }
         })
+    },
+    pushFeeds () {
+      const pusher = new Pusher(this.$root.$options.pusherConfig.pusherKey, {cluster: this.$root.$options.pusherConfig.pusherCluster})
+      const channel = pusher.subscribe(this.$root.$options.pusherConfig.channelName)
+      let vm = this
+      channel.bind('feeds', function (data) {
+        vm.feeds.unshift(data)
+        vm.pushNotif()
+      })
+    },
+    pushNotif () {
+      this.$q.notify({
+        color: 'positive',
+        position: 'bottom-left',
+        actions: [
+          {
+            label: 'One New Feed Arrived',
+            icon: 'arrow_upward',
+            handler: () => {
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+              })
+            }
+          }
+        ]
+      })
     }
   },
   watch: {
@@ -93,6 +124,7 @@ export default {
       this.moreFeedsNeeded = this.bottomVisible()
     })
     this.addFeeds()
+    this.pushFeeds()
   }
 }
 </script>

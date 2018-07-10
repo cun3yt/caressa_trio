@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
 import os
 import dj_database_url
+import pusher
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -167,3 +168,10 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'alexa.api.configuration.pagination.ExtendedPageNumberPagination',
     'PAGE_SIZE': 5,
 }
+
+# Pusher ENV variables
+pusher_app_id = os.environ.get('PUSHER_APP_ID')
+pusher_key_id = os.environ.get('PUSHER_KEY')
+pusher_secret = os.environ.get('PUSHER_SECRET')
+pusher_cluster = os.environ.get('PUSHER_CLUSTER')
+pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pusher_secret, cluster=pusher_cluster)

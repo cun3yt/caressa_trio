@@ -118,3 +118,12 @@ In order to do development against an Alexa skill each developer will need one A
     * Create reverse SSH for global-local server via service Serveo. Example run is like this: `ssh -R letatio.serveo.net:80:localhost:9900 serveo.net`. The good thing about Serveo is that it tries to stick with the URL based on the IP and it is for free. It is not always available so keep `ngrok` in mind, too.
 1. Once you have worldwide accessible HTTP server you'll need to tell it to the Alexa on its web dashboard, it must be under endpoints.
 1. Open the test tab on Alexa web dashboard and write `open Caressa` to test the connection to your local machine.
+
+## Setting Pusher For Live Updates on Mobile App
+* Export these environment variables. You can put these in `.envrc` if you are using direnv.
+    * PUSHER_APP_ID set to 'some_app_id': `export PUSHER_APP_ID='some_app_id'`
+    * PUSHER_KEY set to 'some_pusher_key': `export PUSHER_KEY='some_pusher_key'`
+    * PUSHER_SECRET set to 'some_pusher_secret': `export PUSHER_SECRET='some_pusher_secret'`
+    * PUSHER_CLUSTER set to 'us2': `export PUSHER_CLUSTER='us2'`
+    * Don't forget to add these environment variables into pycharm if you are using it.
+    
