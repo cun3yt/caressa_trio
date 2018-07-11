@@ -175,3 +175,7 @@ pusher_key_id = os.environ.get('PUSHER_KEY')
 pusher_secret = os.environ.get('PUSHER_SECRET')
 pusher_cluster = os.environ.get('PUSHER_CLUSTER')
 pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pusher_secret, cluster=pusher_cluster)
+
+CONVERSATION_ENGINES = {
+    'ttl': 10*60,
+}

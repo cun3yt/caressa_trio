@@ -4,196 +4,332 @@ from .models import AUser, Session, EngineSession
 from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
-from alexa.engines import Question, EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
-    engine_registration, NewsEngine, TalkBitEngine
+from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
+    engine_registration, NewsEngine, TalkBitEngine, OutroEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render
 from utilities.logger import log
-
-
-# todo what about scheduling the postponed td items?
-# postpone types:
-# A. next session: already covered with 'continue' engine-session type
-# B. for specified amount of time...
+from random import sample, random
 
 
 def main_view(request):
     return render(request, 'main.html')
 
 
-def get_engine_from_cascade(alexa_user: AUser):
-    engine = get_engine_from_schedule(alexa_user)
-    if engine:
-        return engine
+class TestSpawner:
+    """
+    This is intended for manually testing single engines
+    """
+    def __init__(self, a_user: AUser, *args, **kwargs):
+        self.a_user = a_user
+        pass
 
-    engine = get_engine_from_critical_list(alexa_user)
-
-    if engine:
-        return engine
-
-    return get_engine_from_filler(alexa_user)
+    def spawn(self):
+        engine_name = 'JokeEngine'
+        return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user, engine_session=None)
 
 
-def get_engine_from_schedule(alexa_user: AUser):
-    log("get_engine_from_schedule with AUser::{}".format(alexa_user.id))
+class BasicEngineSpawner:
+    def __init__(self, a_user: AUser, is_new_session: bool, last_engine_session: EngineSession, request_type,
+                 intent_name):
+        self.a_user = a_user
+        self.is_new_session = is_new_session
+        self.last_engine_session = last_engine_session
+        self.request_type = request_type
+        self.intent_name = intent_name
 
-    schedule = alexa_user.engine_schedule.encode(encoding='UTF-8')
-    events = [] #query_events(string_content=schedule, start=datetime.now(), end=(datetime.now() + timedelta(minutes=10)), fix_apple=True)
+        self.greeting_engine = 'EmotionalEngine'
 
-    # filler or info-collector engines will come here..
-    engine_name = 'NewsEngine'
-    #engine_name = None
+        self.timed_engines = [
+            'MedicalEngine',
+            'WeightEngine',
+        ]
+        self.notif_engines = [
+            'TalkBitEngine',
+        ]
+        self.filler_engines = [
+            'NewsEngine',
+            'JokeEngine',
+            'AdEngine',
+        ]
+        self.outro_engine = 'OutroEngine'
 
-    log("# events fetched from schedule: {}".format(len(events)))
+    def _get_engine_from_schedule(self):
+        alexa_user = self.a_user
+        log("get_engine_from_schedule with AUser::{}".format(alexa_user.id))
 
-    for event in events:
-        log(" >> event in question: {}".format(event.summary))
-        if EngineSession.objects.filter(created__range=(event.start, event.end), state='done').count() == 0:
-            log("  This is being EXECUTED: {}".format(event.summary))
-            engine_name = event.summary
-            break
-        log(" PASSED...")
+        schedule = alexa_user.engine_schedule.encode(encoding='UTF-8')
+        events = query_events(string_content=schedule,
+                              start=datetime.now(),
+                              end=(datetime.now() + timedelta(minutes=10)),
+                              fix_apple=True)
 
-    if not engine_name:
-        return None
+        engine_name = None
 
+        log("# events fetched from schedule: {}".format(len(events)))
+
+        for event in events:
+            log(" >> event in question: {}".format(event.summary))
+            if EngineSession.objects.filter(created__range=(event.start, event.end),
+                                            state='done',
+                                            name=event.summary).count() == 0:
+                log("  This is being EXECUTED: {}".format(event.summary))
+                engine_name = event.summary
+                break
+            log(" PASSED...")
+
+        if not engine_name:
+            return None
+
+        return engine_name
+
+    def _get_available_timed_engines(self):
+        engine_name = self._get_engine_from_schedule()
+        return [] if engine_name is None else [engine_name]
+
+    def _get_available_notif_engines(self):
+        return ['TalkBitEngine'] if TalkBitEngine.fetch_user_post(self.a_user.user) else []
+
+    @staticmethod
+    def _random_select(engine_list):
+        """
+        todo Usage statistics based selection may be better here, stats including last run time of engines
+        :param engine_list:
+        :return: str
+        """
+        return sample(engine_list, 1)[0]
+
+    def _select_filler_engine(self):
+        """
+        todo Usage statistics and user preferences will play role here, stats including last run time of engines
+        expected length is set to 2 with probability
+        [ computation: sum of n*p^n (for n: 1 to inf) ]
+        :return:
+        """
+        probability = 0.5   # probability of selecting
+
+        if random() < (1 - probability):
+            return None
+
+        return sample(self.filler_engines, 1)[0]
+
+    def spawn(self):
+        """
+        engine selection flow: https://screencast.com/t/jPMr2bcaZb
+        :return:
+        """
+        if self.is_new_session:
+            engine_name = self.greeting_engine
+            return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user,
+                                       engine_session=None)
+
+        available_timed_engines = self._get_available_timed_engines()
+        available_notif_engines = self._get_available_notif_engines()
+
+        if len(available_timed_engines) > 0 or len(available_notif_engines) > 0:
+            engine_name = self._random_select(available_timed_engines + available_notif_engines)
+            return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user, engine_session=None)
+
+        engine_name = self._select_filler_engine()
+        engine_name = self.outro_engine if engine_name is None else engine_name
+
+        return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user, engine_session=None)
+
+
+def get_engine_instance(engine_name, alexa_user: AUser, engine_session: EngineSession=None):
+    """
+    :param engine_name:
+    :param alexa_user:
+    :param engine_session: Storage for the engine
+    :return: EngineSession
+    """
     engine_class = globals()[engine_name]
-    return engine_class(alexa_user=alexa_user)
+    engine_object = engine_class(alexa_user=alexa_user, engine_session=engine_session)
+    return engine_object
 
 
-def get_engine_from_critical_list(alexa_user: AUser):
-    log("get_engine_from_critical_list for AUser: {}".format(alexa_user.id))
-    return None
+class Conversation:
+    def __init__(self, request, spawner_class_name):
+        req_body = json.loads(request.body)
+        session_id = deep_get(req_body, 'session.sessionId', '')
+        user_id = deep_get(req_body, 'context.System.user.userId', '')
 
+        self.alexa_user = AUser.objects.get_or_create(alexa_id=user_id)[0]
+        self.engine_session = self.alexa_user.last_engine_session()
+        self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id, alexa_user=self.alexa_user)
 
-def get_engine_from_filler(alexa_user: AUser):
-    log('get_engine_from_filler for AUser: {}'.format(alexa_user.id))
-    return None
+        self.req = {
+            'type': deep_get(req_body, 'request.type'),
+            'intent': deep_get(req_body, 'request.intent'),
+            'intent_name': deep_get(req_body, 'request.intent.name'),
+        }
 
+        spawner_class = globals()[spawner_class_name]
+        self.spawner = spawner_class(self.alexa_user,
+                                     self.is_new_session,
+                                     self.engine_session,
+                                     self.req['type'],
+                                     self.req['intent_name'])
 
-def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_name, request_intent):
-    __level = session.data.get('level')
-    engine_class = globals()[session.name]
-    engine = engine_class(alexa_user=alexa_user)
+        log('-----')
+        log(" TYPE: {}\n INTENT: {}".format(self.req.get('type'), self.req.get('intent_name')))
+        log(" FULL INTENT: {}".format(self.req.get('intent')))
+        log("Engine Session? {}\n"
+            "Session State: {}\n"
+            "Intent: {}".format("Yes" if self.engine_session else "No",
+                                self.engine_session.state if self.engine_session else "None",
+                                self.req.get('intent_name')))
 
-    levels = __level.split('.')
+        self.response = {
+            'text': '',
+            'should_session_end': False,
+        }
 
-    traverser = engine
+    @property
+    def is_the_engine_session_going_on(self):
+        # if self.engine_session
+        return self.engine_session and self.engine_session.is_continuing
 
-    for lev in levels:
-        # traverser = traverser.question if lev == 'question' else traverser.intents.get(lev)
-        if lev == 'question':
-            traverser = traverser.question
-        elif lev == 'profile_builder':
-            traverser = traverser.profile_builder
-        else:
-            traverser = traverser.intents.get(lev)
+    @property
+    def is_there_an_intent(self):
+        return self.req.get('intent') is not None
 
-    intent = traverser.intents.get(intent_name)
+    @staticmethod
+    def continue_engine_session(session: EngineSession, alexa_user: AUser, intent_name, request_intent):
+        __level = session.data.get('level')
+        engine = get_engine_instance(engine_name=session.name, alexa_user=alexa_user, engine_session=session)
 
-    if intent.process_fn:
-        intent.process_fn(intent=request_intent)
+        levels = __level.split('.')
 
-    return intent.get_random_response(), intent
+        traverser = engine
 
+        for lev in levels:
+            if lev == 'question':
+                traverser = traverser.question
+            elif lev == 'profile_builder':
+                traverser = traverser.profile_builder
+            else:
+                traverser = traverser.intents.get(lev)
 
-# todo 2. Engine triggering another engine
-# todo 3. Value (slot) confirmation
-# todo 4. Simplify this fn.
-@csrf_exempt
-def alexa_io(request):
-    req_body = json.loads(request.body)
+        intent = traverser.intents.get(intent_name)
 
-    session_id = deep_get(req_body, 'session.sessionId', '')
-    user_id = deep_get(req_body, 'context.System.user.userId', '')
+        if intent.process_fn:
+            intent.process_fn(intent=request_intent)
 
-    alexa_user = AUser.objects.get_or_create(alexa_id=user_id)[0]
-    engine_session = alexa_user.last_engine_session()
+        return intent.get_random_response(), intent
 
-    sess, is_new_session = Session.objects.get_or_create(alexa_id=session_id, alexa_user=alexa_user)
-    # alexa_req = Request.objects.create(session=sess, request=req_body)
-
-    req_type = deep_get(req_body, 'request.type')
-    req_intent = deep_get(req_body, 'request.intent')
-    intent_name = deep_get(req_body, 'request.intent.name')
-
-    text_response = 'Welcome, ' if req_type == 'LaunchRequest' else ''
-
-    if req_type == 'SessionEndedRequest':
-        log("~~~ Session ended request came ~~~")
-        return JsonResponse(alexa_render(speech='OK'))
-
-    log('-----')
-    log(" TYPE: {}\n INTENT: {}".format(req_type, intent_name))
-    log(" FULL INTENT: {}".format(req_intent))
-    log(
-        "Engine Session? {}\nSession State: {}\nIntent: {}".format("Yes" if engine_session else "No",
-                                                                   engine_session.state if engine_session else "None",
-                                                                   intent_name))
-
-    log("START: ")
-    if engine_session and engine_session.state == 'continue' and req_intent:
-        log(" Continuing Engine Session and there is an INTENT")
-        response, intent = continue_engine_session(engine_session, alexa_user, intent_name, req_intent)
-        text_response = "{}{}".format(text_response, response)
-
-        if intent.engine_session:
+    def _wire_brain_connections_post_intent(self, engine_intent_object):
+        if engine_intent_object.engine_session:         # todo is this if/else necessary??
             # if the intent has specific direction on engine session it takes precedence
-            engine_session.state = intent.engine_session
+            self.engine_session.state = engine_intent_object.engine_session
         else:
-            engine_session.state = 'done' if intent.is_end_state() else 'continue'  # todo: Fix this fucked up logic. Goes crazy below!!
+            if engine_intent_object.is_end_state():
+                self.engine_session.set_state_done()
+            else:
+                self.engine_session.set_state_continue()
 
-        if intent.end_session:  # end the alexa session
-            engine_session.data['level'] = 'question'   # start over in the next session
-            engine_session.save()
-            return JsonResponse(alexa_render(speech=text_response, should_session_end=True))
+        if engine_intent_object.end_session:  # end the alexa session
+            self.engine_session.set_state_continue(start_level='question')
+            self.engine_session.save()
+            self.response['should_session_end'] = True
+            return
 
         # "profile builder execution" if the user don't have it in her profile.
-        if intent.profile_builder and (alexa_user.profile_get(intent.profile_builder.key) is None):
-            engine_session.data['level'] = '{level}.{intent_name}.profile_builder'.format(level=engine_session.data['level'],
-                                                                                          intent_name=intent_name)
-            engine_session.data['asked_questions'].append(intent.profile_builder.asked_question)
-            engine_session.state = 'continue'
-            engine_session.save()
-            text_response = '{} {}'.format(text_response, intent.profile_builder.asked_question)
+        if engine_intent_object.profile_builder and (self.alexa_user.profile_get(engine_intent_object.profile_builder.key) is None):
+            self.engine_session.set_state_continue(
+                additional_level='{intent}.profile_builder'.format(intent=self.req.get('intent_name')),
+                asked_question=engine_intent_object.profile_builder.asked_question
+            )
+            self.engine_session.save()
+            self.response['text'] = '{} {}'.format(self.response['text'],
+                                                   engine_intent_object.profile_builder.asked_question)
 
-        elif not intent.is_end_state():
-            engine_session.data['level'] = '{level}.{intent_name}.question'.format(level=engine_session.data['level'],
-                                                                                   intent_name=intent_name)
-            engine_session.data['asked_questions'].append(intent.question.asked_question)
-            engine_session.state = 'continue'
-            engine_session.save()
-            text_response = '{} {}'.format(text_response, intent.question.asked_question)
+        elif not engine_intent_object.is_end_state():
+            self.engine_session.set_state_continue(
+                additional_level='{intent}.question'.format(intent=self.req.get('intent_name')),
+                asked_question=engine_intent_object.question.asked_question
+            )
+            self.engine_session.save()
+            self.response['text'] = '{} {}'.format(self.response['text'],
+                                                   engine_intent_object.question.asked_question)
 
         else:
-            engine_session.data['level'] = '{level}.{intent_name}'.format(level=engine_session.data['level'],
-                                                                          intent_name=intent_name)
-            engine_session.state = 'done'
-            engine_session.save()
-            follow_engine = get_engine_from_schedule(alexa_user=alexa_user)
+            self.engine_session.set_state_done(additional_level='{intent}'.format(intent=self.req.get('intent_name')))
+            self.engine_session.save()
+            follow_engine = self.spawner.spawn()
+
+            if isinstance(follow_engine, OutroEngine):
+                closing = follow_engine.get_random_closing()
+                e_session = EngineSession(user=self.alexa_user,
+                                          name=follow_engine.__class__.__name__,
+                                          state='done',
+                                          ttl=follow_engine.ttl)
+                e_session.data = {'closing': closing}
+                e_session.save()
+                follow_engine.engine_session = e_session
+                self.response['text'] = '{}. By the way {}'.format(self.response['text'], closing)
+                self.response['should_session_end'] = True
+                return
+
             question = follow_engine.question.asked_question
 
-            e_session = EngineSession(user=alexa_user, name=follow_engine.__class__.__name__, state='continue')
+            e_session = EngineSession(user=self.alexa_user,
+                                      name=follow_engine.__class__.__name__,
+                                      state='continue',
+                                      ttl=follow_engine.ttl)
             e_session.data = {'level': "question", 'asked_questions': [question]}
             e_session.save()
-            text_response = '{} {}'.format(text_response, question)
-    elif engine_session and engine_session.state == 'continue':
-        log(" Continuing Engine Session and there is NO intent")
-        engine_class = globals()[engine_session.name]
-        engine = engine_class(alexa_user=alexa_user)
-        question = engine.question.asked_question
-        text_response = '{} {}'.format(text_response, question)
-        engine_session.data['level'] = 'question'
-        engine_session.save()
-    else:
-        log(" No continuing engine session (must be 'open caressa')")
-        engine = get_engine_from_schedule(alexa_user)
-        question = engine.question.asked_question
-        e_session = EngineSession(user=alexa_user, name=engine.__class__.__name__, state='continue')
-        e_session.data = {'level': 'question', 'asked_questions': [question]}
-        e_session.save()
-        text_response = '{} {}'.format(text_response, question)
-        log(" Response: {}".format(text_response))
+            follow_engine.engine_session = e_session
+            self.response['text'] = '{} {}'.format(self.response['text'], question)
 
-    return JsonResponse(alexa_render(speech=text_response))
+    def run(self):
+        self.response['text'] = 'Welcome, ' if self.req['type'] == 'LaunchRequest' else ''
+
+        if self.req['type'] == 'SessionEndedRequest':
+            log("~~~ Session ended request came ~~~")
+            return JsonResponse(alexa_render(speech='OK, thanks for using Caressa'))
+
+        log("START: ")
+
+        if self.is_the_engine_session_going_on and self.is_there_an_intent:
+            log(" (1) Continuing Engine Session and there is an INTENT")
+            response, engine_intent_object = self.continue_engine_session(self.engine_session,
+                                                                          self.alexa_user,
+                                                                          self.req.get('intent_name'),
+                                                                          self.req.get('intent'))
+            self.response['text'] = "{}{}".format(self.response['text'], response)
+
+            self._wire_brain_connections_post_intent(engine_intent_object)
+
+        elif self.is_the_engine_session_going_on:
+            log(" (2) Continuing Engine Session and there is NO intent")
+            engine = get_engine_instance(engine_name=self.engine_session.name,
+                                         alexa_user=self.alexa_user,
+                                         engine_session=self.engine_session)
+            question = engine.question.asked_question
+            self.response['text'] = '{} {}'.format(self.response['text'], question)
+            self.engine_session.set_state_continue(start_level='question')
+            self.engine_session.save()
+
+        else:
+            log(" (3) No continuing engine session (must be 'open caressa')")
+            engine = self.spawner.spawn()
+            question = engine.question.asked_question
+            e_session = EngineSession(user=self.alexa_user, name=engine.__class__.__name__, state='continue',
+                                      ttl=engine.ttl)
+            e_session.data = {'level': 'question', 'asked_questions': [question]}
+            e_session.save()
+            engine.engine_session = e_session
+            self.response['text'] = '{} {}'.format(self.response['text'], question)
+            log(" Response: {}".format(self.response['text']))
+
+
+@csrf_exempt
+def alexa_io(request):
+    conversation = Conversation(request, 'BasicEngineSpawner')
+    # conversation = Conversation(request, 'TestSpawner')
+    conversation.run()
+    text_response = conversation.response['text']
+    return JsonResponse(alexa_render(speech=text_response,
+                                     should_session_end=conversation.response.get('should_session_end')))

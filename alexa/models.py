@@ -17,6 +17,9 @@ from actstream.models import Action
 from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
+from caressa.settings import CONVERSATION_ENGINES
+from datetime import timedelta
+from django.utils import timezone
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -232,8 +235,65 @@ class EngineSession(TimeStampedModel):
 
     user = models.ForeignKey(AUser, null=False, related_name='engine_sessions', on_delete=models.DO_NOTHING)
     name = models.TextField(null=False, blank=False)
-    state = models.TextField(blank=True)    # continue, done (postpone-next-session, postpone-indefinite, expired)
+    state = models.TextField(blank=True, db_index=True)
+    # Possible `state`s: continue, done (postpone-next-session, postpone-indefinite, expired)
     data = JSONField(default={})
+    ttl = models.PositiveIntegerField(default=CONVERSATION_ENGINES['ttl'])
+
+    @property
+    def is_continuing(self):
+        self._expire_if_ttl_past()
+        return self.state == 'continue'
+
+    @property
+    def is_ttl_past(self):
+        return (self.modified + timedelta(seconds=self.ttl)) < timezone.now()
+
+    def _expire_if_ttl_past(self):
+        if self.state != 'continue':
+            return
+        if self.is_ttl_past:
+            self.state = 'expired'
+            self.save()
+
+    def set_state_continue(self, additional_level=None, start_level=None, asked_question=None):
+        self._set_state('continue',
+                        additional_level=additional_level,
+                        start_level=start_level,
+                        asked_question=asked_question)
+
+    def set_state_done(self, additional_level=None, start_level=None, asked_question=None):
+        self._set_state('done',
+                        additional_level=additional_level,
+                        start_level=start_level,
+                        asked_question=asked_question)
+
+    def set_target_object_id(self, id):
+        self.data['target_object_id'] = id
+
+    def get_target_object_id(self):
+        return self.data.get('target_object_id', None)
+
+    def _add_asked_question(self, question):
+        self.data['asked_questions'].append(question)
+
+    def _set_state(self, state, additional_level=None, start_level=None, asked_question=None):
+        if additional_level is not None:
+            self._add_level(additional_level)
+        elif start_level is not None:
+            self._set_level(start_level)
+
+        if asked_question is not None:
+            self._add_asked_question(asked_question)
+
+        self.state = state
+
+    def _set_level(self, level):
+        self.data['level'] = level
+
+    def _add_level(self, additional_level):
+        self.data['level'] = '{current_level}.{additional_level}'.format(current_level=self.data['level'],
+                                                                         additional_level=additional_level)
 
 
 Request._meta.get_field('created').db_index = True
