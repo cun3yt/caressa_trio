@@ -211,23 +211,22 @@
           <template slot="header">
             <q-item-main label="Legal" />
           </template>
-          <q-item @click.native="newPage('https://www.caressa.ai/tos-v1')" >
+          <q-item @click.native="newPage('tos-v1')" >
             <q-item-main>
               <q-item-tile label>Terms of Service</q-item-tile>
             </q-item-main>
           </q-item>
-          <q-item @click.native="newPage('https://www.caressa.ai/open-source')" >
+          <q-item @click.native="newPage('open-source')" >
             <q-item-main>
               <q-item-tile label>Open Source Libraries</q-item-tile>
             </q-item-main>
           </q-item>
-          <q-item @click.native="newPage('https://www.caressa.ai/data-policiy')" >
+          <q-item @click.native="newPage('data-policy')" >
             <q-item-main>
               <q-item-tile label>Data Policy</q-item-tile>
             </q-item-main>
           </q-item>
         </q-collapsible>
-
       </q-list>
         <q-item>
           <q-btn style="background:white; color:red" class="full-width" label="Sign Out Caressa" />
@@ -237,7 +236,6 @@
 </template>
 
 <script>
-
 export default {
   name: 'settings',
   props: ['setupContent'],
@@ -285,7 +283,8 @@ export default {
   },
   methods: {
     newPage (link) {
-      window.open(link)
+      const baseUrl = 'https://www.caressa.ai/'
+      window.open(baseUrl + link)
     }
   }
 }
