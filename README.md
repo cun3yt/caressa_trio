@@ -75,6 +75,7 @@ This setup is written for Mac OS.
 1. Install `vue-cli` globally: `npm install -g vue-cli`
 1. Go to `q_client` folder
 1. Run `npm install`
+1. Copy & paste the file `.env.template.js` as `.env.js`, update the necessary variables, similar to environment variables.
 1. Start dev server: `quasar dev`. If build is successful hit to `http://localhost:8080/main/health-numbers`. If you see meaningful app-like looking page you're done. Congrats.
 
 ## IOS Build
@@ -126,4 +127,3 @@ In order to do development against an Alexa skill each developer will need one A
     * PUSHER_SECRET set to 'some_pusher_secret': `export PUSHER_SECRET='some_pusher_secret'`
     * PUSHER_CLUSTER set to 'us2': `export PUSHER_CLUSTER='us2'`
     * Don't forget to add these environment variables into pycharm if you are using it.
-    
