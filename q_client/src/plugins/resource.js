@@ -1,10 +1,11 @@
 import VueResource from 'vue-resource'
+import vars from '../.env'
 
 export default ({ app, router, Vue }) => {
   Vue.use(VueResource)
 
   app.hosts = {
-    rest: 'http://127.0.0.1:9900' // todo this line needed change when debugging in ios build
+    rest: vars.API_HOST // todo this line needed change when debugging in ios build
   }
 
   app.user = { // todo these items need to go to `hard-coding`
@@ -15,9 +16,8 @@ export default ({ app, router, Vue }) => {
     }
   }
   app.pusherConfig = {
-    channelName: 'channel-dev-circle-1', // todo hard coded here
-    pusherKey: '23e76179aa5279ff7d29',
-    pusherCluster: 'us2'
-
+    channelName: vars.PUSHER_CHANNEL,
+    pusherKey: vars.PUSHER_KEY,
+    pusherCluster: vars.PUSHER_CLUSTER
   }
 }
