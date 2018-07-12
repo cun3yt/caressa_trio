@@ -1,6 +1,6 @@
 from django.test import TestCase
 from alexa.engines import Question
-from alexa.intents import Intent
+from alexa.intents import Intent, YesIntent
 from alexa.slots import SlotType, Slot
 from unittest.mock import patch
 from random import sample
@@ -57,3 +57,25 @@ class BaseIntentTestCase(TestCase):
     def test_profile_builder(self):
         self.assertIsNotNone(self.complex_intent.profile_builder)
         self.assertEqual(self.complex_intent.profile_builder(), 'profile is built')
+
+
+class QuestionTestCase(TestCase):
+    def setUp(self):
+        self.q_no_version = Question(versions=None, intent_list=[], reprompt=['hello'])
+        self.q = Question(versions=['a', 'b', 'c'],
+                          intent_list=[
+                              YesIntent(response_set=['x', 'y'],
+                                        end_session=True)
+                          ])
+
+    def test_no_version_fields(self):
+        self.assertEqual(self.q_no_version.versions, None)
+        self.assertEqual(self.q_no_version.reprompt, ['hello'])
+        self.assertEqual(self.q_no_version.intents, {})
+        self.assertEqual(self.q_no_version.asked_question, '')
+
+    def test_question_fields(self):
+        self.assertEqual(self.q.versions, ['a', 'b', 'c'])
+        self.assertEqual(len(self.q.intents), 1)
+        self.assertIsInstance(self.q.intents['yes_intent'], YesIntent)
+        self.assertIn(self.q.asked_question, ['a', 'b', 'c'])
