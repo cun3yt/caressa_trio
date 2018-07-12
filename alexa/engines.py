@@ -146,7 +146,7 @@ class NewsEngine(Engine):
     """
     def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
-            versions=['Would you like to hear popular news around you?', ],  # todo should end headline
+            versions=['Would you like to hear latest news?', ],  # todo should end headline
             reprompt=['Do you want to listen recent news?', ],
             intent_list=[
                 YesIntent(
@@ -195,7 +195,7 @@ class MedicalEngine(Engine):
     def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=[
-                "Have you taken your blood pressure measurements yet?",
+                "Have you taken your blood pressure measurement for the day?",
                 "Did you take your blood pressure today?",
             ],
             reprompt=["Have you taken your blood pressure measurements? Yes or no?"],
@@ -236,8 +236,8 @@ class WeightEngine(Engine):
     def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=[
-                "Have you taken your weight measurement yet?",
-                "Did you take your weight measurement today?",
+                "Have you taken your weight measurement for the week?",
+                "Did you take your weight measurement this week?",
             ],
             reprompt=["Have you taken your weight measurement yet? Yes or no?", ],
             intent_list=[
@@ -281,18 +281,35 @@ class AdEngine(Engine):
             intent_list=[
                 YesIntent(question=Question(
                     versions=[
-                        "A chiropractor can ease the pain with warm massage. "
-                        "Dr. Smith in San Jose has over 20 years experiences. "
-                        "Would you like him to give you a call?", ],
+                        "Most leg cramps go away on their own, but sometimes "
+                        "they may be linked to an underlying disorder. "
+                        "Is your leg cramp so severe, causing you to lose sleep?",
+                        ],
+                    reprompt=['Is your leg cramp severe?', ],
                     intent_list=[
                         YesIntent(
-                            response_set=["Great, I will ask him to give you a call.", ]
+                            question=Question(
+                                versions=[
+                                    "A chiropractor can ease the pain with warm massage. "
+                                    "Dr. Smith in San Jose has over 20 years experiences. "
+                                    "Would you like him to give you a call?",
+                                ],
+                                reprompt=['Would you like a call from Dr. Smith?', ],
+                                intent_list=[
+                                    YesIntent(response_set=["Great, I will ask him to give you a call.", ]),
+                                    NoIntent(response_set=['That would be fine. Stretching may help relieve '
+                                                           'cramp and also prevent future episodes, if they '
+                                                           'are done two or three times a day. Hope you will '
+                                                           'feel better', ]),
+                                ]
+                            ),
                         ),
-                        NoIntent(response_set=['No problem.', ])
+                        NoIntent(response_set=['It is good to hear that it is not severe. '
+                                               'Just a friendly reminder: Magnesium is the mineral curing cramps.', ])
                     ]
                 )),
                 NoIntent(response_set=["It is great to hear that you don't have leg cramps. "
-                                       "Just a friendly reminder: Magnesium is the mineral curing cramps."])
+                                       "A little exercise before bed time always helps", ])
 
             ]
         )
