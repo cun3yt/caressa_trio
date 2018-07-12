@@ -207,15 +207,37 @@
             <q-item-tile sublabel>info@caressa.ai</q-item-tile>
           </q-item-main>
         </q-item>
+        <q-collapsible highlight>
+          <template slot="header">
+            <q-item-main label="Legal" />
+          </template>
+          <q-item @click.native="newPage('https://www.caressa.ai/tos-v1')" >
+            <q-item-main>
+              <q-item-tile label>Terms of Service</q-item-tile>
+            </q-item-main>
+          </q-item>
+          <q-item @click.native="newPage('https://www.caressa.ai/open-source')" >
+            <q-item-main>
+              <q-item-tile label>Open Source Libraries</q-item-tile>
+            </q-item-main>
+          </q-item>
+          <q-item @click.native="newPage('https://www.caressa.ai/data-policiy')" >
+            <q-item-main>
+              <q-item-tile label>Data Policy</q-item-tile>
+            </q-item-main>
+          </q-item>
+        </q-collapsible>
+
       </q-list>
         <q-item>
           <q-btn style="background:white; color:red" class="full-width" label="Sign Out Caressa" />
-      </q-item>
+        </q-item>
     </div>
   </q-page>
 </template>
 
 <script>
+
 export default {
   name: 'settings',
   props: ['setupContent'],
@@ -259,6 +281,11 @@ export default {
         min: 10,
         max: 35
       }
+    }
+  },
+  methods: {
+    newPage (link) {
+      window.open(link)
     }
   }
 }
