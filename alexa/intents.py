@@ -8,12 +8,12 @@ class Intent:
         self.name = name
         self.response_set = response_set    # either function or list of strings
         self.slots = slots
-        self.follow_engine = follow_engine
+        self.follow_engine = follow_engine  # todo not in use yet
         self.samples = samples
         self.process_fn = process_fn
         self.question = question
         self.end_session = end_session
-        self.engine_session = kwargs.get('engine_session', None)
+        self.engine_session = kwargs.get('engine_session', None)    # todo is this in use? Delete if not.
         self.profile_builder = kwargs.get('profile_builder', None)
 
     @classmethod
@@ -28,9 +28,6 @@ class Intent:
         if type(self.response_set) is list:
             return sample(self.response_set, 1)[0]
         return self.response_set()
-
-    def render(self, render_type='json'):
-        pass
 
 
 class GoodIntent(Intent):
