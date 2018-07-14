@@ -22,3 +22,4 @@ django-jsonfield==1.0.1
 django-jsonfield-compat==0.4.4
 rest-framework-generic-relations==1.1.0
 -e git+git@github.com:chibisov/drf-extensions.git@00712396be979aaa5a86246bee39284b5e5e8d71#egg=drf-extensions
+model_mommy==1.6.0
