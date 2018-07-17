@@ -11,6 +11,7 @@ from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
 from caressa.settings import CONVERSATION_ENGINES
 from collections import Callable as callable_type
+from typing import Optional
 
 
 class Question:
@@ -33,7 +34,7 @@ class Question:
 class Engine:
     default_ttl = CONVERSATION_ENGINES['ttl']     # time to live is 10 minutes by default
 
-    def __init__(self, question: Question, alexa_user: AUser, engine_session=None,
+    def __init__(self, question: Optional[Question], alexa_user: AUser, engine_session=None,
                  ttl=None):
         self.question = question
         self.alexa_user = alexa_user
@@ -92,6 +93,47 @@ class ProfileBuilderForJoke(Question):
 
     def save_no(self, **kwargs):
         self.alexa_user.profile_set('joke', False)
+
+
+class DirectJokeEngine(Engine):
+    def __init__(self, alexa_user: AUser, **kwargs):
+        super(DirectJokeEngine, self).__init__(question=None, alexa_user=alexa_user, ttl=1*60, **kwargs)
+
+        self.question = Question(
+            versions=self._get_joke_and_render_and_ask,
+            reprompt=["Did you like the joke?", ],
+            intent_list=[
+                YesIntent(
+                    response_set=['Thanks!'],
+                    process_fn=self._save_joke_like),
+                NoIntent(response_set=['OK']),
+            ]
+        )
+
+    def _get_joke(self):
+        if self.engine_session and self.engine_session.get_target_object_id():
+            joke_id = self.engine_session.get_target_object_id()
+            joke = Joke.objects.get(id=joke_id)
+            return joke
+
+        joke = Joke.fetch_random()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(joke.id)
+
+        return joke
+
+    def _get_joke_and_render_and_ask(self):
+        joke = self._get_joke()
+        return '{main}<break time="1s"/>{punchline}. Was that funny?'.format(main=joke.main, punchline=joke.punchline)
+
+    def _save_joke_like(self, **kwargs):
+        from alexa.models import UserActOnContent
+        joke = self._get_joke()
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='laughed at',
+                               object=joke)
+        act.save()
 
 
 class JokeEngine(Engine):
