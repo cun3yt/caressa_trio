@@ -142,13 +142,17 @@ class AUserModelTestCase(TestCase):
         self.assertEqual(last_engine_session.id, self.engine_session_one.id)
 
     def test_set_emotion(self):
-        self.auser_one.set_emotion('happiness', 50.05)
-        self.assertEqual(self.auser_emotional_state.attribute, 'happiness')
+        set_emotion = self.auser_one.set_emotion('anxiety', 50.05)
+        self.assertEqual(set_emotion.attribute, 'anxiety')
 
     def test_update_emotion(self):
-        set_emotion = self.auser_one.set_emotion('happiness', 50.05)
-        update_emotion = self.auser_one.update_emotion('happiness', percentage=-5.0)
-        self.assertTrue(set_emotion.value > update_emotion.value)
+        value = 50.05
+        emotion = 'anxiety'
+        percentage = -5.0
+        self.auser_one.set_emotion(emotion=emotion, value=value)
+        update_emotion = self.auser_one.update_emotion(emotion=emotion, percentage=percentage)
+        updated_value = value * (1+percentage/100)
+        self.assertEqual(updated_value, update_emotion.value)
 
     def test_set_medical_state(self):
         measurement = 'weight'
