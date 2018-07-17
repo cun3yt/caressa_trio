@@ -10,6 +10,7 @@ from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPress
 from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
 from caressa.settings import CONVERSATION_ENGINES
+from collections import Callable as callable_type
 
 
 class Question:
@@ -22,6 +23,9 @@ class Question:
     def _get_random_version(self):
         if self.versions is None:
             return ''
+
+        if isinstance(self.versions, callable_type):
+            return self.versions()
 
         return sample(self.versions, 1)[0]
 
@@ -140,13 +144,66 @@ class JokeEngine(Engine):
         act.save()
 
 
+class DirectNewsEngine(Engine):
+    def __init__(self, alexa_user: AUser, **kwargs):
+        super(DirectNewsEngine, self).__init__(question=None, alexa_user=alexa_user, ttl=1*60, **kwargs)
+
+        self.question = Question(
+            versions=self._get_obj_and_render_headline_and_ask,
+            reprompt=['Do you want to listen recent news?', ],
+            intent_list=[
+                YesIntent(
+                    response_set=self._get_obj_and_render_content,
+                    question=Question(versions=['Did you find this news interesting?', ],
+                                      intent_list=[
+                                          YesIntent(
+                                              response_set=['Thanks!'],
+                                              process_fn=self._save_obj_like),
+                                          NoIntent(response_set=['OK']),
+                                      ]),
+                ),
+                NoIntent(response_set=['Maybe later!', ])
+            ]
+        )
+
+    def _get_obj(self):
+        if self.engine_session and self.engine_session.get_target_object_id():
+            obj_id = self.engine_session.get_target_object_id()
+            obj = News.objects.get(id=obj_id)
+            return obj
+
+        obj = News.fetch_random()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(obj.id)
+
+        return obj
+
+    def _get_obj_and_render_headline_and_ask(self):
+        obj = self._get_obj()
+        return "Here is a latest news headline for you. {headline}. " \
+               "Would you like to hear more?".format(headline=obj.headline)
+
+    def _get_obj_and_render_content(self):
+        obj = self._get_obj()
+        return "{content}".format(content=obj.content)
+
+    def _save_obj_like(self, **kwargs):
+        from alexa.models import UserActOnContent
+        obj = self._get_obj()
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='found interesting',
+                               object=obj)
+        act.save()
+
+
 class NewsEngine(Engine):
     """
     todo consider dropping some functions by generalizing with the other similar engines.
     """
     def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
-            versions=['Would you like to hear latest news?', ],  # todo should end headline
+            versions=['Would you like to hear popular news around you?', ],  # todo should end headline
             reprompt=['Do you want to listen recent news?', ],
             intent_list=[
                 YesIntent(
@@ -195,7 +252,7 @@ class MedicalEngine(Engine):
     def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=[
-                "Have you taken your blood pressure measurement for the day?",
+                "Have you taken your blood pressure measurements yet?",
                 "Did you take your blood pressure today?",
             ],
             reprompt=["Have you taken your blood pressure measurements? Yes or no?"],
@@ -236,8 +293,8 @@ class WeightEngine(Engine):
     def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
             versions=[
-                "Have you taken your weight measurement for the week?",
-                "Did you take your weight measurement this week?",
+                "Have you taken your weight measurement yet?",
+                "Did you take your weight measurement today?",
             ],
             reprompt=["Have you taken your weight measurement yet? Yes or no?", ],
             intent_list=[
