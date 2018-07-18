@@ -181,6 +181,6 @@ class AUserModelTestCase(TestCase):
     def test_profile_get_set(self):
         self.auser_one.profile_set('joke.simple', True)
         self.assertTrue(self.auser_one.profile_get('joke.simple'))
-        self.assertTrue(isinstance(self.auser_one.profile_get('joke'), dict))
+        self.assertFalse(isinstance(self.auser_one.profile_get('joke'), dict))
         self.assertIsNone(self.auser_one.profile_get('joke.smt'))
         self.assertIsNone(self.auser_one.profile_get('none.value'))
