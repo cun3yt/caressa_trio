@@ -1,0 +1,10 @@
+#!/bin/sh
+CMD="./manage.py test"
+$CMD
+RESULT=$?
+echo $RESULT
+if [ $RESULT -ne 0 ]; then
+    echo "TEST FAIL! => $CMD"
+    exit 1
+fi
+exit 0

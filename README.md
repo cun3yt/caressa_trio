@@ -56,6 +56,12 @@ This setup is written for Mac OS.
     * Run `./manage.py runserver 9900`
     * Hit: `http://localhost:9900/act/actions/` If you see a meaningful page that's great. If not try to solve the problem and if you cannot get some help from other folks.
     * For easier debugging: JetBrain IDEs providing Django Run/Debug configuration which eases the pain.
+1. Running Tests Before Push
+    * Go to git hooks directory in this project `cd .git/hooks`
+    * There is file called `pre-push` in root directory. We need to link it here with
+    `ln -s ../../pre-push ./pre-push` command.
+    * Now every time you push your changes tests will run. If they fail changes will not be pushed.
+    
 
 ## Specific to PyCharm & Possibly IntelliJ
 
