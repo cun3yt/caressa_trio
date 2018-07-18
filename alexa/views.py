@@ -5,7 +5,7 @@ from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
 from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
-    engine_registration, NewsEngine, TalkBitEngine, OutroEngine
+    engine_registration, NewsEngine, DirectNewsEngine, DirectJokeEngine, TalkBitEngine, OutroEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render
@@ -49,7 +49,8 @@ class BasicEngineSpawner:
             'TalkBitEngine',
         ]
         self.filler_engines = [
-            'NewsEngine',
+            # 'NewsEngine',
+            'DirectNewsEngine',
             'JokeEngine',
             'AdEngine',
         ]
@@ -107,7 +108,7 @@ class BasicEngineSpawner:
         [ computation: sum of n*p^n (for n: 1 to inf) ]
         :return:
         """
-        probability = 0.5   # probability of selecting
+        probability = 0.9   # probability of selecting
 
         if random() < (1 - probability):
             return None

@@ -10,6 +10,8 @@ from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPress
 from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
 from caressa.settings import CONVERSATION_ENGINES
+from collections import Callable as callable_type
+from typing import Optional
 
 
 class Question:
@@ -23,13 +25,16 @@ class Question:
         if self.versions is None:
             return ''
 
+        if isinstance(self.versions, callable_type):
+            return self.versions()
+
         return sample(self.versions, 1)[0]
 
 
 class Engine:
     default_ttl = CONVERSATION_ENGINES['ttl']     # time to live is 10 minutes by default
 
-    def __init__(self, question: Question, alexa_user: AUser, engine_session=None,
+    def __init__(self, question: Optional[Question], alexa_user: AUser, engine_session=None,
                  ttl=None):
         self.question = question
         self.alexa_user = alexa_user
@@ -90,6 +95,47 @@ class ProfileBuilderForJoke(Question):
         self.alexa_user.profile_set('joke', False)
 
 
+class DirectJokeEngine(Engine):
+    def __init__(self, alexa_user: AUser, **kwargs):
+        super(DirectJokeEngine, self).__init__(question=None, alexa_user=alexa_user, ttl=1*60, **kwargs)
+
+        self.question = Question(
+            versions=self._get_joke_and_render_and_ask,
+            reprompt=["Did you like the joke?", ],
+            intent_list=[
+                YesIntent(
+                    response_set=['Thanks!'],
+                    process_fn=self._save_joke_like),
+                NoIntent(response_set=['OK']),
+            ]
+        )
+
+    def _get_joke(self):
+        if self.engine_session and self.engine_session.get_target_object_id():
+            joke_id = self.engine_session.get_target_object_id()
+            joke = Joke.objects.get(id=joke_id)
+            return joke
+
+        joke = Joke.fetch_random()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(joke.id)
+
+        return joke
+
+    def _get_joke_and_render_and_ask(self):
+        joke = self._get_joke()
+        return '{main}<break time="1s"/>{punchline}. Was that funny?'.format(main=joke.main, punchline=joke.punchline)
+
+    def _save_joke_like(self, **kwargs):
+        from alexa.models import UserActOnContent
+        joke = self._get_joke()
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='laughed at',
+                               object=joke)
+        act.save()
+
+
 class JokeEngine(Engine):
     def __init__(self, alexa_user: AUser, **kwargs):
         init_question = Question(
@@ -137,6 +183,59 @@ class JokeEngine(Engine):
         act = UserActOnContent(user=self.alexa_user.user,
                                verb='laughed at',
                                object=joke)
+        act.save()
+
+
+class DirectNewsEngine(Engine):
+    def __init__(self, alexa_user: AUser, **kwargs):
+        super(DirectNewsEngine, self).__init__(question=None, alexa_user=alexa_user, ttl=1*60, **kwargs)
+
+        self.question = Question(
+            versions=self._get_obj_and_render_headline_and_ask,
+            reprompt=['Do you want to listen recent news?', ],
+            intent_list=[
+                YesIntent(
+                    response_set=self._get_obj_and_render_content,
+                    question=Question(versions=['Did you find this news interesting?', ],
+                                      intent_list=[
+                                          YesIntent(
+                                              response_set=['Thanks!'],
+                                              process_fn=self._save_obj_like),
+                                          NoIntent(response_set=['OK']),
+                                      ]),
+                ),
+                NoIntent(response_set=['Maybe later!', ])
+            ]
+        )
+
+    def _get_obj(self):
+        if self.engine_session and self.engine_session.get_target_object_id():
+            obj_id = self.engine_session.get_target_object_id()
+            obj = News.objects.get(id=obj_id)
+            return obj
+
+        obj = News.fetch_random()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(obj.id)
+
+        return obj
+
+    def _get_obj_and_render_headline_and_ask(self):
+        obj = self._get_obj()
+        return "Here is a latest news headline for you. {headline}. " \
+               "Would you like to hear more?".format(headline=obj.headline)
+
+    def _get_obj_and_render_content(self):
+        obj = self._get_obj()
+        return "{content}".format(content=obj.content)
+
+    def _save_obj_like(self, **kwargs):
+        from alexa.models import UserActOnContent
+        obj = self._get_obj()
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='found interesting',
+                               object=obj)
         act.save()
 
 
@@ -281,18 +380,35 @@ class AdEngine(Engine):
             intent_list=[
                 YesIntent(question=Question(
                     versions=[
-                        "A chiropractor can ease the pain with warm massage. "
-                        "Dr. Smith in San Jose has over 20 years experiences. "
-                        "Would you like him to give you a call?", ],
+                        "Most leg cramps go away on their own, but sometimes "
+                        "they may be linked to an underlying disorder. "
+                        "Is your leg cramp so severe, causing you to lose sleep?",
+                        ],
+                    reprompt=['Is your leg cramp severe?', ],
                     intent_list=[
                         YesIntent(
-                            response_set=["Great, I will ask him to give you a call.", ]
+                            question=Question(
+                                versions=[
+                                    "A chiropractor can ease the pain with warm massage. "
+                                    "Dr. Smith in San Jose has over 20 years experiences. "
+                                    "Would you like him to give you a call?",
+                                ],
+                                reprompt=['Would you like a call from Dr. Smith?', ],
+                                intent_list=[
+                                    YesIntent(response_set=["Great, I will ask him to give you a call.", ]),
+                                    NoIntent(response_set=['That would be fine. Stretching may help relieve '
+                                                           'cramp and also prevent future episodes, if they '
+                                                           'are done two or three times a day. Hope you will '
+                                                           'feel better', ]),
+                                ]
+                            ),
                         ),
-                        NoIntent(response_set=['No problem.', ])
+                        NoIntent(response_set=['It is good to hear that it is not severe. '
+                                               'Just a friendly reminder: Magnesium is the mineral curing cramps.', ])
                     ]
                 )),
                 NoIntent(response_set=["It is great to hear that you don't have leg cramps. "
-                                       "Just a friendly reminder: Magnesium is the mineral curing cramps."])
+                                       "A little exercise before bed time always helps", ])
 
             ]
         )

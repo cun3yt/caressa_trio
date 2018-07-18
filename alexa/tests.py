@@ -63,7 +63,10 @@ class BaseIntentTestCase(TestCase):
 
 class QuestionTestCase(TestCase):
     def setUp(self):
+        self.fn = lambda : 'hello'
+
         self.q_no_version = Question(versions=None, intent_list=[], reprompt=['hello'])
+        self.q_fn_version = Question(versions=self.fn, intent_list=[])
         self.q = Question(versions=['a', 'b', 'c'],
                           intent_list=[
                               YesIntent(response_set=['x', 'y'],
@@ -75,6 +78,9 @@ class QuestionTestCase(TestCase):
         self.assertEqual(self.q_no_version.reprompt, ['hello'])
         self.assertEqual(self.q_no_version.intents, {})
         self.assertEqual(self.q_no_version.asked_question, '')
+
+    def test_fn_version_field(self):
+        self.assertEqual(self.q_fn_version.asked_question, 'hello')
 
     def test_question_fields(self):
         self.assertEqual(self.q.versions, ['a', 'b', 'c'])
