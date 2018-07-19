@@ -49,6 +49,8 @@ This setup is written for Mac OS.
     * ENV set to 'dev': `export ENV='dev'`
     * ENV_KEY set to some long string: `export ENV_KEY='some-long-random-string'`
     * DATABASE_URL set to the local database instance, e.g.: `export DATABASE_URL='postgres://cuneyt:@localhost:5432/caressa_django'`
+    * VIRTUAL_ENV_PATH set to the virtual environment path that is in use, e.g.: `export VIRTUAL_ENV_PATH='/Users/cuneyt/.pyenv/versions/caressa'`
+    * PROJECT_ROOT set to the project root, e.g.: `export PROJECT_ROOT='/Users/cuneyt/Work/caressa'`
 1. Run Database Migrations
     * Go to project root
     * Run `./manage.py migrate`
@@ -56,12 +58,16 @@ This setup is written for Mac OS.
     * Run `./manage.py runserver 9900`
     * Hit: `http://localhost:9900/act/actions/` If you see a meaningful page that's great. If not try to solve the problem and if you cannot get some help from other folks.
     * For easier debugging: JetBrain IDEs providing Django Run/Debug configuration which eases the pain.
-1. Running Tests Before Push
-    * Go to git hooks directory in this project `cd .git/hooks`
-    * There is file called `pre-push` in root directory. We need to link it here with
-    `ln -s ../../pre-push ./pre-push` command.
-    * Now every time you push your changes tests will run. If they fail changes will not be pushed.
-    
+1. Running Tests Before Push via Git Push Hook
+    * Go to `.git/` folder.
+    * If you already have a `hooks` folder delete it.
+    * Symlink `hooks` to `../scripts/githooks/`, from project root:
+    ```bash
+    ln -s -f ../scripts/githooks/ .hooks
+    ```
+    * Now every time you try to push your Python changes in commits, tests under version control will be triggered. If tests run and there is any failure the push will not be executed. Please note:  
+        * If there is not Python change tests will not be executed. 
+        * If you have any tests that are not committed yet they will not be executed.
 
 ## Specific to PyCharm & Possibly IntelliJ
 
