@@ -111,6 +111,7 @@ class UserModelTestCase(TestCase):
     def test_is_provider(self):
         self.assertTrue(self.user_3.is_provider(), True)
         self.assertTrue(self.user_4.is_provider(), True)
+        self.assertTrue(False)
 
 
 class CircleModelTestCase(TestCase):
