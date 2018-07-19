@@ -103,7 +103,7 @@ class UserModelTestCase(TestCase):
         self.assertEqual(self.user_1.get_profile_pic(), '/statics/TestProfilePic1.png')
 
     def test_is_senior(self):
-        self.assertFalse(self.user_1.is_senior(), True)
+        self.assertTrue(self.user_1.is_senior(), True)
 
     def test_is_family(self):
         self.assertTrue(self.user_2.is_family(), True)

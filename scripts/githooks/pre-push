@@ -4,7 +4,7 @@
 # If you already have a .git/hooks folder you should delete (or rename) it.
 # ln -s -f ./scripts/githooks/ .git/hooks
 
-source "${PROJECT_ROOT}/.envrc"
+source .envrc
 source "${PROJECT_ROOT}/scripts/init.sh"
 
 RESULT=0
@@ -40,7 +40,7 @@ for file in "${changed_files[@]}"; do
 done
 
 if [ "$run_python_unit_tests" == true ]; then
-    printf "Unit testing Python... " >> /Users/mikail/Desktop/something.txt
+    printf "Unit testing Python... " >> /Users/cuneyt/Desktop/something.txt
     ${PROJECT_ROOT}/manage.py test
     RESULT=$?
 fi
