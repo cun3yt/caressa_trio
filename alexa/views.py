@@ -5,7 +5,8 @@ from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
 from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
-    engine_registration, NewsEngine, DirectNewsEngine, DirectJokeEngine, TalkBitEngine, OutroEngine
+    engine_registration, NewsEngine, DirectNewsEngine, DirectJokeEngine, FactEngine, TalkBitEngine, \
+    OutroEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render
@@ -189,7 +190,6 @@ class Conversation:
 
     @property
     def is_the_engine_session_going_on(self):
-        # if self.engine_session
         return self.engine_session and self.engine_session.is_continuing
 
     @property
