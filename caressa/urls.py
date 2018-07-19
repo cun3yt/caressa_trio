@@ -63,6 +63,8 @@ flat_router.register(r'jokes', JokeViewSet, 'joke')
 flat_router.register(r'news', NewsViewSet, 'news')
 flat_router.register(r'user-act-on-content', UserActOnContentViewSet, 'user-act-on-content')
 
+x = 2+2
+
 urlpatterns = [
     path('', main_view),
     path('discussion', alexa_io),
