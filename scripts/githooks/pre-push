@@ -40,7 +40,7 @@ for file in "${changed_files[@]}"; do
 done
 
 if [ "$run_python_unit_tests" == true ]; then
-    printf "Unit testing Python... " >> /Users/cuneyt/Desktop/something.txt
+    printf "Unit testing Python... "
     ${PROJECT_ROOT}/manage.py test
     RESULT=$?
 fi
