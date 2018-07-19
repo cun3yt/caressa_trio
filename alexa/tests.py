@@ -111,7 +111,7 @@ class FactEngineTestCase(TestCase):
         self.content = self.fact.get_random_content()
         self.engine_session = mommy.make(EngineSession,
                                          user=self.a_user,
-                                         name='FaceEngine',
+                                         name='FactEngine',
                                          state='continue')
 
     def test_question_setup(self):
