@@ -38,6 +38,7 @@ ALLOWED_HOSTS = [
     '.serveo.net',
 ]
 
+HOSTED_ENV = os.environ.get('HOSTED_ENV')
 
 # Application definition
 

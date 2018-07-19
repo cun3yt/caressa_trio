@@ -5,13 +5,14 @@ from django.utils import timezone
 from datetime import timedelta, datetime
 from random import sample
 import pytz
-from alexa.models import AUser, Joke, News, User
+from alexa.models import AUser, Joke, News, User, Song
 from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent
 from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
 from caressa.settings import CONVERSATION_ENGINES
 from collections import Callable as callable_type
 from typing import Optional
+from caressa.settings import HOSTED_ENV as hosted_env
 
 
 class Question:
@@ -470,6 +471,55 @@ class TalkBitEngine(Engine):
         if actions.count() < 1:
             return None
         return actions[0]
+
+
+class SongEngine(Engine):
+    def __init__(self, alexa_user: AUser, **kwargs):
+        super(SongEngine, self).__init__(question=None, alexa_user=alexa_user, ttl=1*60, **kwargs)
+
+        self.question = Question(
+            versions=self._get_obj_and_render_song_name_and_ask,
+            reprompt=['Here is a song for you.', ],
+            intent_list=[
+                YesIntent(
+                    response_set=['Yes, Indeed!', ],
+                    process_fn=self._save_obj_like),
+                NoIntent(response_set=['OK!', ]),
+            ]
+        )
+
+    def _get_obj(self):
+        if self.engine_session and self.engine_session.get_target_object_id():
+            obj_id = self.engine_session.get_target_object_id()
+            obj = Song.objects.get(id=obj_id)
+            return obj
+
+        obj = Song.fetch_random()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(obj.id)
+
+        return obj
+
+    def _get_obj_and_render_song_name_and_ask(self):
+        obj = self._get_obj()
+        return "I think you like this song named {song_name} by {song_owner}. " \
+               "<audio src='{hosted_env}{song_location}'/>. Did you like it?".format(song_name=obj.song_name,
+                                                                                     song_owner=obj.song_owner,
+                                                                                     hosted_env=hosted_env,
+                                                                                     song_location=obj.song_location)
+
+    def _get_obj_and_render_content(self):
+        obj = self._get_obj()
+        return "{content}".format(content=obj.content)
+
+    def _save_obj_like(self, **kwargs):
+        from alexa.models import UserActOnContent
+        obj = self._get_obj()
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='liked',
+                               object=obj)
+        act.save()
 
 
 class OutroEngine(Engine):

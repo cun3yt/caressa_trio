@@ -330,6 +330,23 @@ class News(TimeStampedModel, FetchRandomMixin):
         return "sample news"
 
 
+class Song(TimeStampedModel, FetchRandomMixin):
+    class Meta:
+        db_table = 'song'
+
+    song_name = models.TextField(null=False, blank=False)
+    song_owner = models.TextField(null=False, blank=False)
+    song_location = models.TextField(null=False, blank=False)
+
+    def __repr__(self):
+        return "Song({id}, {song_name} by {song_owner})".format(id=self.id,
+                                                                song_name=self.song_name,
+                                                                song_owner=self.song_owner)
+
+    def __str__(self):
+        return "test song"
+
+
 class UserActOnContent(TimeStampedModel):
     class Meta:
         db_table = 'user_act_on_content'
@@ -345,7 +362,7 @@ class UserActOnContent(TimeStampedModel):
 
 
 def user_act_on_content_activity_save(sender, instance, created, **kwargs):
-    from actions.api.serializers import ActionSerializer # todo move this up
+    from actions.api.serializers import ActionSerializer  # todo move this up
     user_action_model = apps.get_model('actions', 'UserAction')
     user = instance.user
     verb = instance.verb

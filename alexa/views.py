@@ -5,7 +5,7 @@ from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
 from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
-    engine_registration, NewsEngine, DirectNewsEngine, DirectJokeEngine, TalkBitEngine, OutroEngine
+    engine_registration, NewsEngine, DirectNewsEngine, DirectJokeEngine, TalkBitEngine, SongEngine, OutroEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render
@@ -26,7 +26,7 @@ class TestSpawner:
         pass
 
     def spawn(self):
-        engine_name = 'JokeEngine'
+        engine_name = 'SongEngine'
         return get_engine_instance(engine_name=engine_name, alexa_user=self.a_user, engine_session=None)
 
 
@@ -53,6 +53,7 @@ class BasicEngineSpawner:
             'DirectNewsEngine',
             'JokeEngine',
             'AdEngine',
+            'SongEngine',
         ]
         self.outro_engine = 'OutroEngine'
 
@@ -328,8 +329,8 @@ class Conversation:
 
 @csrf_exempt
 def alexa_io(request):
-    conversation = Conversation(request, 'BasicEngineSpawner')
-    # conversation = Conversation(request, 'TestSpawner')
+    # conversation = Conversation(request, 'BasicEngineSpawner')
+    conversation = Conversation(request, 'TestSpawner')
     conversation.run()
     text_response = conversation.response['text']
     return JsonResponse(alexa_render(speech=text_response,

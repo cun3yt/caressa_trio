@@ -3,7 +3,7 @@ from django.db.models import signals
 from actstream import action
 from actstream.models import Action
 from model_utils.models import TimeStampedModel
-from alexa.models import User, Joke, News, Circle
+from alexa.models import User, Joke, News, Circle, Song
 from django.utils.translation import ugettext as _
 from django.contrib.contenttypes.fields import GenericRelation
 from jsonfield import JSONField
