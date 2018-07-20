@@ -12,8 +12,6 @@ from utilities.dictionaries import deep_get
 from caressa.settings import CONVERSATION_ENGINES
 from collections import Callable as callable_type
 from typing import Optional
-from caressa.settings import HOSTED_ENV as hosted_env
-
 
 class Question:
     def __init__(self, versions=None, intent_list=None, reprompt=None):
@@ -479,10 +477,10 @@ class SongEngine(Engine):
 
         self.question = Question(
             versions=self._get_obj_and_render_song_name_and_ask,
-            reprompt=['Here is a song for you.', ],
+            reprompt=['Did you like it?', ],
             intent_list=[
                 YesIntent(
-                    response_set=['Yes, Indeed!', ],
+                    response_set=['Thanks!'],
                     process_fn=self._save_obj_like),
                 NoIntent(response_set=['OK!', ]),
             ]
@@ -503,15 +501,8 @@ class SongEngine(Engine):
 
     def _get_obj_and_render_song_name_and_ask(self):
         obj = self._get_obj()
-        return "I think you like this song named {song_name} by {song_owner}. " \
-               "<audio src='{hosted_env}{song_location}'/>. Did you like it?".format(song_name=obj.song_name,
-                                                                                     song_owner=obj.song_owner,
-                                                                                     hosted_env=hosted_env,
-                                                                                     song_location=obj.song_location)
-
-    def _get_obj_and_render_content(self):
-        obj = self._get_obj()
-        return "{content}".format(content=obj.content)
+        return "I think you like this song named {title} by {artist}. " \
+               "<audio src='{url}'/> Did you like it?".format(title=obj.title, artist=obj.artist, url=obj.url)
 
     def _save_obj_like(self, **kwargs):
         from alexa.models import UserActOnContent
@@ -553,4 +544,5 @@ engine_registration = [
     'JokeEngine',
     'NewsEngine',
     'AdEngine',
+    'SongEngine',
 ]

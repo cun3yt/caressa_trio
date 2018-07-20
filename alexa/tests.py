@@ -3,7 +3,8 @@ from model_mommy import mommy
 from alexa.engines import Question
 from alexa.intents import Intent, YesIntent
 from alexa.slots import SlotType, Slot
-from alexa.models import User, AUser, Circle, EngineSession, AUserEmotionalState, AUserMedicalState
+from alexa.models import User, AUser, Circle, EngineSession, AUserEmotionalState, AUserMedicalState, Song
+from caressa.settings import HOSTED_ENV
 from unittest.mock import patch
 from random import sample
 
@@ -184,3 +185,12 @@ class AUserModelTestCase(TestCase):
         self.assertTrue(isinstance(self.auser_one.profile_get('joke'), dict))
         self.assertIsNone(self.auser_one.profile_get('joke.smt'))
         self.assertIsNone(self.auser_one.profile_get('none.value'))
+
+
+class SongModelTestCase(TestCase):
+    def setUp(self):
+        self.song = mommy.make_recipe('alexa.song')
+        self.url = HOSTED_ENV + self.song.file_name
+
+    def test_url(self):
+        self.assertEqual(self.song.url, self.url)

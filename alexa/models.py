@@ -17,7 +17,7 @@ from actstream.models import Action
 from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
-from caressa.settings import CONVERSATION_ENGINES
+from caressa.settings import CONVERSATION_ENGINES, HOSTED_ENV
 from datetime import timedelta
 from django.utils import timezone
 
@@ -334,14 +334,18 @@ class Song(TimeStampedModel, FetchRandomMixin):
     class Meta:
         db_table = 'song'
 
-    song_name = models.TextField(null=False, blank=False)
-    song_owner = models.TextField(null=False, blank=False)
-    song_location = models.TextField(null=False, blank=False)
+    title = models.TextField(null=False, blank=False)
+    artist = models.TextField(null=False, blank=False)
+    duration = models.PositiveIntegerField(null=False, blank=False)
+    genre = models.TextField(null=False, blank=False)
+    file_name = models.TextField(null=False, blank=False)
+
+    @property
+    def url(self):
+        return HOSTED_ENV + self.file_name
 
     def __repr__(self):
-        return "Song({id}, {song_name} by {song_owner})".format(id=self.id,
-                                                                song_name=self.song_name,
-                                                                song_owner=self.song_owner)
+        return "Song({id}, {title} by {artist})".format(id=self.id, title=self.title, artist=self.artist)
 
     def __str__(self):
         return "test song"
