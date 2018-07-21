@@ -20,7 +20,7 @@ class NewsSerializer(serializers.ModelSerializer):
 class SongSerializer(serializers.ModelSerializer):
     class Meta:
         model = Song
-        fields = ('id', 'song_name', 'song_owner', 'song_location', )
+        fields = ('id', 'title', 'artist', 'duration', 'genre', 'file_name')
 
 
 class CommentSerializer(serializers.ModelSerializer):

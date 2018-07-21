@@ -69,7 +69,7 @@ def find_interesting_at_news(request):
 
 @api_view(['POST'])
 def like_the_song(request):
-    song_id = request.data['song_id']
+    song_id = request.data.get('song_id')
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
     user_id = 2                             # todo move to `hard-coding`

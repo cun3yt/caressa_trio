@@ -563,8 +563,9 @@ class SongEngine(Engine):
 
     def _get_obj_and_render_song_name_and_ask(self):
         obj = self._get_obj()
-        return "I think you like this song named {title} by {artist}. " \
-               "<audio src='{url}'/> Did you like it?".format(title=obj.title, artist=obj.artist, url=obj.url)
+        return "I think you'll enjoy this song titled '{title}' by '{artist}'. " \
+               "<audio src='{url}'/>" \
+               "That was a song by '{artist}'. Did you like it?".format(title=obj.title, artist=obj.artist, url=obj.url)
 
     def _save_obj_like(self, **kwargs):
         from alexa.models import UserActOnContent
