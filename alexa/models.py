@@ -20,6 +20,7 @@ from rest_framework.renderers import JSONRenderer
 from caressa.settings import CONVERSATION_ENGINES, HOSTED_ENV
 from datetime import timedelta
 from django.utils import timezone
+from random import sample
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -236,7 +237,7 @@ class EngineSession(TimeStampedModel):
     user = models.ForeignKey(AUser, null=False, related_name='engine_sessions', on_delete=models.DO_NOTHING)
     name = models.TextField(null=False, blank=False)
     state = models.TextField(blank=True, db_index=True)
-    # Possible `state`s: continue, done (postpone-next-session, postpone-indefinite, expired)
+    # Possible `state`s: continue, done, expired
     data = JSONField(default={})
     ttl = models.PositiveIntegerField(default=CONVERSATION_ENGINES['ttl'])
 
@@ -273,6 +274,12 @@ class EngineSession(TimeStampedModel):
 
     def get_target_object_id(self):
         return self.data.get('target_object_id', None)
+
+    def set_data(self, key, value):     # todo make other related functions use this one
+        self.data[key] = value
+
+    def get_data(self, key):    # todo make other related functions use this one
+        return self.data.get(key, None)
 
     def _add_asked_question(self, question):
         self.data['asked_questions'].append(question)
@@ -330,6 +337,31 @@ class News(TimeStampedModel, FetchRandomMixin):
         return "sample news"
 
 
+class FactType(TimeStampedModel):
+    class Meta:
+        db_table = 'fact_type'
+
+    name = models.TextField(null=False,
+                            blank=False,
+                            db_index=True)
+
+
+class Fact(TimeStampedModel, FetchRandomMixin):
+    class Meta:
+        db_table = 'fact'
+
+    type = models.ForeignKey(to=FactType,
+                             null=True,
+                             on_delete=models.DO_NOTHING,
+                             related_name='facts')
+    entry_text = models.TextField(null=False, blank=False)
+    fact_list = JSONField(default=[])
+    ending_yes_no_question = models.TextField(null=False, blank=False)
+
+    def get_random_content(self):
+        return sample(self.fact_list, 1)[0]
+
+
 class Song(TimeStampedModel, FetchRandomMixin):
     class Meta:
         db_table = 'song'
@@ -360,8 +392,8 @@ class UserActOnContent(TimeStampedModel):
                              on_delete=models.DO_NOTHING,
                              related_name='contents_user_acted_on')
     verb = models.TextField(db_index=True)
-    content_type = models.ForeignKey(ContentType, on_delete=models.DO_NOTHING)
-    object_id = models.PositiveIntegerField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.DO_NOTHING, null=True)
+    object_id = models.PositiveIntegerField(null=True)
     object = GenericForeignKey()
 
 

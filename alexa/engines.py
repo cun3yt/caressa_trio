@@ -5,18 +5,20 @@ from django.utils import timezone
 from datetime import timedelta, datetime
 from random import sample
 import pytz
-from alexa.models import AUser, Joke, News, User, Song
+from alexa.models import AUser, Joke, News, User, Fact, Song
 from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent
 from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
 from caressa.settings import CONVERSATION_ENGINES
 from collections import Callable as callable_type
-from typing import Optional
+from typing import Optional, Tuple
+
 
 class Question:
     def __init__(self, versions=None, intent_list=None, reprompt=None):
         self.versions = versions
-        self.reprompt = reprompt  # todo Reprompt can be built based on what is available in intent_list!!
+        # todo Reprompt can be built based on what is available in intent_list!!
+        self.reprompt = reprompt() if isinstance(reprompt, callable_type) else reprompt
         self.intents = {intent.intent_identifier(): intent for intent in intent_list}
         self.asked_question = self._get_random_version()
 
@@ -92,6 +94,66 @@ class ProfileBuilderForJoke(Question):
 
     def save_no(self, **kwargs):
         self.alexa_user.profile_set('joke', False)
+
+
+class FactEngine(Engine):
+    def __init__(self, alexa_user: AUser, **kwargs):
+        self._content_key = 'content'
+
+        super(FactEngine, self).__init__(question=None, alexa_user=alexa_user, ttl=1*60, **kwargs)
+
+        self.question = Question(
+            versions=self._get_fact_and_render_and_ask,
+            reprompt=self._get_ending_question,     # todo may need an update!
+            intent_list=[
+                YesIntent(
+                    response_set=['Thanks!'],
+                    process_fn=self._save_yes,
+                ),
+                NoIntent(response_set=['OK']),
+            ]
+        )
+
+    def _get_fact(self) -> Tuple[Fact, str]:
+        key = self._content_key
+
+        if self.engine_session and self.engine_session.get_target_object_id() \
+                and self.engine_session.get_data(key):
+            obj_id = self.engine_session.get_target_object_id()
+            obj = Fact.objects.get(id=obj_id)
+            content = self.engine_session.get_data(key)
+            return obj, content
+
+        obj = Fact.fetch_random()
+        content = obj.get_random_content()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(obj.id)
+            self.engine_session.set_data(key, content)
+
+        return obj, content
+
+    def _get_fact_and_render_and_ask(self):
+        fact, content = self._get_fact()
+
+        content = fact.get_random_content()
+
+        return "{introduction}. {content}. {question}".format(
+            introduction=fact.entry_text,
+            content=content,
+            question=fact.ending_yes_no_question
+        )
+
+    def _get_ending_question(self):
+        fact, _ = self._get_fact()
+        return fact.ending_yes_no_question
+
+    def _save_yes(self, **kwargs):
+        from alexa.models import UserActOnContent
+        _, content = self._get_fact()
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='liked this fact: "{}"'.format(content))
+        act.save()
 
 
 class DirectJokeEngine(Engine):

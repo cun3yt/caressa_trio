@@ -1,12 +1,11 @@
 from django.test import TestCase
-from model_mommy import mommy
-from alexa.engines import Question
+from alexa.engines import Question, FactEngine
 from alexa.intents import Intent, YesIntent
+from model_mommy import mommy
 from alexa.slots import SlotType, Slot
-from alexa.models import User, AUser, Circle, EngineSession, AUserEmotionalState, AUserMedicalState, Song
+from alexa.models import User, AUser, Circle, EngineSession, Fact, AUserEmotionalState, AUserMedicalState, Song
 from caressa.settings import HOSTED_ENV
 from unittest.mock import patch
-from random import sample
 
 
 class BaseIntentTestCase(TestCase):
@@ -64,10 +63,15 @@ class BaseIntentTestCase(TestCase):
 
 class QuestionTestCase(TestCase):
     def setUp(self):
-        self.fn = lambda : 'hello'
+        def version_fn():
+            return 'hello'
+
+        def reprompt_fn():
+            return 'hello reprompt'
 
         self.q_no_version = Question(versions=None, intent_list=[], reprompt=['hello'])
-        self.q_fn_version = Question(versions=self.fn, intent_list=[])
+        self.q_fn_version = Question(versions=version_fn, intent_list=[])
+        self.q_fn_reprompt = Question(versions=None, intent_list=[], reprompt=reprompt_fn)
         self.q = Question(versions=['a', 'b', 'c'],
                           intent_list=[
                               YesIntent(response_set=['x', 'y'],
@@ -83,11 +87,54 @@ class QuestionTestCase(TestCase):
     def test_fn_version_field(self):
         self.assertEqual(self.q_fn_version.asked_question, 'hello')
 
+    def test_fn_reprompt_field(self):
+        self.assertEqual(self.q_fn_reprompt.reprompt, 'hello reprompt')
+
     def test_question_fields(self):
         self.assertEqual(self.q.versions, ['a', 'b', 'c'])
         self.assertEqual(len(self.q.intents), 1)
         self.assertIsInstance(self.q.intents['yes_intent'], YesIntent)
         self.assertIn(self.q.asked_question, ['a', 'b', 'c'])
+
+
+class FactEngineTestCase(TestCase):
+    def setUp(self):
+        self.a_user = mommy.make(AUser, _fill_optional=['alexa_id', ])  # type: AUser
+        self.fact = mommy.make(Fact,
+                               entry_text='entry-text-here',
+                               fact_list=['content-1',
+                                          'content-2',
+                                          'content-3',
+                                          'content-4',
+                                          'content-5',
+                                          'content-6', ],
+                               ending_yes_no_question='question-here')  # type: Fact
+        self.content = self.fact.get_random_content()
+        self.engine_session = mommy.make(EngineSession,
+                                         user=self.a_user,
+                                         name='FactEngine',
+                                         state='continue')
+
+    def test_question_setup(self):
+        with patch.object(Fact, 'fetch_random', return_value=self.fact), \
+             patch.object(Fact, 'get_random_content', return_value=self.content):
+
+            engine = FactEngine(alexa_user=self.a_user, engine_session=self.engine_session)
+            intent_keys = [x for x in engine.question.intents.keys()]
+
+            self.assertEqual(engine.question.asked_question, "{introduction}. {content}. {question}".format(
+                introduction=self.fact.entry_text,
+                content=self.content,
+                question=self.fact.ending_yes_no_question
+            ))
+            self.assertEqual(engine.question.reprompt, self.fact.ending_yes_no_question)
+            self.assertEqual(engine.ttl, 60)
+            self.assertEqual(engine.alexa_user, self.a_user)
+            self.assertTrue(isinstance(engine.question, Question))
+            self.assertIsNotNone(engine.engine_session)
+            self.assertEqual(len(engine.question.intents), 2)
+            self.assertIn('no_intent', intent_keys)
+            self.assertIn('yes_intent', intent_keys)
 
 
 class UserModelTestCase(TestCase):
