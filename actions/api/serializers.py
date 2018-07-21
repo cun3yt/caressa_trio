@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from actions.models import UserAction, Comment, UserReaction, UserPost
 from caressa.settings import REST_FRAMEWORK
-from alexa.models import Joke, User, News
+from alexa.models import Joke, User, News, Song
 from generic_relations.relations import GenericRelatedField
 
 
@@ -15,6 +15,12 @@ class NewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = News
         fields = ('id', 'headline', 'content')
+
+
+class SongSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Song
+        fields = ('id', 'title', 'artist', 'duration', 'genre', 'file_name')
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -84,6 +90,7 @@ class ActionSerializer(serializers.ModelSerializer):
         Joke: JokeSerializer(),
         News: NewsSerializer(),
         UserPost: UserPostSerializer(),
+        Song: SongSerializer(),
     })
 
     def get_actor(self, user_action: UserAction):

@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.decorators import api_view
 from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer
-from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost
+from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 
@@ -60,6 +60,25 @@ def find_interesting_at_news(request):
 
     if set_to and action.count() < 1:
         act = UserActOnContent(user=user, verb='found interesting', object=news)
+        act.save()
+    elif not set_to and action.count() > 0:
+        action.delete()
+
+    return Response({"message": "Something went wrong.."})
+
+
+@api_view(['POST'])
+def like_the_song(request):
+    song_id = request.data.get('song_id')
+    set_to = request.data.get('set_to', 'true').lower() != 'false'
+
+    user_id = 2                             # todo move to `hard-coding`
+    user = User.objects.get(id=user_id)
+    song = Song.objects.get(id=song_id)
+    action = action_object_stream(song).filter(actor_object_id=user.id)
+
+    if set_to and action.count() < 1:
+        act = UserActOnContent(user=user, verb='liked', object=song)
         act.save()
     elif not set_to and action.count() > 0:
         action.delete()

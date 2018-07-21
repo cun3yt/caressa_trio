@@ -6,7 +6,7 @@ import json
 from utilities.dictionaries import deep_get
 from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
     engine_registration, NewsEngine, DirectNewsEngine, DirectJokeEngine, FactEngine, TalkBitEngine, \
-    OutroEngine
+    SongEngine, OutroEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render
@@ -54,6 +54,7 @@ class BasicEngineSpawner:
             'DirectNewsEngine',
             'JokeEngine',
             'AdEngine',
+            'SongEngine',
         ]
         self.outro_engine = 'OutroEngine'
 

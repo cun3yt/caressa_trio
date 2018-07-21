@@ -11,3 +11,4 @@ class AlexaConfig(AppConfig):
         registry.register(self.get_model('News'))
         registry.register(self.get_model('User'))
         registry.register(self.get_model('Circle'))
+        registry.register(self.get_model('Song'))

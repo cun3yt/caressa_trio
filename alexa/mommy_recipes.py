@@ -1,5 +1,5 @@
 from model_mommy.recipe import Recipe, foreign_key
-from alexa.models import User, AUser, EngineSession
+from alexa.models import User, AUser, EngineSession, Song
 
 user = Recipe(
     User,
@@ -24,4 +24,13 @@ engine_session = Recipe(
     state='continue',
     data={},
     ttl=600,
+)
+
+song = Recipe(
+    Song,
+    artist='TestArtist1',
+    duration=180,
+    file_name='static/song/test.mp3',
+    title='TestSong1',
+    genre='Rock',
 )

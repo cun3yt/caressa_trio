@@ -16,6 +16,8 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import include, path
+from django.conf.urls.static import static
+from django.conf import settings
 from alexa.views import main_view, alexa_io
 from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, laugh_at_joke, find_interesting_at_news, \
     new_post
@@ -73,4 +75,5 @@ urlpatterns = [
     path('laugh/', laugh_at_joke),
     path('find-interesting/', find_interesting_at_news),
     path('post/', new_post),
-]
+
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

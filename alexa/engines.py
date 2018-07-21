@@ -5,7 +5,7 @@ from django.utils import timezone
 from datetime import timedelta, datetime
 from random import sample
 import pytz
-from alexa.models import AUser, Joke, News, User, Fact
+from alexa.models import AUser, Joke, News, User, Fact, Song
 from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent
 from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
@@ -533,6 +533,49 @@ class TalkBitEngine(Engine):
         return actions[0]
 
 
+class SongEngine(Engine):
+    def __init__(self, alexa_user: AUser, **kwargs):
+        super(SongEngine, self).__init__(question=None, alexa_user=alexa_user, ttl=1*60, **kwargs)
+
+        self.question = Question(
+            versions=self._get_obj_and_render_song_name_and_ask,
+            reprompt=['Did you like it?', ],
+            intent_list=[
+                YesIntent(
+                    response_set=['Thanks!'],
+                    process_fn=self._save_obj_like),
+                NoIntent(response_set=['OK!', ]),
+            ]
+        )
+
+    def _get_obj(self):
+        if self.engine_session and self.engine_session.get_target_object_id():
+            obj_id = self.engine_session.get_target_object_id()
+            obj = Song.objects.get(id=obj_id)
+            return obj
+
+        obj = Song.fetch_random()
+
+        if self.engine_session:
+            self.engine_session.set_target_object_id(obj.id)
+
+        return obj
+
+    def _get_obj_and_render_song_name_and_ask(self):
+        obj = self._get_obj()
+        return "I think you'll enjoy this song titled '{title}' by '{artist}'. " \
+               "<audio src='{url}'/>" \
+               "That was a song by '{artist}'. Did you like it?".format(title=obj.title, artist=obj.artist, url=obj.url)
+
+    def _save_obj_like(self, **kwargs):
+        from alexa.models import UserActOnContent
+        obj = self._get_obj()
+        act = UserActOnContent(user=self.alexa_user.user,
+                               verb='liked',
+                               object=obj)
+        act.save()
+
+
 class OutroEngine(Engine):
     def __init__(self, alexa_user: AUser, **kwargs):
         self.closings = [
@@ -564,4 +607,5 @@ engine_registration = [
     'JokeEngine',
     'NewsEngine',
     'AdEngine',
+    'SongEngine',
 ]

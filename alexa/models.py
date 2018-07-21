@@ -17,7 +17,7 @@ from actstream.models import Action
 from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
-from caressa.settings import CONVERSATION_ENGINES
+from caressa.settings import CONVERSATION_ENGINES, HOSTED_ENV
 from datetime import timedelta
 from django.utils import timezone
 from random import sample
@@ -362,6 +362,27 @@ class Fact(TimeStampedModel, FetchRandomMixin):
         return sample(self.fact_list, 1)[0]
 
 
+class Song(TimeStampedModel, FetchRandomMixin):
+    class Meta:
+        db_table = 'song'
+
+    title = models.TextField(null=False, blank=False)
+    artist = models.TextField(null=False, blank=False)
+    duration = models.PositiveIntegerField(null=False, blank=False)
+    genre = models.TextField(null=False, blank=False)
+    file_name = models.TextField(null=False, blank=False)
+
+    @property
+    def url(self):
+        return HOSTED_ENV + self.file_name
+
+    def __repr__(self):
+        return "Song({id}, {title} by {artist})".format(id=self.id, title=self.title, artist=self.artist)
+
+    def __str__(self):
+        return "test song"
+
+
 class UserActOnContent(TimeStampedModel):
     class Meta:
         db_table = 'user_act_on_content'
@@ -377,7 +398,7 @@ class UserActOnContent(TimeStampedModel):
 
 
 def user_act_on_content_activity_save(sender, instance, created, **kwargs):
-    from actions.api.serializers import ActionSerializer # todo move this up
+    from actions.api.serializers import ActionSerializer  # todo move this up
     user_action_model = apps.get_model('actions', 'UserAction')
     user = instance.user
     verb = instance.verb
