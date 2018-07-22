@@ -130,6 +130,28 @@ class NoIntent(Intent):
                                        process_fn=process_fn, question=question)
 
 
+class StopIntent(Intent):
+    @classmethod
+    def intent_identifier(cls):
+        return 'stop_intent'
+
+    def __init__(self, slots=None, process_fn=None, question=None, response_set=None, end_session=True):
+        name = self.intent_identifier()
+        default_response_set = [
+            'Later',
+            'Goodbye',
+        ]
+        samples = [
+            "stop",
+            "off",
+            "shut up",
+            "go away",
+        ]
+        response_set = response_set if response_set else default_response_set
+        super(StopIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
+                                         process_fn=process_fn, question=question, end_session=end_session)
+
+
 class BloodPressureIntent(Intent):
     @classmethod
     def intent_identifier(cls):

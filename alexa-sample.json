@@ -11,8 +11,14 @@
           "samples": []
         },
         {
-          "name": "AMAZON.StopIntent",
-          "samples": []
+          "name": "stop_intent",
+          "slots": [],
+          "samples": [
+            "stop",
+            "off",
+            "shut up",
+            "go away",
+          ]
         },
         {
           "name": "yes_intent",
