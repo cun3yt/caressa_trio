@@ -133,13 +133,13 @@ class NoIntent(Intent):
 class StopIntent(Intent):
     @classmethod
     def intent_identifier(cls):
-        return 'stop_intent'
+        return 'AMAZON.StopIntent'
 
     def __init__(self, slots=None, process_fn=None, question=None, response_set=None, end_session=True):
         name = self.intent_identifier()
         default_response_set = [
-            'Later',
-            'Goodbye',
+            'Alright. Don\'t forget to come back by saying "Alexa, open Caressa"',
+            'Goodbye. Don\'t forget to come back by saying "Alexa, open Caressa',
         ]
         samples = [
             "stop",
