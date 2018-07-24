@@ -126,6 +126,7 @@ In order to do development against an Alexa skill each developer will need one A
 1. Create an Amazon developer account if you haven't already: https://developer.amazon.com/alexa/console
 1. Create a skill named "caressa-dev" as a custom skill
 1. Open JSON editor on Alexa web dashboard and insert the seed skill info (ask to a coworker if it is not available somewhere yet).
+    * This skill is subject to change and not dynamic for others for now. So if any change done on the skill `alexa-sample.json` needed to be updated so others can implement the changes to their skills.
 1. Alexa skill expects an HTTPS endpoint to reach to the skill. In order to make it work on the local machine you need to create a world-wide accessible HTTP server. There are two alternatives that we have identified so far without going through lots of configurations for firewalls etc:
     * Install `ngrok` (available on Homebrew as a cask: `brew cask install ngrok`) and run it: 
     @todo ... specs will be here... 
