@@ -141,12 +141,7 @@ class StopIntent(Intent):
             'Alright. Don\'t forget to come back by saying "Alexa, open Caressa"',
             'Goodbye. Don\'t forget to come back by saying "Alexa, open Caressa',
         ]
-        samples = [
-            "stop",
-            "off",
-            "shut up",
-            "go away",
-        ]
+        samples = []
         response_set = response_set if response_set else default_response_set
         super(StopIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
                                          process_fn=process_fn, question=question, end_session=end_session)
