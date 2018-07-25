@@ -29,12 +29,13 @@ class SplitJSONWidget(forms.Widget):
         attrs['type'] = 'text'
         attrs['name'] = "%s%s%s" % (name, self.separator, key)
         attrs['value'] = utils.encoding.force_text(value)
-        attrs['id'] = attrs.get('name', None)
+        attrs['id'] = attrs.get('name', '')
 
         delete_attrs = {
             'type': 'button',
             'value': 'delete',
             'id': "delete_%s" % attrs.get('name', ''),
+            'class': 'delete-btn',
         }
         return u""" <label for="%s">%s:</label>
         <input%s /> <input%s />""" % (attrs['id'], key, flatatt(attrs), flatatt(delete_attrs))
@@ -71,7 +72,7 @@ class SplitJSONWidget(forms.Widget):
                 if isinstance(el, list) and len(l) == 1:
                     result += '%s' % self._prepare_as_ul(el)
                 elif isinstance(el, list):
-                    result += '<ul>'
+                    result += '<ul class="listing">'
                     result += '%s' % self._prepare_as_ul(el)
                     result += '</ul>'
                 else:
@@ -84,7 +85,7 @@ class SplitJSONWidget(forms.Widget):
                'value="Add New" ' \
                'id="add_new" ' \
                'class="default" ' \
-               'style="margin-left: 160px; padding-left: 10px;"/>'
+               'style="margin-left: 170px;"/>'
 
     def _to_pack_up(self, root_node, raw_data):
 
