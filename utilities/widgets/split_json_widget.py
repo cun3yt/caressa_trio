@@ -30,8 +30,14 @@ class SplitJSONWidget(forms.Widget):
         attrs['name'] = "%s%s%s" % (name, self.separator, key)
         attrs['value'] = utils.encoding.force_text(value)
         attrs['id'] = attrs.get('name', None)
+
+        delete_attrs = {
+            'type': 'button',
+            'value': 'delete',
+            'id': "delete_%s" % attrs.get('name', ''),
+        }
         return u""" <label for="%s">%s:</label>
-        <input%s />""" % (attrs['id'], key, flatatt(attrs))
+        <input%s /> <input%s />""" % (attrs['id'], key, flatatt(attrs), flatatt(delete_attrs))
 
     def _to_build(self, name, json_obj):
         inputs = []
@@ -72,6 +78,13 @@ class SplitJSONWidget(forms.Widget):
                     result += '<li>%s</li>' % el
             return result
         return ''
+
+    def _add_new_button(self):
+        return '<input type="button" ' \
+               'value="Add New" ' \
+               'id="add_new" ' \
+               'class="default" ' \
+               'style="margin-left: 160px; padding-left: 10px;"/>'
 
     def _to_pack_up(self, root_node, raw_data):
 
@@ -158,6 +171,7 @@ class SplitJSONWidget(forms.Widget):
             pass
         inputs = self._to_build(name, value or {})
         result = self._prepare_as_ul(inputs)
+        result += self._add_new_button()
         if self.debug:
             source_data = u'<hr/>Source data: <br/>%s<hr/>' % str(value)
             result = '%s%s' % (result, source_data)
