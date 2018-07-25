@@ -157,10 +157,10 @@ class Conversation:
         req_body = json.loads(request.body)
         session_id = deep_get(req_body, 'session.sessionId', '')
         user_id = deep_get(req_body, 'context.System.user.userId', '')
-
-        self.alexa_user = AUser.objects.get_or_create(alexa_id=user_id)[0]
-        self.engine_session = self.alexa_user.last_engine_session()
-        self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id, alexa_user=self.alexa_user)
+        device_id = deep_get(req_body, 'context.System.device.deviceId', '')
+        self.alexa_device = AUser.objects.get_or_create(alexa_device_id=device_id, alexa_user_id=user_id)[0]
+        self.engine_session = self.alexa_device.last_engine_session()
+        self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id, alexa_user=self.alexa_device)
 
         self.req = {
             'type': deep_get(req_body, 'request.type'),
@@ -169,7 +169,7 @@ class Conversation:
         }
 
         spawner_class = globals()[spawner_class_name]
-        self.spawner = spawner_class(self.alexa_user,
+        self.spawner = spawner_class(self.alexa_device,
                                      self.is_new_session,
                                      self.engine_session,
                                      self.req['type'],
@@ -263,7 +263,7 @@ class Conversation:
 
             if isinstance(follow_engine, OutroEngine):
                 closing = follow_engine.get_random_closing()
-                e_session = EngineSession(user=self.alexa_user,
+                e_session = EngineSession(user=self.alexa_device,
                                           name=follow_engine.__class__.__name__,
                                           state='done',
                                           ttl=follow_engine.ttl)
@@ -276,7 +276,7 @@ class Conversation:
 
             question = follow_engine.question.asked_question
 
-            e_session = EngineSession(user=self.alexa_user,
+            e_session = EngineSession(user=self.alexa_device,
                                       name=follow_engine.__class__.__name__,
                                       state='continue',
                                       ttl=follow_engine.ttl)
@@ -297,7 +297,7 @@ class Conversation:
         if self.is_the_engine_session_going_on and self.is_there_an_intent:
             log(" (1) Continuing Engine Session and there is an INTENT")
             response, engine_intent_object = self.continue_engine_session(self.engine_session,
-                                                                          self.alexa_user,
+                                                                          self.alexa_device,
                                                                           self.req.get('intent_name'),
                                                                           self.req.get('intent'))
             self.response['text'] = "{}{}".format(self.response['text'], response)
@@ -307,7 +307,7 @@ class Conversation:
         elif self.is_the_engine_session_going_on:
             log(" (2) Continuing Engine Session and there is NO intent")
             engine = get_engine_instance(engine_name=self.engine_session.name,
-                                         alexa_user=self.alexa_user,
+                                         alexa_user=self.alexa_device,
                                          engine_session=self.engine_session)
             question = engine.question.asked_question
             self.response['text'] = '{} {}'.format(self.response['text'], question)
@@ -318,7 +318,7 @@ class Conversation:
             log(" (3) No continuing engine session (must be 'open caressa')")
             engine = self.spawner.spawn()
             question = engine.question.asked_question
-            e_session = EngineSession(user=self.alexa_user, name=engine.__class__.__name__, state='continue',
+            e_session = EngineSession(user=self.alexa_device, name=engine.__class__.__name__, state='continue',
                                       ttl=engine.ttl)
             e_session.data = {'level': 'question', 'asked_questions': [question]}
             e_session.save()
