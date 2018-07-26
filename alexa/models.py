@@ -345,21 +345,31 @@ class FactType(TimeStampedModel):
                             blank=False,
                             db_index=True)
 
+    def __str__(self):
+        return "{}".format(self.name)
+
 
 class Fact(TimeStampedModel, FetchRandomMixin):
     class Meta:
         db_table = 'fact'
 
-    type = models.ForeignKey(to=FactType,
-                             null=True,
-                             on_delete=models.DO_NOTHING,
-                             related_name='facts')
+    fact_type = models.ForeignKey(db_column='type',
+                                  to=FactType,
+                                  null=True,
+                                  on_delete=models.DO_NOTHING,
+                                  related_name='facts')
     entry_text = models.TextField(null=False, blank=False)
     fact_list = JSONField(default=[])
     ending_yes_no_question = models.TextField(null=False, blank=False)
+    # todo consider column on action, e.g. "found interesting" for the question of "Did you find this fact interesting?"
 
     def get_random_content(self):
         return sample(self.fact_list, 1)[0]
+
+    def __str__(self):
+        return "({}) {} - entry text: '{}'".format(self.id,
+                                                   self.fact_type.name,
+                                                   self.entry_text)
 
 
 class Song(TimeStampedModel, FetchRandomMixin):

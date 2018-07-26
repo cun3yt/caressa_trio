@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 import os
 import dj_database_url
 import pusher
+from django.contrib import admin
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -180,3 +181,5 @@ pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pu
 CONVERSATION_ENGINES = {
     'ttl': 10*60,
 }
+
+admin.site.empty_value_display = '-empty-'
