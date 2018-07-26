@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import AUser, Session, EngineSession, User
 from utilities.renderers import alexa_render
+from django.utils.crypto import get_random_string
 import json
 from utilities.dictionaries import deep_get
 from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
@@ -12,7 +13,6 @@ from datetime import datetime, timedelta
 from django.shortcuts import render
 from utilities.logger import log
 from random import sample, random
-
 
 def main_view(request):
     return render(request, 'main.html')
@@ -154,37 +154,21 @@ def get_engine_instance(engine_name, alexa_user: AUser, engine_session: EngineSe
 
 class Conversation:
     def __init__(self, request, spawner_class_name):
-        from django.utils.crypto import get_random_string
-        import datetime
-
         req_body = json.loads(request.body)
         session_id = deep_get(req_body, 'session.sessionId', '')
         user_id = deep_get(req_body, 'context.System.user.userId', '')
         device_id = deep_get(req_body, 'context.System.device.deviceId', '')
-        self.alexa_device_init = AUser.objects.get_or_create(alexa_device_id=device_id, alexa_user_id=user_id)
-        self.alexa_device = self.alexa_device_init[0]
-        if self.alexa_device_init[1]:
-            username = 'Test{date}'.format(date=datetime.datetime.now().strftime('%Y%m%d%H%M'))
-            test_user = User(username=username,
-                             password=get_random_string(),
-                             first_name='AnonymousFirstName',
-                             last_name='AnonymousLastName',
-                             is_staff=False,
-                             is_superuser=False,
-                             email='test@caressa.ai',
-                             phone_number='+14153477898',
-                             profile_pic='default_profile_pic'
-                             )
+        self.alexa_user, is_created = AUser.objects.get_or_create(alexa_device_id=device_id, alexa_user_id=user_id)
+        if is_created:
+            test_user = self._create_test_user()
             test_user.save()
-            test_id = User.objects.get(username=username).id
             new_device = AUser.objects.get(alexa_device_id=device_id)
-            new_device.user_id = test_id
+            new_device.user_id = test_user.id
             new_device.save()
 
-        log(self.alexa_device)
-        self.engine_session = self.alexa_device.last_engine_session()
+        self.engine_session = self.alexa_user.last_engine_session()
         self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id,
-                                                                       alexa_user=self.alexa_device)
+                                                                       alexa_user=self.alexa_user)
 
         self.req = {
             'type': deep_get(req_body, 'request.type'),
@@ -193,7 +177,7 @@ class Conversation:
         }
 
         spawner_class = globals()[spawner_class_name]
-        self.spawner = spawner_class(self.alexa_device,
+        self.spawner = spawner_class(self.alexa_user,
                                      self.is_new_session,
                                      self.engine_session,
                                      self.req['type'],
@@ -212,6 +196,21 @@ class Conversation:
             'text': '',
             'should_session_end': False,
         }
+
+    @staticmethod
+    def _create_test_user():
+        username = 'Test{date}'.format(date=datetime.datetime.now().strftime('%Y%m%d%H%M'))
+        test_user = User(username=username,
+                         password=get_random_string(),
+                         first_name='AnonymousFirstName',
+                         last_name='AnonymousLastName',
+                         is_staff=False,
+                         is_superuser=False,
+                         email='test@caressa.ai',
+                         phone_number='+14153477898',
+                         profile_pic='default_profile_pic'
+                         )
+        return test_user
 
     @property
     def is_the_engine_session_going_on(self):
@@ -287,7 +286,7 @@ class Conversation:
 
             if isinstance(follow_engine, OutroEngine):
                 closing = follow_engine.get_random_closing()
-                e_session = EngineSession(user=self.alexa_device,
+                e_session = EngineSession(user=self.alexa_user,
                                           name=follow_engine.__class__.__name__,
                                           state='done',
                                           ttl=follow_engine.ttl)
@@ -300,7 +299,7 @@ class Conversation:
 
             question = follow_engine.question.asked_question
 
-            e_session = EngineSession(user=self.alexa_device,
+            e_session = EngineSession(user=self.alexa_user,
                                       name=follow_engine.__class__.__name__,
                                       state='continue',
                                       ttl=follow_engine.ttl)
@@ -321,7 +320,7 @@ class Conversation:
         if self.is_the_engine_session_going_on and self.is_there_an_intent:
             log(" (1) Continuing Engine Session and there is an INTENT")
             response, engine_intent_object = self.continue_engine_session(self.engine_session,
-                                                                          self.alexa_device,
+                                                                          self.alexa_user,
                                                                           self.req.get('intent_name'),
                                                                           self.req.get('intent'))
             self.response['text'] = "{}{}".format(self.response['text'], response)
@@ -331,7 +330,7 @@ class Conversation:
         elif self.is_the_engine_session_going_on:
             log(" (2) Continuing Engine Session and there is NO intent")
             engine = get_engine_instance(engine_name=self.engine_session.name,
-                                         alexa_user=self.alexa_device,
+                                         alexa_user=self.alexa_user,
                                          engine_session=self.engine_session)
             question = engine.question.asked_question
             self.response['text'] = '{} {}'.format(self.response['text'], question)
@@ -342,7 +341,7 @@ class Conversation:
             log(" (3) No continuing engine session (must be 'open caressa')")
             engine = self.spawner.spawn()
             question = engine.question.asked_question
-            e_session = EngineSession(user=self.alexa_device, name=engine.__class__.__name__, state='continue',
+            e_session = EngineSession(user=self.alexa_user, name=engine.__class__.__name__, state='continue',
                                       ttl=engine.ttl)
             e_session.data = {'level': 'question', 'asked_questions': [question]}
             e_session.save()

@@ -421,15 +421,16 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
 
 
 def initial_engine_scheduler(sender, instance, created, **kwargs):
-    if instance.engine_schedule == '':
-        auser_id = instance.id
-        user = AUser.objects.get(id=auser_id)
-        cal = Calendar()
-        cal.add('dtstart', datetime.now())
-        cal.add('summary', 'schedule of user:{}'.format(auser_id))
+    if not instance.engine_schedule == '':
+        return
+    auser_id = instance.id
+    user = AUser.objects.get(id=auser_id)
+    cal = Calendar()
+    cal.add('dtstart', datetime.now())
+    cal.add('summary', 'schedule of user:{}'.format(auser_id))
 
-        user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
-        user.save()
+    user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
+    user.save()
 
 
 def new_testing_device_added_circle(sender, instance, created, **kwargs):
