@@ -12,7 +12,8 @@ user = Recipe(
 
 auser = Recipe(
     AUser,
-    alexa_id='TestAlexaId1',
+    alexa_user_id='TestAlexaUserId1',
+    alexa_device_id='TestAlexaDeviceId1',
     user=foreign_key(user),
     engine_schedule='TestEngineSchedule',
 )
