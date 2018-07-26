@@ -21,6 +21,8 @@ from caressa.settings import CONVERSATION_ENGINES, HOSTED_ENV
 from datetime import timedelta
 from django.utils import timezone
 from random import sample
+from icalendar import Calendar
+from datetime import datetime
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -418,4 +420,22 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
     pusher_client.trigger(channel_name, 'feeds', json)
 
 
+def initial_engine_scheduler(sender, instance, created, **kwargs):
+    if instance.engine_schedule == '':
+        auser_id = instance.id
+        # user_id =
+        # circle = Circle(person_of_interest=user_id)
+        # circle.save()
+        # circle_member = User.objects.get(id=user_id)
+        # circle.add_member(circle_member, False)
+        user = AUser.objects.get(id=auser_id)
+        cal = Calendar()
+        cal.add('dtstart', datetime.now())
+        cal.add('summary', 'schedule of user:{}'.format(auser_id))
+
+        user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
+        user.save()
+
+
+signals.post_save.connect(receiver=initial_engine_scheduler, sender=AUser)
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)

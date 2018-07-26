@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import AUser, Session, EngineSession
+from .models import AUser, Session, EngineSession, User
 from utilities.renderers import alexa_render
 import json
 from utilities.dictionaries import deep_get
@@ -154,13 +154,37 @@ def get_engine_instance(engine_name, alexa_user: AUser, engine_session: EngineSe
 
 class Conversation:
     def __init__(self, request, spawner_class_name):
+        from django.utils.crypto import get_random_string
+        import datetime
+
         req_body = json.loads(request.body)
         session_id = deep_get(req_body, 'session.sessionId', '')
         user_id = deep_get(req_body, 'context.System.user.userId', '')
         device_id = deep_get(req_body, 'context.System.device.deviceId', '')
-        self.alexa_device = AUser.objects.get_or_create(alexa_device_id=device_id, alexa_user_id=user_id)[0]
+        self.alexa_device_init = AUser.objects.get_or_create(alexa_device_id=device_id, alexa_user_id=user_id)
+        self.alexa_device = self.alexa_device_init[0]
+        if self.alexa_device_init[1]:
+            username = 'Test{date}'.format(date=datetime.datetime.now().strftime('%Y%m%d%H%M'))
+            test_user = User(username=username,
+                             password=get_random_string(),
+                             first_name='Not Added Yet',
+                             last_name='Not Added Yet',
+                             is_staff=False,
+                             is_superuser=False,
+                             email='test@caressa.ai',
+                             phone_number='+14153477898',
+                             profile_pic='default_profile_pic'
+                             )
+            test_user.save()
+            test_id = User.objects.get(username=username).id
+            new_device = AUser.objects.get(alexa_device_id=device_id)
+            new_device.user_id = test_id
+            new_device.save()
+
+        log(self.alexa_device)
         self.engine_session = self.alexa_device.last_engine_session()
-        self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id, alexa_user=self.alexa_device)
+        self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id,
+                                                                       alexa_user=self.alexa_device)
 
         self.req = {
             'type': deep_get(req_body, 'request.type'),
@@ -325,6 +349,9 @@ class Conversation:
             engine.engine_session = e_session
             self.response['text'] = '{} {}'.format(self.response['text'], question)
             log(" Response: {}".format(self.response['text']))
+
+
+
 
 
 @csrf_exempt
