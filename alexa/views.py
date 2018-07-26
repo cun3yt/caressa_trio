@@ -167,8 +167,8 @@ class Conversation:
             username = 'Test{date}'.format(date=datetime.datetime.now().strftime('%Y%m%d%H%M'))
             test_user = User(username=username,
                              password=get_random_string(),
-                             first_name='Not Added Yet',
-                             last_name='Not Added Yet',
+                             first_name='AnonymousFirstName',
+                             last_name='AnonymousLastName',
                              is_staff=False,
                              is_superuser=False,
                              email='test@caressa.ai',

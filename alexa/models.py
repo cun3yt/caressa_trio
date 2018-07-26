@@ -406,12 +406,12 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
     user = instance.user
     verb = instance.verb
     action_object = instance.object
-    circle = Circle.objects.get(id=1)  # todo: Move to `hard-coding`
+    circle = user.circle_set.all()[0]
     action.send(user,
                 verb=verb,
                 description=kwargs.get('description', ''),
                 action_object=action_object,
-                target=circle,     # todo: Move to `hard-coding`
+                target=circle,
                 )
     channel_name = 'channel-{env}-circle-{circle}'.format(env=SETTINGS_ENV, circle=circle.id)
     user_action = user_action_model.objects.my_actions(user, circle).order_by('-timestamp')[0]
@@ -423,11 +423,6 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
 def initial_engine_scheduler(sender, instance, created, **kwargs):
     if instance.engine_schedule == '':
         auser_id = instance.id
-        # user_id =
-        # circle = Circle(person_of_interest=user_id)
-        # circle.save()
-        # circle_member = User.objects.get(id=user_id)
-        # circle.add_member(circle_member, False)
         user = AUser.objects.get(id=auser_id)
         cal = Calendar()
         cal.add('dtstart', datetime.now())
@@ -437,5 +432,13 @@ def initial_engine_scheduler(sender, instance, created, **kwargs):
         user.save()
 
 
+def new_testing_device_added_circle(sender, instance, created, **kwargs):
+    circle = Circle(person_of_interest=instance)
+    circle.save()
+    circle_member = User.objects.get(id=instance.id)
+    circle.add_member(circle_member, False)
+
+
+signals.post_save.connect(receiver=new_testing_device_added_circle, sender=User)
 signals.post_save.connect(receiver=initial_engine_scheduler, sender=AUser)
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)
