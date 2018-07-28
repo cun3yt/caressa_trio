@@ -147,6 +147,22 @@ class StopIntent(Intent):
                                          process_fn=process_fn, question=question, end_session=end_session)
 
 
+class FallbackIntent(Intent):
+    @classmethod
+    def intent_identifier(cls):
+        return 'AMAZON.FallbackIntent'
+
+    def __init__(self, slots=None, process_fn=None, question=None, response_set=None, end_session=False):
+        name = self.intent_identifier()
+        default_response_set = [
+            'Ok, moving on...',
+        ]
+        samples = []
+        response_set = response_set if response_set else default_response_set
+        super(FallbackIntent, self).__init__(name=name, response_set=response_set, samples=samples, slots=slots,
+                                             process_fn=process_fn, question=question, end_session=end_session)
+
+
 class BloodPressureIntent(Intent):
     @classmethod
     def intent_identifier(cls):

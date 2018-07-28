@@ -6,7 +6,8 @@ from datetime import timedelta, datetime
 from random import sample
 import pytz
 from alexa.models import AUser, Joke, News, User, Fact, Song
-from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent, StopIntent
+from alexa.intents import GoodIntent, BadIntent, YesIntent, NoIntent, BloodPressureIntent, WeightIntent, StopIntent, \
+    FallbackIntent
 from actions.models import UserAction, UserPost, UserListened
 from utilities.dictionaries import deep_get
 from caressa.settings import CONVERSATION_ENGINES
@@ -56,6 +57,7 @@ class EmotionalEngine(Engine):
                       ],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 GoodIntent(
                     process_fn=self.update_on_good_intent
                 ),
@@ -108,6 +110,7 @@ class FactEngine(Engine):
             reprompt=self._get_ending_question,     # todo may need an update!
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(
                     response_set=['Thanks!'],
                     process_fn=self._save_yes,
@@ -167,6 +170,7 @@ class DirectJokeEngine(Engine):
             reprompt=["Did you like the joke?", ],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(
                     response_set=['Thanks!'],
                     process_fn=self._save_joke_like),
@@ -207,12 +211,14 @@ class JokeEngine(Engine):
             reprompt=["Do you want a joke?", ],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(
                     response_set=self._get_joke_and_render,
                     question=Question(versions=['Was it funny?',
                                                 'Did you like this joke?', ],
                                       intent_list=[
                                           StopIntent(),
+                                          FallbackIntent(),
                                           YesIntent(
                                               response_set=['Thanks!'],
                                               process_fn=self._save_joke_like),
@@ -261,11 +267,13 @@ class DirectNewsEngine(Engine):
             reprompt=['Do you want to listen recent news?', ],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(
                     response_set=self._get_obj_and_render_content,
                     question=Question(versions=['Did you find this news interesting?', ],
                                       intent_list=[
                                           StopIntent(),
+                                          FallbackIntent(),
                                           YesIntent(
                                               response_set=['Thanks!'],
                                               process_fn=self._save_obj_like),
@@ -317,11 +325,13 @@ class NewsEngine(Engine):
             reprompt=['Do you want to listen recent news?', ],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(
                     response_set=self._get_obj_and_render,
                     question=Question(versions=['Did you like this news?', ],
                                       intent_list=[
                                           StopIntent(),
+                                          FallbackIntent(),
                                           YesIntent(
                                               response_set=['Thanks!'],
                                               process_fn=self._save_obj_like),
@@ -370,11 +380,13 @@ class MedicalEngine(Engine):
             reprompt=["Have you taken your blood pressure measurements? Yes or no?"],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(question=Question(versions=['What are your measurements?'],
                                             reprompt=[
                                                 'Please tell me with systolic over diastolic such as 120 over 80'],
                                             intent_list=[
                                                 StopIntent(),
+                                                FallbackIntent(),
                                                 BloodPressureIntent(process_fn=self.save_blood_pressure)
                                             ])),
                 NoIntent(question=Question(versions=['Would you like to take your measurement now then come back to '
@@ -383,6 +395,7 @@ class MedicalEngine(Engine):
                                                      "it to me? Yes or No?"],
                                            intent_list=[
                                                StopIntent(),
+                                               FallbackIntent(),
                                                YesIntent(response_set=['You can say Alexa open Caressa after '
                                                                        'you have taken your blood pressure. Bye.'],
                                                          end_session=True,
@@ -414,11 +427,13 @@ class WeightEngine(Engine):
             reprompt=["Have you taken your weight measurement yet? Yes or no?", ],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(question=Question(versions=['Good. What is your weight in pounds?'],
                                             reprompt=['Please, tell me your weight in pounds, '
                                                       'for example a hundred and twenty pounds.', ],
                                             intent_list=[
                                                 StopIntent(),
+                                                FallbackIntent(),
                                                 WeightIntent(process_fn=self.save_weight),
                                             ])),
                 NoIntent(question=Question(versions=['Would you like to go take your weight measurement now, '
@@ -427,6 +442,7 @@ class WeightEngine(Engine):
                                                      "and then tell it to me? Yes or No?"],
                                            intent_list=[
                                                StopIntent(),
+                                               FallbackIntent(),
                                                YesIntent(response_set=['You can say Alexa open Caressa '
                                                                        'after you have taken your weight. Goodbye.'],
                                                          end_session=True,
@@ -455,6 +471,7 @@ class AdEngine(Engine):
             reprompt=["Sorry, I didn't hear you. Did you have any night-time leg cramps lately?"],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(question=Question(
                     versions=[
                         "Most leg cramps go away on their own, but sometimes "
@@ -464,6 +481,7 @@ class AdEngine(Engine):
                     reprompt=['Is your leg cramp severe?', ],
                     intent_list=[
                         StopIntent(),
+                        FallbackIntent(),
                         YesIntent(
                             question=Question(
                                 versions=[
@@ -474,6 +492,7 @@ class AdEngine(Engine):
                                 reprompt=['Would you like a call from Dr. Smith?', ],
                                 intent_list=[
                                     StopIntent(),
+                                    FallbackIntent(),
                                     YesIntent(response_set=["Great, I will ask him to give you a call.", ]),
                                     NoIntent(response_set=['That would be fine. Stretching may help relieve '
                                                            'cramp and also prevent future episodes, if they '
@@ -517,6 +536,7 @@ class TalkBitEngine(Engine):
             reprompt=[statement, ],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(
                     response_set=['Yes, right!', ],
                     process_fn=self.mark_as_listened,
@@ -561,6 +581,7 @@ class SongEngine(Engine):
             reprompt=['Did you like it?', ],
             intent_list=[
                 StopIntent(),
+                FallbackIntent(),
                 YesIntent(
                     response_set=['Thanks!'],
                     process_fn=self._save_obj_like),
