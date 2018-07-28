@@ -132,7 +132,7 @@ class FactEngineTestCase(TestCase):
             self.assertEqual(engine.alexa_user, self.a_user)
             self.assertTrue(isinstance(engine.question, Question))
             self.assertIsNotNone(engine.engine_session)
-            self.assertEqual(len(engine.question.intents), 3)
+            self.assertEqual(len(engine.question.intents), 4)
             self.assertIn('no_intent', intent_keys)
             self.assertIn('yes_intent', intent_keys)
 
