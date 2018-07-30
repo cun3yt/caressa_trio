@@ -1,5 +1,5 @@
 from model_mommy.recipe import Recipe, foreign_key
-from alexa.models import User, AUser, EngineSession, Song
+from alexa.models import User, AUser, EngineSession, Song, Circle, CircleMembership
 
 user = Recipe(
     User,
@@ -35,3 +35,16 @@ song = Recipe(
     title='TestSong1',
     genre='Rock',
 )
+
+circle = Recipe(
+    Circle,
+    person_of_interest_id=foreign_key(user)
+)
+
+circle_membership = Recipe(
+    CircleMembership,
+    isAdmin=False,
+    circle_id=foreign_key(circle),
+    circle_membership=foreign_key(user)
+)
+

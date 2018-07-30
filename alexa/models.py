@@ -18,11 +18,10 @@ from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
 from caressa.settings import CONVERSATION_ENGINES, HOSTED_ENV
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils import timezone
 from random import sample
 from icalendar import Calendar
-from datetime import datetime
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -60,6 +59,15 @@ class User(AbstractUser, TimeStampedModel):
 
     def is_provider(self):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
+
+    def create_initial_circle(self):
+        membership = CircleMembership.objects.filter(member_id=self.id)
+        if membership.count() > 0:
+            return 'User in a circle'
+        circle = Circle(person_of_interest=self)
+        circle.save()
+        circle_member = User.objects.get(id=self.id)
+        circle.add_member(circle_member, False)
 
     def __repr__(self):
         return self.first_name.title()
@@ -174,6 +182,18 @@ class AUser(TimeStampedModel):
     def profile_set(self, key, value):
         deep_set(self.profile, key, value)
         self.save()
+
+    def engine_scheduler(self):
+        if not self.engine_schedule == '':
+            return 'Schedule exist'
+        auser_id = self.id
+        user = AUser.objects.get(id=auser_id)
+        cal = Calendar()
+        cal.add('dtstart', datetime.now())
+        cal.add('summary', 'schedule of user:{}'.format(auser_id))
+
+        user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
+        user.save()
 
 
 class AUserEmotionalState(TimeStampedModel):
@@ -420,26 +440,16 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
     pusher_client.trigger(channel_name, 'feeds', json)
 
 
-def initial_engine_scheduler(sender, instance, created, **kwargs):
-    if not instance.engine_schedule == '':
-        return
-    auser_id = instance.id
-    user = AUser.objects.get(id=auser_id)
-    cal = Calendar()
-    cal.add('dtstart', datetime.now())
-    cal.add('summary', 'schedule of user:{}'.format(auser_id))
-
-    user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
-    user.save()
+def set_init_engine_scheduler_for_auser(sender, instance, created, **kwargs):
+    auser = instance    # type: AUser
+    auser.engine_scheduler()
 
 
-def new_testing_device_added_circle(sender, instance, created, **kwargs):
-    circle = Circle(person_of_interest=instance)
-    circle.save()
-    circle_member = User.objects.get(id=instance.id)
-    circle.add_member(circle_member, False)
+def create_circle_for_user(sender, instance, created, **kwargs):
+    user = instance     # type: User
+    user.create_initial_circle()
 
 
-signals.post_save.connect(receiver=new_testing_device_added_circle, sender=User)
-signals.post_save.connect(receiver=initial_engine_scheduler, sender=AUser)
+signals.post_save.connect(receiver=create_circle_for_user, sender=User)
+signals.post_save.connect(receiver=set_init_engine_scheduler_for_auser, sender=AUser)
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)

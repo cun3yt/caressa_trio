@@ -14,6 +14,7 @@ from django.shortcuts import render
 from utilities.logger import log
 from random import sample, random
 
+
 def main_view(request):
     return render(request, 'main.html')
 
@@ -348,9 +349,6 @@ class Conversation:
             engine.engine_session = e_session
             self.response['text'] = '{} {}'.format(self.response['text'], question)
             log(" Response: {}".format(self.response['text']))
-
-
-
 
 
 @csrf_exempt
