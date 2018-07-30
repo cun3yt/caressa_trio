@@ -1,3 +1,5 @@
+[![Build Status](https://semaphoreci.com/api/v1/projects/feec7071-453b-4a9f-b392-8669d5277617/2118268/badge.svg)](https://semaphoreci.com/caressa/caressa_trio)
+
 # Caressa Main Repository
 
 Welcome to Caressa's code repository. Currently it includes two main repositories in this central location:
