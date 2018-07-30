@@ -63,11 +63,12 @@ class User(AbstractUser, TimeStampedModel):
     def create_initial_circle(self):
         membership = CircleMembership.objects.filter(member_id=self.id)
         if membership.count() > 0:
-            return 'User in a circle'
+            return False
         circle = Circle(person_of_interest=self)
         circle.save()
         circle_member = User.objects.get(id=self.id)
         circle.add_member(circle_member, False)
+        return True
 
     def __repr__(self):
         return self.first_name.title()
@@ -183,9 +184,9 @@ class AUser(TimeStampedModel):
         deep_set(self.profile, key, value)
         self.save()
 
-    def engine_scheduler(self):
+    def create_initial_engine_scheduler(self):
         if not self.engine_schedule == '':
-            return 'Schedule exist'
+            return False
         auser_id = self.id
         user = AUser.objects.get(id=auser_id)
         cal = Calendar()
@@ -194,7 +195,7 @@ class AUser(TimeStampedModel):
 
         user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
         user.save()
-
+        return True
 
 class AUserEmotionalState(TimeStampedModel):
     class Meta:
@@ -442,7 +443,7 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
 
 def set_init_engine_scheduler_for_auser(sender, instance, created, **kwargs):
     auser = instance    # type: AUser
-    auser.engine_scheduler()
+    auser.create_initial_engine_scheduler()
 
 
 def create_circle_for_user(sender, instance, created, **kwargs):
@@ -450,6 +451,7 @@ def create_circle_for_user(sender, instance, created, **kwargs):
     user.create_initial_circle()
 
 
-signals.post_save.connect(receiver=create_circle_for_user, sender=User)
-signals.post_save.connect(receiver=set_init_engine_scheduler_for_auser, sender=AUser)
+signals.post_save.connect(receiver=create_circle_for_user, sender=User, dispatch_uid='create_circle_for_user')
+signals.post_save.connect(receiver=set_init_engine_scheduler_for_auser, sender=AUser,
+                          dispatch_uid='set_init_engine_scheduler_for_auser')
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)

@@ -3,9 +3,12 @@ from alexa.engines import Question, FactEngine
 from alexa.intents import Intent, YesIntent
 from model_mommy import mommy
 from alexa.slots import SlotType, Slot
-from alexa.models import User, AUser, Circle, EngineSession, Fact, AUserEmotionalState, AUserMedicalState, Song
+from alexa.models import User, AUser, Circle, EngineSession, Fact, AUserEmotionalState, AUserMedicalState, Song, \
+    CircleMembership
 from caressa.settings import HOSTED_ENV
 from unittest.mock import patch
+from django.db.models import signals
+
 
 
 class BaseIntentTestCase(TestCase):
@@ -147,6 +150,9 @@ class UserModelTestCase(TestCase):
 
         self.user_four = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG')
 
+        self.circle_one = mommy.make(Circle)
+        self.circle_membership_one = mommy.make(CircleMembership)
+
     def test_get_profile_object(self):
         self.assertEqual(self.user_one.get_profile_pic(), '/statics/TestProfilePic1.png')
 
@@ -167,8 +173,15 @@ class UserModelTestCase(TestCase):
         self.assertFalse(self.user_four.is_senior(), False)
 
     def test_create_initial_circle(self):
-        self.assertEqual(self.user_one.create_initial_circle(), 'User in a circle')
-        self.assertNotEqual(self.user_two.create_initial_circle(), '__User in a circle__')
+        signals.post_save.disconnect(sender=User, dispatch_uid='create_circle_for_user')
+        user_five = User(first_name='TestFirstName1',
+                         last_name='TestLastName1',
+                         email='TestEMail1',
+                         phone_number='+14151234567',
+                         profile_pic='TestProfilePic1')
+        user_five.save()
+        self.assertFalse(self.user_one.create_initial_circle(), False)
+        self.assertTrue(user_five.create_initial_circle(), True)
 
 
 class CircleModelTestCase(TestCase):
@@ -244,9 +257,9 @@ class AUserModelTestCase(TestCase):
         self.assertIsNone(self.auser_one.profile_get('joke.smt'))
         self.assertIsNone(self.auser_one.profile_get('none.value'))
 
-    def test_engine_scheduler(self):
-        self.assertEqual(self.auser_one.engine_scheduler(), 'Schedule exist')
-        self.assertNotEqual(self.auser_two.engine_scheduler(), 'Schedule exist')
+    def test_create_initial_engine_scheduler(self):
+        self.assertFalse(self.auser_one.create_initial_engine_scheduler(), False)
+        self.assertTrue(self.auser_two.create_initial_engine_scheduler(), True)
 
 
 class SongModelTestCase(TestCase):
