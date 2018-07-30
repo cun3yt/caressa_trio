@@ -200,7 +200,7 @@ class Conversation:
 
     @staticmethod
     def _create_test_user():
-        username = 'Test{date}'.format(date=datetime.datetime.now().strftime('%Y%m%d%H%M'))
+        username = 'Test{date}'.format(date=datetime.now().strftime('%Y%m%d%H%M'))
         test_user = User(username=username,
                          password=get_random_string(),
                          first_name='AnonymousFirstName',
