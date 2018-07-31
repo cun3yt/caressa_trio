@@ -150,9 +150,6 @@ class UserModelTestCase(TestCase):
 
         self.user_four = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG')
 
-        self.circle_one = mommy.make(Circle)
-        self.circle_membership_one = mommy.make(CircleMembership)
-
     def test_get_profile_object(self):
         self.assertEqual(self.user_one.get_profile_pic(), '/statics/TestProfilePic1.png')
 
