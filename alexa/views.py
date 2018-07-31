@@ -1,7 +1,8 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import AUser, Session, EngineSession
+from .models import AUser, Session, EngineSession, User
 from utilities.renderers import alexa_render
+from django.utils.crypto import get_random_string
 import json
 from utilities.dictionaries import deep_get
 from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
@@ -157,10 +158,18 @@ class Conversation:
         req_body = json.loads(request.body)
         session_id = deep_get(req_body, 'session.sessionId', '')
         user_id = deep_get(req_body, 'context.System.user.userId', '')
+        device_id = deep_get(req_body, 'context.System.device.deviceId', '')
+        self.alexa_user, is_created = AUser.objects.get_or_create(alexa_device_id=device_id, alexa_user_id=user_id)
+        if is_created:
+            test_user = self._create_test_user()
+            test_user.save()
+            new_device = AUser.objects.get(alexa_device_id=device_id)
+            new_device.user_id = test_user.id
+            new_device.save()
 
-        self.alexa_user = AUser.objects.get_or_create(alexa_id=user_id)[0]
         self.engine_session = self.alexa_user.last_engine_session()
-        self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id, alexa_user=self.alexa_user)
+        self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id,
+                                                                       alexa_user=self.alexa_user)
 
         self.req = {
             'type': deep_get(req_body, 'request.type'),
@@ -188,6 +197,21 @@ class Conversation:
             'text': '',
             'should_session_end': False,
         }
+
+    @staticmethod
+    def _create_test_user():
+        username = 'Test{date}'.format(date=datetime.now().strftime('%Y%m%d%H%M'))
+        test_user = User(username=username,
+                         password=get_random_string(),
+                         first_name='AnonymousFirstName',
+                         last_name='AnonymousLastName',
+                         is_staff=False,
+                         is_superuser=False,
+                         email='test@caressa.ai',
+                         phone_number='+14153477898',
+                         profile_pic='default_profile_pic'
+                         )
+        return test_user
 
     @property
     def is_the_engine_session_going_on(self):

@@ -18,9 +18,10 @@ from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
 from caressa.settings import CONVERSATION_ENGINES, HOSTED_ENV
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.utils import timezone
 from random import sample
+from icalendar import Calendar
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -58,6 +59,16 @@ class User(AbstractUser, TimeStampedModel):
 
     def is_provider(self):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
+
+    def create_initial_circle(self):
+        membership = CircleMembership.objects.filter(member_id=self.id)
+        if membership.count() > 0:
+            return False
+        circle = Circle(person_of_interest=self)
+        circle.save()
+        circle_member = User.objects.get(id=self.id)
+        circle.add_member(circle_member, False)
+        return True
 
     def __repr__(self):
         return self.first_name.title()
@@ -122,7 +133,8 @@ class AUser(TimeStampedModel):
     class Meta:
         db_table = 'a_user'
 
-    alexa_id = models.TextField(db_index=True, editable=False)
+    alexa_user_id = models.TextField(editable=False)
+    alexa_device_id = models.TextField(db_index=True, editable=False)
     user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='a_users')
     engine_schedule = models.TextField(null=False, blank=True, default="")
     profile = JSONField(default={})
@@ -172,6 +184,18 @@ class AUser(TimeStampedModel):
         deep_set(self.profile, key, value)
         self.save()
 
+    def create_initial_engine_scheduler(self):
+        if not self.engine_schedule == '':
+            return False
+        auser_id = self.id
+        user = AUser.objects.get(id=auser_id)
+        cal = Calendar()
+        cal.add('dtstart', datetime.now())
+        cal.add('summary', 'schedule of user:{}'.format(auser_id))
+
+        user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
+        user.save()
+        return True
 
 class AUserEmotionalState(TimeStampedModel):
     class Meta:
@@ -413,12 +437,12 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
     user = instance.user
     verb = instance.verb
     action_object = instance.object
-    circle = Circle.objects.get(id=1)  # todo: Move to `hard-coding`
+    circle = user.circle_set.all()[0]
     action.send(user,
                 verb=verb,
                 description=kwargs.get('description', ''),
                 action_object=action_object,
-                target=circle,     # todo: Move to `hard-coding`
+                target=circle,
                 )
     channel_name = 'channel-{env}-circle-{circle}'.format(env=SETTINGS_ENV, circle=circle.id)
     user_action = user_action_model.objects.my_actions(user, circle).order_by('-timestamp')[0]
@@ -427,4 +451,17 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
     pusher_client.trigger(channel_name, 'feeds', json)
 
 
+def set_init_engine_scheduler_for_auser(sender, instance, created, **kwargs):
+    auser = instance    # type: AUser
+    auser.create_initial_engine_scheduler()
+
+
+def create_circle_for_user(sender, instance, created, **kwargs):
+    user = instance     # type: User
+    user.create_initial_circle()
+
+
+signals.post_save.connect(receiver=create_circle_for_user, sender=User, dispatch_uid='create_circle_for_user')
+signals.post_save.connect(receiver=set_init_engine_scheduler_for_auser, sender=AUser,
+                          dispatch_uid='set_init_engine_scheduler_for_auser')
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)

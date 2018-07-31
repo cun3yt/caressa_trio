@@ -19,7 +19,7 @@ def run():
     event.add('dtstart', datetime(2018, 4, 4, 0, 0, 0, tzinfo=pytz.utc))
     event.add('dtend', datetime(2018, 4, 4, 23, 59, 59, tzinfo=pytz.utc))
     event.add('rrule', {'freq': 'daily'})
-
     cal.add_component(event)
+    
     user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
     user.save()

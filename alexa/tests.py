@@ -3,9 +3,12 @@ from alexa.engines import Question, FactEngine
 from alexa.intents import Intent, YesIntent
 from model_mommy import mommy
 from alexa.slots import SlotType, Slot
-from alexa.models import User, AUser, Circle, EngineSession, Fact, AUserEmotionalState, AUserMedicalState, Song
+from alexa.models import User, AUser, Circle, EngineSession, Fact, AUserEmotionalState, AUserMedicalState, Song, \
+    CircleMembership
 from caressa.settings import HOSTED_ENV
 from unittest.mock import patch
+from django.db.models import signals
+
 
 
 class BaseIntentTestCase(TestCase):
@@ -139,26 +142,43 @@ class FactEngineTestCase(TestCase):
 
 class UserModelTestCase(TestCase):
     def setUp(self):
-        self.user_1 = mommy.make_recipe('alexa.user')
+        self.user_one = mommy.make_recipe('alexa.user')
 
-        self.user_2 = mommy.make_recipe('alexa.user', user_type='FAMILY')
+        self.user_two = mommy.make_recipe('alexa.user', user_type='FAMILY')
 
-        self.user_3 = mommy.make_recipe('alexa.user', user_type='CAREGIVER')
+        self.user_three = mommy.make_recipe('alexa.user', user_type='CAREGIVER')
 
-        self.user_4 = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG')
+        self.user_four = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG')
 
     def test_get_profile_object(self):
-        self.assertEqual(self.user_1.get_profile_pic(), '/statics/TestProfilePic1.png')
+        self.assertEqual(self.user_one.get_profile_pic(), '/statics/TestProfilePic1.png')
 
     def test_is_senior(self):
-        self.assertTrue(self.user_1.is_senior(), True)
+        self.assertTrue(self.user_one.is_senior(), True)
+        self.assertFalse(self.user_one.is_family(), False)
+        self.assertFalse(self.user_one.is_provider(), False)
 
     def test_is_family(self):
-        self.assertTrue(self.user_2.is_family(), True)
+        self.assertTrue(self.user_two.is_family(), True)
+        self.assertFalse(self.user_two.is_senior(), False)
+        self.assertFalse(self.user_two.is_provider(), False)
 
     def test_is_provider(self):
-        self.assertTrue(self.user_3.is_provider(), True)
-        self.assertTrue(self.user_4.is_provider(), True)
+        self.assertTrue(self.user_three.is_provider(), True)
+        self.assertFalse(self.user_three.is_family(), False)
+        self.assertTrue(self.user_four.is_provider(), True)
+        self.assertFalse(self.user_four.is_senior(), False)
+
+    def test_create_initial_circle(self):
+        signals.post_save.disconnect(sender=User, dispatch_uid='create_circle_for_user')
+        user_five = User(first_name='TestFirstName1',
+                         last_name='TestLastName1',
+                         email='TestEMail1',
+                         phone_number='+14151234567',
+                         profile_pic='TestProfilePic1')
+        user_five.save()
+        self.assertFalse(self.user_one.create_initial_circle(), False)
+        self.assertTrue(user_five.create_initial_circle(), True)
 
 
 class CircleModelTestCase(TestCase):
@@ -186,6 +206,7 @@ class CircleModelTestCase(TestCase):
 class AUserModelTestCase(TestCase):
     def setUp(self):
         self.auser_one = mommy.make_recipe('alexa.auser')
+        self.auser_two = mommy.make(AUser, engine_schedule='')
         self.auser_emotional_state = mommy.make(AUserEmotionalState)
         self.auser_medical_state = mommy.make(AUserMedicalState)
         self.engine_session_one = mommy.make_recipe('alexa.engine_session')
@@ -232,6 +253,10 @@ class AUserModelTestCase(TestCase):
         self.assertTrue(isinstance(self.auser_one.profile_get('joke'), dict))
         self.assertIsNone(self.auser_one.profile_get('joke.smt'))
         self.assertIsNone(self.auser_one.profile_get('none.value'))
+
+    def test_create_initial_engine_scheduler(self):
+        self.assertFalse(self.auser_one.create_initial_engine_scheduler(), False)
+        self.assertTrue(self.auser_two.create_initial_engine_scheduler(), True)
 
 
 class SongModelTestCase(TestCase):
