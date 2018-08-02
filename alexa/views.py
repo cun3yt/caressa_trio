@@ -7,7 +7,7 @@ import json
 from utilities.dictionaries import deep_get
 from alexa.engines import EmotionalEngine, MedicalEngine, WeightEngine, JokeEngine, AdEngine, \
     engine_registration, NewsEngine, DirectNewsEngine, DirectJokeEngine, FactEngine, TalkBitEngine, \
-    SongEngine, OutroEngine
+    SongEngine, OutroEngine, ManualTalkBitEngine
 from icalevents.icalevents import events as query_events
 from datetime import datetime, timedelta
 from django.shortcuts import render
@@ -48,7 +48,8 @@ class BasicEngineSpawner:
             'WeightEngine',
         ]
         self.notif_engines = [
-            'TalkBitEngine',
+            # 'TalkBitEngine',
+            'ManualTalkBitEngine',
         ]
         self.filler_engines = [
             # 'NewsEngine',
@@ -93,7 +94,8 @@ class BasicEngineSpawner:
         return [] if engine_name is None else [engine_name]
 
     def _get_available_notif_engines(self):
-        return ['TalkBitEngine'] if TalkBitEngine.fetch_user_post(self.a_user.user) else []
+        return ['ManualTalkBitEngine'] if ManualTalkBitEngine.fetch_user_post(self.a_user.user) else []
+        # return ['TalkBitEngine'] if TalkBitEngine.fetch_user_post(self.a_user.user) else []
 
     @staticmethod
     def _random_select(engine_list):
