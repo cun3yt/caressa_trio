@@ -139,7 +139,7 @@ class StopIntent(Intent):
         name = self.intent_identifier()
         default_response_set = [
             'Alright. Don\'t forget to come back by saying "Alexa, open Caressa"',
-            'Goodbye. Don\'t forget to come back by saying "Alexa, open Caressa',
+            'Goodbye. Don\'t forget to come back by saying "Alexa, open Caressa"',
         ]
         samples = []
         response_set = response_set if response_set else default_response_set
