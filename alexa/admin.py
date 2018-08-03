@@ -1,9 +1,33 @@
 from django.contrib import admin
-from alexa.models import Fact, FactType
+from alexa.models import Fact, FactType, User
 from django.db import models
 from django import forms
 from utilities.widgets.split_json_widget import SplitJSONWidget
 from jsonfield import JSONField
+
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    fields = ('username',
+              'first_name',
+              'last_name',
+              'email',
+              'date_joined',
+              'is_staff',
+              'is_active',
+              'user_type',
+              'phone_number',
+              'profile_pic', )
+    list_display = ('username',
+                    'first_name',
+                    'last_name',
+                    'email',
+                    'date_joined',
+                    'is_staff',
+                    'is_active',
+                    'user_type',
+                    'phone_number', )
+    readonly_fields = ('profile_pic', 'date_joined', 'is_active', )
 
 
 @admin.register(Fact)
