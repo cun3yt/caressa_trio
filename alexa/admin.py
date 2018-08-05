@@ -1,5 +1,5 @@
 from django.contrib import admin
-from alexa.models import Fact, FactType, User
+from alexa.models import Fact, FactType, User, Circle
 from django.db import models
 from django import forms
 from utilities.widgets.split_json_widget import SplitJSONWidget
@@ -27,7 +27,26 @@ class UserAdmin(admin.ModelAdmin):
                     'is_active',
                     'user_type',
                     'phone_number', )
-    readonly_fields = ('profile_pic', 'date_joined', 'is_active', )
+    readonly_fields = ('profile_pic',
+                       'date_joined',
+                       'is_active', )
+
+
+class CircleMembershipInlineAdmin(admin.TabularInline):
+    model = Circle.members.through
+
+
+@admin.register(Circle)
+class CircleAdmin(admin.ModelAdmin):
+    fields = ('person_of_interest',
+              )
+    list_display = ('pk',
+                    'person_of_interest',
+                    )
+
+    inlines = (CircleMembershipInlineAdmin, )
+
+    readonly_fields = ('person_of_interest', )
 
 
 @admin.register(Fact)
