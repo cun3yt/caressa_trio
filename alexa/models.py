@@ -47,6 +47,11 @@ class User(AbstractUser, TimeStampedModel):
 
     phone_number = PhoneNumberField(db_index=True, blank=True)
     profile_pic = models.TextField(blank=True, default='')
+    is_anonymous_user = models.BooleanField(default=True,
+                                            help_text='Having this field anonymous means that the content will '
+                                                      'not be optimized on the personal level, e.g. calling by '
+                                                      'name. Once you set the user\'s first name properly you can '
+                                                      'set this field to `False`', )
 
     def get_profile_pic(self):
         return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None
