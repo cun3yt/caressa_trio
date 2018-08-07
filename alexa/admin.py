@@ -24,6 +24,7 @@ class UserAdmin(admin.ModelAdmin):
                     'last_name',
                     'email',
                     'date_joined',
+                    'is_anonymous_user',
                     'is_staff',
                     'is_active',
                     'user_type',
