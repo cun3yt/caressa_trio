@@ -47,6 +47,11 @@ class User(AbstractUser, TimeStampedModel):
 
     phone_number = PhoneNumberField(db_index=True, blank=True)
     profile_pic = models.TextField(blank=True, default='')
+    is_anonymous_user = models.BooleanField(default=True,
+                                            help_text='Having this field anonymous means that the content will '
+                                                      'not be optimized on the personal level, e.g. calling by '
+                                                      'name. Once you set the user\'s first name properly you can '
+                                                      'set this field to `False`', )
 
     def get_profile_pic(self):
         return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None
@@ -132,9 +137,12 @@ class CircleMembership(TimeStampedModel):
 class AUser(TimeStampedModel):
     class Meta:
         db_table = 'a_user'
+        indexes = [
+            models.Index(fields=['alexa_device_id', 'alexa_user_id'])
+        ]
 
     alexa_user_id = models.TextField(editable=False)
-    alexa_device_id = models.TextField(db_index=True, editable=False)
+    alexa_device_id = models.TextField(editable=False)
     user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='a_users')
     engine_schedule = models.TextField(null=False, blank=True, default="")
     profile = JSONField(default={})

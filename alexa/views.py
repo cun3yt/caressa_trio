@@ -166,7 +166,7 @@ class Conversation:
             test_user = self._create_test_user()
             test_user.save()
             new_device = AUser.objects.get(alexa_device_id=device_id)
-            new_device.user_id = test_user.id
+            new_device.user = test_user
             new_device.save()
 
         self.engine_session = self.alexa_user.last_engine_session()
