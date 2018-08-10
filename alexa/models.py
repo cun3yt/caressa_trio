@@ -79,7 +79,7 @@ class User(AbstractUser, TimeStampedModel):
         return self.first_name.title()
 
     def __str__(self):
-        return self.first_name.title()
+        return self.get_full_name()
 
 
 class Circle(TimeStampedModel):

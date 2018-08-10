@@ -38,7 +38,7 @@ class CircleMembershipInlineAdmin(admin.TabularInline):
     model = Circle.members.through
 
 
-@admin.register(Circle)
+# @admin.register(Circle)
 class CircleAdmin(admin.ModelAdmin):
     fields = ('person_of_interest',
               )
@@ -51,7 +51,7 @@ class CircleAdmin(admin.ModelAdmin):
     readonly_fields = ('person_of_interest', )
 
 
-@admin.register(Fact)
+# @admin.register(Fact)
 class FactAdmin(admin.ModelAdmin):
     class Media:
         css = {
@@ -68,6 +68,6 @@ class FactAdmin(admin.ModelAdmin):
     }
 
 
-@admin.register(FactType)
+# @admin.register(FactType)
 class FactTypeAdmin(admin.ModelAdmin):
     pass
