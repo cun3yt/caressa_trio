@@ -2,7 +2,7 @@ from django.contrib import admin
 from actions.models import ManualUserPost
 
 
-@admin.register(ManualUserPost)
+#@admin.register(ManualUserPost)
 class ManualUserPostAdmin(admin.ModelAdmin):
     fields = ('listened_time',
               'user',
