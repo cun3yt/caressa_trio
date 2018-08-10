@@ -1,20 +1,8 @@
 from django.contrib import admin
-from actions.models import User, UserPost, ManualUserPost
-from utilities.widgets.split_json_widget import SplitJSONWidget
-from jsonfield import JSONField
+from actions.models import ManualUserPost
 
 
-@admin.register(UserPost)
-class UserPostAdmin(admin.ModelAdmin):
-    fields = ('user', 'data', )
-    list_display = ('user', 'created', 'modified')
-
-    formfield_overrides = {
-        JSONField: {'widget': SplitJSONWidget(debug=False)},
-    }
-
-
-@admin.register(ManualUserPost)
+#@admin.register(ManualUserPost)
 class ManualUserPostAdmin(admin.ModelAdmin):
     fields = ('listened_time',
               'user',
