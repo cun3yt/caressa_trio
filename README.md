@@ -54,6 +54,9 @@ This setup is written for Mac OS.
     * VIRTUAL_ENV_PATH set to the virtual environment path that is in use, e.g.: `export VIRTUAL_ENV_PATH='/Users/cuneyt/.pyenv/versions/caressa'`
     * PROJECT_ROOT set to the project root, e.g.: `export PROJECT_ROOT='/Users/cuneyt/Work/caressa'`
     * HOSTED_ENV set to the serveo or which environment you serve your dev server for alexa skill development: `export HOSTED_ENV='https://yourserver.serveo.net/'`
+    * AWS_ACCESS_KEY_ID set to active AWS access key id.
+    * AWS_SECRET_ACCESS_KEY set to active AWS secret access key id.
+    * MEDIA_BUCKET set to active s3 bucket on AWS.
 
 1. Run Database Migrations
     * Go to project root
