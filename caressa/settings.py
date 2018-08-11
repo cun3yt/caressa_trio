@@ -179,6 +179,8 @@ pusher_secret = os.environ.get('PUSHER_SECRET')
 pusher_cluster = os.environ.get('PUSHER_CLUSTER')
 pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pusher_secret, cluster=pusher_cluster)
 
+botanalytics_api_token = os.environ.get('BOTANALYTICS_API_TOKEN')
+
 CONVERSATION_ENGINES = {
     'ttl': 10*60,
 }
