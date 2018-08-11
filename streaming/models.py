@@ -35,6 +35,7 @@ class AudioFile(TimeStampedModel):
                                   choices=TYPE_SET, )
     url = models.TextField(blank=False,
                            null=False,
+                           db_index=True,
                            help_text='File URL, it must be publicly accessible', )
     duration = models.IntegerField(blank=False,
                                    null=False,
@@ -42,7 +43,6 @@ class AudioFile(TimeStampedModel):
                                    help_text='Duration of content in seconds', )
     name = models.TextField(blank=False,
                             null=False,
-                            db_index=True,
                             help_text='For internal use only', )
     description = models.TextField(blank=True,
                                    null=False,
