@@ -25,4 +25,5 @@ rest-framework-generic-relations==1.1.0
 model_mommy==1.6.0
 timeago==1.0.8
 mutagen==1.41.0
+boto==2.49.0
 botanalytics==0.2.5

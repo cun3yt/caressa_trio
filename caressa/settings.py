@@ -179,6 +179,11 @@ pusher_secret = os.environ.get('PUSHER_SECRET')
 pusher_cluster = os.environ.get('PUSHER_CLUSTER')
 pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pusher_secret, cluster=pusher_cluster)
 
+# AWS ENV variables
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+MEDIA_BUCKET = os.environ.get('MEDIA_BUCKET')
+
 botanalytics_api_token = os.environ.get('BOTANALYTICS_API_TOKEN')
 
 CONVERSATION_ENGINES = {
