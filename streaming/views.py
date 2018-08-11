@@ -9,6 +9,12 @@ from django.utils.crypto import get_random_string
 from django.http import JsonResponse
 from streaming.models import PlaylistHasAudio, UserPlaylistStatus
 from django.db import transaction
+from botanalytics.amazon import AmazonAlexa
+from caressa.settings import botanalytics_api_token
+
+
+botanalytics = AmazonAlexa(debug=True,
+                           token=botanalytics_api_token)
 
 
 def _create_test_user():
@@ -26,9 +32,14 @@ def _create_test_user():
 
 
 @csrf_exempt
-def stream_io(request):
-    req_body = json.loads(request.body)
+def stream_io_wrapper(request):
+    request_body = json.loads(request.body)
+    response_body = stream_io(request_body)   # type: dict
+    botanalytics.log(request_body, response_body)
+    return JsonResponse(response_body)
 
+
+def stream_io(req_body):
     log(req_body)
 
     session_id = deep_get(req_body, 'session.sessionId', '')
@@ -82,7 +93,7 @@ def filler():
             "shouldEndSession": True
         }
     }
-    return JsonResponse(data)
+    return data
 
 
 @transaction.atomic()
@@ -136,7 +147,7 @@ def stop_session():
             ]
         }
     }
-    return JsonResponse(data)
+    return data
 
 
 def start_session(playlist_has_audio: PlaylistHasAudio, offset=0):
@@ -163,7 +174,7 @@ def start_session(playlist_has_audio: PlaylistHasAudio, offset=0):
         }
     }
 
-    return JsonResponse(data)
+    return data
 
 
 @transaction.atomic()
@@ -202,4 +213,4 @@ def enqueue_next_song(alexa_user: AUser):
         }
     }
 
-    return JsonResponse(data)
+    return data

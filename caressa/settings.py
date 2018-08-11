@@ -184,6 +184,8 @@ AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 MEDIA_BUCKET = os.environ.get('MEDIA_BUCKET')
 
+botanalytics_api_token = os.environ.get('BOTANALYTICS_API_TOKEN')
+
 CONVERSATION_ENGINES = {
     'ttl': 10*60,
 }
