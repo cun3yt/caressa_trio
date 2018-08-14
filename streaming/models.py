@@ -183,3 +183,4 @@ class HardwareRegistry(TimeStampedModel):
 
     caressa_device_id = models.CharField(max_length=100, blank=False, null=False)   # e.g. CA-AMZ-001
     device_id = models.TextField()      # Alexa ID  todo: when Alexa User is changed on Alexa device is it updated?
+    notes = models.TextField(default='')

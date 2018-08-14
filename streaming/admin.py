@@ -75,12 +75,14 @@ class PlaylistHasAudioAdmin(admin.ModelAdmin):
 class HardwareRegistry(admin.ModelAdmin):
     fields = ('caressa_device_id',
               'device_id',
-              'last_used_by', )
+              'last_used_by',
+              'notes', )
 
     list_display = ('id',
                     'caressa_device_id',
                     'list_device_id',
-                    'last_used_by', )
+                    'last_used_by',
+                    'notes', )
 
     readonly_fields = ('last_used_by', )
 
@@ -94,4 +96,7 @@ class HardwareRegistry(admin.ModelAdmin):
         alexa_user_qs = AUser.objects.filter(alexa_device_id__exact=registry.device_id)
         if alexa_user_qs.count() < 1:
             return None
-        return alexa_user_qs[0].user
+        return "{user} (AUser::{au_id}, User::{u_id})".format(
+            user=alexa_user_qs[0].user,
+            au_id=alexa_user_qs[0].id,
+            u_id=alexa_user_qs[0].user.id, )
