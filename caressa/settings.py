@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'utilities',
     'actstream',    # package `django activity stream`
+    'admin_ordering',   # package `django-admin-ordering`
     'alexa',
     'actions',
     'streaming',

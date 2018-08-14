@@ -3,6 +3,7 @@ from streaming.models import AudioFile, Playlist, PlaylistHasAudio, HardwareRegi
 from alexa.models import AUser
 from streaming.forms import AudioFileForm
 from django.utils.html import format_html
+from admin_ordering.admin import OrderableAdmin
 
 
 @admin.register(AudioFile)
@@ -52,7 +53,9 @@ class PlaylistAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlaylistHasAudio)
-class PlaylistHasAudioAdmin(admin.ModelAdmin):
+class PlaylistHasAudioAdmin(OrderableAdmin, admin.ModelAdmin):
+    ordering_field = 'order_id'     # this is for 'admin_ordering' package
+
     fields = ('playlist',
               'audio',
               'order_id', )
@@ -92,7 +95,8 @@ class HardwareRegistry(admin.ModelAdmin):
         return "{}...{}".format(registry.device_id[:10], registry.device_id[-15:])
     list_device_id.admin_order_field = 'device_id'
 
-    def last_used_by(self, registry: HardwareRegistry):
+    @staticmethod
+    def last_used_by(registry: HardwareRegistry):
         alexa_user_qs = AUser.objects.filter(alexa_device_id__exact=registry.device_id)
         if alexa_user_qs.count() < 1:
             return None
