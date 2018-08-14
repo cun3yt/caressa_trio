@@ -1,4 +1,4 @@
-from streaming.models import Playlist, PlaylistHasAudio, UserPlaylistStatus
+from streaming.models import Playlist, UserPlaylistStatus
 from alexa.models import User
 from utilities.logger import log
 from django.db import transaction
