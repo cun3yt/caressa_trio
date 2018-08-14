@@ -13,7 +13,7 @@ from botanalytics.amazon import AmazonAlexa
 from caressa.settings import botanalytics_api_token
 
 
-botanalytics = AmazonAlexa(debug=True,
+botanalytics = AmazonAlexa(debug=False,
                            token=botanalytics_api_token)
 
 
@@ -35,7 +35,7 @@ def _create_test_user():
 def stream_io_wrapper(request):
     request_body = json.loads(request.body)
     response_body = stream_io(request_body)   # type: dict
-    botanalytics.log(request_body, response_body)
+    # botanalytics.log(request_body, response_body)
     return JsonResponse(response_body)
 
 
@@ -93,6 +93,9 @@ def filler():
             "shouldEndSession": True
         }
     }
+
+    log(" >> LOG: FILLER")
+
     return data
 
 
@@ -102,7 +105,10 @@ def save_state(alexa_user: AUser, req_body):
     offset = deep_get(req_body, 'context.AudioPlayer.offsetInMilliseconds')
     token = deep_get(req_body, 'context.AudioPlayer.token')     # this is AudioFile instance's ID
 
-    qs_playlist_entry = status.playlist_has_audio.playlist.playlisthasaudio_set.filter(audio_id__exact=token)
+    qs_playlist_entry = status.playlist_has_audio.playlist.playlisthasaudio_set.filter(
+        audio_id__exact=token, order_id__gte=status.playlist_has_audio.order_id
+    )
+
     new_playlist_has_audio = None
     if qs_playlist_entry.count() < 1:   # if the currently playing song is not available in the playlist
         new_playlist_has_audio = status.playlist_has_audio.playlist.playlisthasaudio_set.all()[0]
@@ -115,6 +121,11 @@ def save_state(alexa_user: AUser, req_body):
     status.offset = offset
     status.save()
 
+    log(' >> LOG SAVE_STATE: pha: {}, audio: {}, order: {}'.format(
+        status.playlist_has_audio.id,
+        status.playlist_has_audio.audio.id,
+        status.playlist_has_audio.order_id))
+
 
 @transaction.atomic()
 def save_state_by_playlist_entry(alexa_user: AUser, pha: PlaylistHasAudio):
@@ -123,14 +134,21 @@ def save_state_by_playlist_entry(alexa_user: AUser, pha: PlaylistHasAudio):
     status.offset = 0
     status.save()
 
+    log(' >> LOG: SAVE_STATE_BY_PLAYLIST_ENTRY: pha: {}, audio: {}, order: {}'.format(
+        status.playlist_has_audio.id,
+        status.playlist_has_audio.audio.id,
+        status.playlist_has_audio.order_id))
+
 
 def pause_session(alexa_user: AUser, req_body):
+    log(' >> LOG: PAUSE')
     save_state(alexa_user, req_body)
     return stop_session()
 
 
 @transaction.atomic()
 def resume_session(alexa_user: AUser):
+    log(' >> LOG: RESUME_SESSION')
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
     return start_session(status.playlist_has_audio, status.offset)
 
@@ -147,6 +165,9 @@ def stop_session():
             ]
         }
     }
+
+    log(" >> LOG: STOP")
+
     return data
 
 
@@ -173,6 +194,8 @@ def start_session(playlist_has_audio: PlaylistHasAudio, offset=0):
             ]
         }
     }
+
+    log(" >> LOG: START_SESSION token: {}".format(token))
 
     return data
 
@@ -212,5 +235,7 @@ def enqueue_next_song(alexa_user: AUser):
             ]
         }
     }
+
+    log(" >> LOG: EN.Q token: {}, previous token: {}".format(file.id, status.playlist_has_audio.audio.id))
 
     return data
