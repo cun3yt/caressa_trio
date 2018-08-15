@@ -4,6 +4,9 @@ from alexa.models import AUser
 from streaming.forms import AudioFileForm
 from django.utils.html import format_html
 from admin_ordering.admin import OrderableAdmin
+from django_admin_relation_links import AdminChangeLinksMixin
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 
 
 @admin.register(AudioFile)
@@ -25,7 +28,9 @@ class AudioFileAdmin(admin.ModelAdmin):
     readonly_fields = ('url_hyperlink',
                        'duration', )
 
-    ordering = ['-modified', 'duration', ]
+    ordering = ['-modified', ]
+
+    search_fields = ['name', ]
 
     form = AudioFileForm
 
@@ -53,15 +58,19 @@ class PlaylistAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlaylistHasAudio)
-class PlaylistHasAudioAdmin(OrderableAdmin, admin.ModelAdmin):
+class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAdmin):
     ordering_field = 'order_id'     # this is for 'admin_ordering' package
 
     fields = ('playlist',
               'audio',
+              'duration',
               'order_id', )
 
-    list_display = ('playlist',
-                    'audio',
+    list_display = ('id',
+                    'playlist',
+                    'audio_file',
+                    'audio_file_external_link',
+                    'duration',
                     'order_id', )
 
     list_editable = ('order_id', )
@@ -72,6 +81,28 @@ class PlaylistHasAudioAdmin(OrderableAdmin, admin.ModelAdmin):
 
     search_fields = ('playlist__name',
                      'audio__name', )
+
+    readonly_fields = ('duration', )
+
+    change_links = ['audio']
+
+    autocomplete_fields = ['audio', ]
+
+    @staticmethod
+    def audio_file(instance: PlaylistHasAudio):
+        url = '<a href="{url}">{file_name}</a>'.format(url=reverse('admin:streaming_audiofile_change', args=(instance.audio.id,)),
+                                                       file_name=instance.audio, )
+        return mark_safe(url)
+
+    @staticmethod
+    def audio_file_external_link(instance: PlaylistHasAudio):
+        url = '<a href="{url}" target="_blank">Listen</a>'.format(
+            url=instance.audio.url, )
+        return mark_safe(url)
+
+    @staticmethod
+    def duration(instance: PlaylistHasAudio):
+        return instance.audio.duration_in_minutes
 
 
 @admin.register(HardwareRegistry)

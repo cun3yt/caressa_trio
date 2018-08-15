@@ -173,6 +173,16 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 5,
 }
 
+if ENV == 'dev':
+    LOGGING = {
+        'version': 1,
+        'loggers': {
+            'django.db.backends': {
+                'level': 'DEBUG',
+            },
+        },
+    }
+
 # Pusher ENV variables
 pusher_app_id = os.environ.get('PUSHER_APP_ID')
 pusher_key_id = os.environ.get('PUSHER_KEY')
