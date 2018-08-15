@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'utilities',
     'actstream',    # package `django activity stream`
+    'admin_ordering',   # package `django-admin-ordering`
     'alexa',
     'actions',
     'streaming',
@@ -171,6 +172,16 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'alexa.api.configuration.pagination.ExtendedPageNumberPagination',
     'PAGE_SIZE': 5,
 }
+
+if ENV == 'dev':
+    LOGGING = {
+        'version': 1,
+        'loggers': {
+            'django.db.backends': {
+                'level': 'DEBUG',
+            },
+        },
+    }
 
 # Pusher ENV variables
 pusher_app_id = os.environ.get('PUSHER_APP_ID')
