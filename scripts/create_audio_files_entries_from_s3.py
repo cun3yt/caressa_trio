@@ -18,7 +18,6 @@ def run():
 
     log('~~~ SCRIPT STARTS ~~~')
 
-    audio_files_batch = []
     for key in bucket.list():
         s3_audio_file_split = key.name.split('/')
         url = '{}/{}/{}'.format('https://s3-us-west-1.amazonaws.com', MEDIA_BUCKET, quote_plus(key.name, '/'))
@@ -38,10 +37,9 @@ def run():
         log('Description: {}'.format(description))
 
         new_audio_from_s3 = AudioFile(audio_type=audio_type, url=url, name=name, description=description)
-        audio_files_batch.append(new_audio_from_s3)
+        new_audio_from_s3.save()
 
-        log('Appended')
+        log('Audio Saved')
         log('~~~~~~~~~~~~~~~~~~~~')
 
-    AudioFile.objects.bulk_create(audio_files_batch, 1000)
     log('~~~ SCRIPT FINISHED ~~~')
