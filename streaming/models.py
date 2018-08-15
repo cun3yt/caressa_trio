@@ -43,6 +43,7 @@ class AudioFile(TimeStampedModel):
                                    help_text='Duration of content in seconds', )
     name = models.TextField(blank=False,
                             null=False,
+                            db_index=True,
                             help_text='For internal use only', )
     description = models.TextField(blank=True,
                                    null=False,
@@ -51,10 +52,17 @@ class AudioFile(TimeStampedModel):
     payload = JSONField(default={})
 
     def __str__(self):
-        return self.name
+        return "({audio_type}) {file_name}".format(audio_type=self.audio_type, file_name=self.name)
 
     def url_hyperlink(self):
         return format_html("<a href='{url}' target='_blank'>{url}</a>".format(url=self.url))
+
+    @property
+    def duration_in_minutes(self):
+        formatted_str = '{:02} min(s) {:02} sec(s)'.format(self.duration // 60, self.duration % 60) \
+            if self.duration > 60 \
+            else '{:02} sec(s)'.format(self.duration)
+        return formatted_str
 
     def is_publicly_accessible(self):
         return self.duration >= 0
@@ -183,3 +191,4 @@ class HardwareRegistry(TimeStampedModel):
 
     caressa_device_id = models.CharField(max_length=100, blank=False, null=False)   # e.g. CA-AMZ-001
     device_id = models.TextField()      # Alexa ID  todo: when Alexa User is changed on Alexa device is it updated?
+    notes = models.TextField(default='')

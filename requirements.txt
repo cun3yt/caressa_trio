@@ -27,3 +27,5 @@ timeago==1.0.8
 mutagen==1.41.0
 boto==2.49.0
 botanalytics==0.2.5
+django-admin-ordering==0.8.1
+django-admin-relation-links==0.0.5
