@@ -9,7 +9,7 @@ from caressa.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, MEDIA_BUC
 def is_file_importable(filename, public_url):
     proper_audio_extensions = ('.ra', '.aif', '.aiff', '.aifc', '.wav', '.au', '.snd', '.mp3', '.mp2')
     return filename.endswith(proper_audio_extensions) \
-           and (AudioFile.objects.all().filter(url=public_url).count() == 0)
+        and (AudioFile.objects.all().filter(url=public_url).count() == 0)
 
 
 def run():
@@ -18,8 +18,7 @@ def run():
 
     log('~~~ SCRIPT STARTS ~~~')
 
-    # todo Pagination will be good here.
-
+    audio_files_batch = []
     for key in bucket.list():
         s3_audio_file_split = key.name.split('/')
         url = '{}/{}/{}'.format('https://s3-us-west-1.amazonaws.com', MEDIA_BUCKET, quote_plus(key.name, '/'))
@@ -39,9 +38,10 @@ def run():
         log('Description: {}'.format(description))
 
         new_audio_from_s3 = AudioFile(audio_type=audio_type, url=url, name=name, description=description)
-        new_audio_from_s3.save()
+        audio_files_batch.append(new_audio_from_s3)
 
-        log('Audio Saved')
+        log('Appended')
         log('~~~~~~~~~~~~~~~~~~~~')
 
+    AudioFile.objects.bulk_create(audio_files_batch, 1000)
     log('~~~ SCRIPT FINISHED ~~~')
