@@ -7,6 +7,9 @@ from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
 from urllib.error import HTTPError
 from django.utils.html import format_html
+from django.db.models import Sum
+from utilities.models.mixins import CacheMixin, CacheMiss
+from utilities.time import seconds_to_minutes
 
 
 class AudioFile(TimeStampedModel):
@@ -59,10 +62,7 @@ class AudioFile(TimeStampedModel):
 
     @property
     def duration_in_minutes(self):
-        formatted_str = '{:02} min(s) {:02} sec(s)'.format(self.duration // 60, self.duration % 60) \
-            if self.duration > 60 \
-            else '{:02} sec(s)'.format(self.duration)
-        return formatted_str
+        return seconds_to_minutes(self.duration)
 
     def is_publicly_accessible(self):
         return self.duration >= 0
@@ -85,7 +85,7 @@ signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
                          sender=AudioFile)
 
 
-class Playlist(TimeStampedModel):
+class Playlist(CacheMixin, TimeStampedModel):
     class Meta:
         db_table = 'playlist'
         ordering = ['id', ]
@@ -123,6 +123,33 @@ class Playlist(TimeStampedModel):
         pha.save()
         return pha
 
+    def _compute_total_duration(self):
+        total_duration = self.audio_files.aggregate(Sum('duration'))['duration__sum']
+        return total_duration if total_duration else 0
+
+    def _compute_number_of_audio(self):
+        return self.audio_files.count()
+
+    @property
+    def total_duration(self):
+        cache_key = 'total_duration'
+        try:
+            total_duration = self.get_cache_value(cache_key)
+        except CacheMiss:
+            total_duration = self._compute_total_duration()
+            self.set_cache_value(cache_key, total_duration)
+        return total_duration
+
+    @property
+    def number_of_audio(self):
+        cache_key = 'audio_count'
+        try:
+            audio_count = self.get_cache_value(cache_key)
+        except CacheMiss:
+            audio_count = self._compute_number_of_audio()
+            self.set_cache_value(cache_key, audio_count)
+        return audio_count
+
     @classmethod
     def get_default(cls):
         qs = cls.objects.filter(name__iexact=cls.DEFAULT_PLAYLIST_NAME)
@@ -131,8 +158,10 @@ class Playlist(TimeStampedModel):
         return qs[0]
 
     def __str__(self):
-        return '{}\'s playlist (name: "{}")'.format(self.user.first_name, self.name) if self.user \
-            else self.name
+        duration = seconds_to_minutes(self.total_duration)
+        return "{name} (duration: {duration}, #files: {num_files})".format(name=self.name,
+                                                                           duration=duration,
+                                                                           num_files=self.number_of_audio, )
 
 
 class PlaylistHasAudio(TimeStampedModel):
@@ -153,6 +182,22 @@ class PlaylistHasAudio(TimeStampedModel):
         if qs.count() < 1:
             return self.playlist.playlisthasaudio_set.all()[0]
         return qs[0]
+
+
+def invalidate_playlist_caches(sender, instance, *args, **kwargs):
+    if instance:    # type: PlaylistHasAudio
+        instance.playlist.invalidate_cache()
+
+    if instance.id:
+        old_entry = PlaylistHasAudio.objects.get(pk=instance.id)
+        old_entry.playlist.invalidate_cache()
+
+
+signals.pre_save.connect(receiver=invalidate_playlist_caches,
+                         sender=PlaylistHasAudio)
+
+signals.pre_delete.connect(receiver=invalidate_playlist_caches,
+                           sender=PlaylistHasAudio)
 
 
 class UserPlaylistStatus(TimeStampedModel):
