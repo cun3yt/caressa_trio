@@ -94,6 +94,7 @@ class Playlist(TimeStampedModel):
 
     user = models.ForeignKey(to=User,
                              null=True,
+                             blank=True,
                              help_text='Who is it for?',
                              on_delete=models.DO_NOTHING, )
     name = models.TextField(blank=True,
