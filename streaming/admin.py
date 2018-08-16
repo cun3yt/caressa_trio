@@ -7,12 +7,13 @@ from admin_ordering.admin import OrderableAdmin
 from django_admin_relation_links import AdminChangeLinksMixin
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from utilities.time import seconds_to_minutes
 
 
 @admin.register(AudioFile)
 class AudioFileAdmin(admin.ModelAdmin):
     fields = ('audio_type',
-              'duration',
+              'duration_in_minutes',
               'name',
               'description',
               'url', )
@@ -20,13 +21,13 @@ class AudioFileAdmin(admin.ModelAdmin):
     list_display = ('id',
                     'audio_type',
                     'url_hyperlink',
-                    'duration',
+                    'duration_in_minutes',
                     'url_public_status',
                     'name',
                     'description', )
 
     readonly_fields = ('url_hyperlink',
-                       'duration', )
+                       'duration_in_minutes', )
 
     ordering = ['-modified', ]
 
@@ -51,10 +52,26 @@ class AudioFileAdmin(admin.ModelAdmin):
 @admin.register(Playlist)
 class PlaylistAdmin(admin.ModelAdmin):
     fields = ('user',
-              'name', )
+              'name',
+              'total_duration_in_minutes',
+              'number_of_audio',
+              )
 
-    list_display = ('user',
-                    'name', )
+    list_display = ('name',
+                    'user',
+                    'total_duration_in_minutes',
+                    'number_of_audio', )
+
+    readonly_fields = ('total_duration_in_minutes',
+                       'number_of_audio', )
+
+    @staticmethod
+    def total_duration_in_minutes(instance: Playlist):
+        return seconds_to_minutes(instance.total_duration) if instance.id else "--not set yet--"
+
+    @staticmethod
+    def number_of_audio(instance: Playlist):
+        return instance.number_of_audio if instance.id else '--not set yet--'
 
 
 @admin.register(PlaylistHasAudio)
