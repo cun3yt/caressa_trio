@@ -139,9 +139,11 @@ def save_state_by_playlist_entry(alexa_user: AUser, pha: PlaylistHasAudio):
         status.playlist_has_audio.order_id))
 
 
-def pause_session(alexa_user: AUser, req_body):
+def pause_session(alexa_user: AUser):
     log(' >> LOG: PAUSE')
-    save_state(alexa_user, req_body)
+    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
+    playlist_has_audio = status.playlist_has_audio.next()
+    save_state_by_playlist_entry(alexa_user, playlist_has_audio)
     return stop_session()
 
 
