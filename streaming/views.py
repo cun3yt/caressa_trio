@@ -68,16 +68,17 @@ def stream_io(req_body):
     sess, is_new_session = Session.objects.get_or_create(alexa_id=session_id,
                                                          alexa_user=alexa_user)
 
-    if req_type in ['LaunchRequest', ] or intent_name in ['AMAZON.ResumeIntent', ]:
+    if req_type in ['LaunchRequest', 'PlaybackController.PlayCommandIssued', ] \
+            or intent_name in ['AMAZON.ResumeIntent', ]:
         return resume_session(alexa_user)
-    elif intent_name in ['AMAZON.NextIntent', ]:
+    elif intent_name in ['AMAZON.NextIntent', ] or req_type in ['PlaybackController.NextCommandIssued', ]:
         return next_intent_response(alexa_user)
     elif req_type in ['AudioPlayer.PlaybackNearlyFinished', ]:
         return enqueue_next_song(alexa_user)
     elif req_type in ['AudioPlayer.PlaybackStarted', ]:
         save_state(alexa_user, req_body)
         return filler()
-    elif intent_name in ['AMAZON.PauseIntent', ]:
+    elif intent_name in ['AMAZON.PauseIntent', ] or req_type in ['PlaybackController.PauseCommandIssued', ]:
         return pause_session(alexa_user, req_body)
     elif intent is not None:
         return stop_session()
