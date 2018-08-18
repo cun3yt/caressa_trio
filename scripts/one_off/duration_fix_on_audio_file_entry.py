@@ -1,7 +1,7 @@
 from streaming.models import AudioFile
 from utilities.logger import log
 from urllib.request import urlretrieve
-from mutagen.mp3 import MP3
+from mutagen.mp3 import MP3, HeaderNotFoundError
 from urllib.error import HTTPError
 
 
@@ -25,6 +25,8 @@ def run():
     duration_zero = AudioFile.objects.all().filter(duration='0')
 
     for instance in duration_zero:
-        audio_file_accessibility_and_duration(instance=instance)
-
+        try:
+            audio_file_accessibility_and_duration(instance=instance)
+        except HeaderNotFoundError:
+            pass
     log('~~~ SCRIPT FINISHED ~~~')
