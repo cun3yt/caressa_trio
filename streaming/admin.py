@@ -81,14 +81,19 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
     fields = ('playlist',
               'audio',
               'duration',
-              'order_id', )
+              'order_id',
+              'play_date',
+              'play_time', )
 
     list_display = ('id',
                     'playlist',
                     'audio_file',
                     'audio_file_external_link',
                     'duration',
-                    'order_id', )
+                    'order_id',
+                    'play_date',
+                    'play_time',
+                    )
 
     list_editable = ('order_id', )
 
@@ -111,11 +116,11 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
                                                        file_name=instance.audio, )
         return mark_safe(url)
 
-    @staticmethod
-    def audio_file_external_link(instance: PlaylistHasAudio):
+    def audio_file_external_link(self, instance: PlaylistHasAudio):
         url = '<a href="{url}" target="_blank">Listen</a>'.format(
             url=instance.audio.url, )
         return mark_safe(url)
+    audio_file_external_link.short_description = 'Link'
 
     @staticmethod
     def duration(instance: PlaylistHasAudio):
