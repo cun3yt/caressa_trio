@@ -199,30 +199,28 @@ class PlaylistHasAudio(TimeStampedModel):
                                  choices=TIME_SET,
                                  default=TIME_DAYLONG)
 
+    def current_daytime(self):
+        now = datetime.utcnow()
+        if 12 < now.hour <= 19:
+            return self.TIME_MORNING
+        elif 19 < now.hour <= 23 or now.hour <= 1:
+            return self.TIME_AFTERNOON
+        elif 1 < now.hour < 6:
+            return self.TIME_EVENING
+        else:
+            return self.TIME_NIGHT
+
     def time_based_filtered_content(self, daytime):
         now = datetime.utcnow()
         qs = self.playlist.playlisthasaudio_set.select_for_update() \
             .filter(order_id__gt=self.order_id) \
             .filter(Q(play_date__isnull=True) | Q(play_date=now.today()))\
-            .filter(Q(play_time='daylong') | Q(play_time=daytime))
+            .filter(Q(play_time=self.TIME_DAYLONG) | Q(play_time=daytime))
         return qs
 
     def next(self):
-        now = datetime.utcnow()
-        if 12 < now.hour <= 19:
-            daytime = 'morning'
-            qs = self.time_based_filtered_content(daytime)
-
-        elif 19 < now.hour <= 23 or now.hour <= 1:
-            daytime = 'afternoon'
-            qs = self.time_based_filtered_content(daytime)
-        elif 1 < now.hour < 6:
-            daytime = 'evening'
-            qs = self.time_based_filtered_content(daytime)
-        else:
-            daytime = 'night'
-            qs = self.time_based_filtered_content(daytime)
-
+        current_daytime = self.current_daytime()
+        qs = self.time_based_filtered_content(current_daytime)
         if qs.count() < 1:
             return self.playlist.playlisthasaudio_set.all()[0]
         return qs[0]
