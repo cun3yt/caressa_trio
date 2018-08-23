@@ -10,6 +10,8 @@ from django.utils.html import format_html
 from django.db.models import Sum
 from utilities.models.mixins import CacheMixin, CacheMiss
 from utilities.time import seconds_to_minutes
+from datetime import datetime
+from django.db.models import Q
 
 
 class AudioFile(TimeStampedModel):
@@ -169,6 +171,20 @@ class PlaylistHasAudio(TimeStampedModel):
         db_table = 'playlist_has_audio'
         ordering = ['order_id', ]
 
+    TIME_MORNING = 'morning'
+    TIME_AFTERNOON = 'afternoon'
+    TIME_EVENING = 'evening'
+    TIME_NIGHT = 'night'
+    TIME_DAYLONG = 'daylong'
+
+    TIME_SET = (
+        (TIME_MORNING, 'Morning'),
+        (TIME_AFTERNOON, 'Afternoon'),
+        (TIME_EVENING, 'Evening'),
+        (TIME_NIGHT, 'Night'),
+        (TIME_DAYLONG, 'Daylong'),
+    )
+
     playlist = models.ForeignKey(to=Playlist,
                                  on_delete=models.DO_NOTHING, )
     audio = models.ForeignKey(to=AudioFile,
@@ -176,9 +192,35 @@ class PlaylistHasAudio(TimeStampedModel):
     order_id = models.FloatField(blank=False,
                                  null=False,
                                  db_index=True, )
+    play_date = models.DateField(null=True,
+                                 blank=True, )
+    play_time = models.TextField(null=False,
+                                 blank=False,
+                                 choices=TIME_SET,
+                                 default=TIME_DAYLONG)
+
+    def current_daytime(self):
+        now = datetime.utcnow()
+        if 12 < now.hour <= 19:
+            return self.TIME_MORNING
+        elif 19 < now.hour <= 23 or now.hour <= 1:
+            return self.TIME_AFTERNOON
+        elif 1 < now.hour < 6:
+            return self.TIME_EVENING
+        else:
+            return self.TIME_NIGHT
+
+    def time_based_filtered_content(self, daytime):
+        now = datetime.utcnow()
+        qs = self.playlist.playlisthasaudio_set.select_for_update() \
+            .filter(order_id__gt=self.order_id) \
+            .filter(Q(play_date__isnull=True) | Q(play_date=now.today()))\
+            .filter(Q(play_time=self.TIME_DAYLONG) | Q(play_time=daytime))
+        return qs
 
     def next(self):
-        qs = self.playlist.playlisthasaudio_set.select_for_update().filter(order_id__gt=self.order_id)
+        current_daytime = self.current_daytime()
+        qs = self.time_based_filtered_content(current_daytime)
         if qs.count() < 1:
             return self.playlist.playlisthasaudio_set.all()[0]
         return qs[0]
