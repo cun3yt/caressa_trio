@@ -1,7 +1,7 @@
 from django.db import models
 from model_utils.models import TimeStampedModel
 from jsonfield import JSONField
-from alexa.models import User
+from alexa.models import User, Session
 from django.db.models import signals
 from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
@@ -280,3 +280,21 @@ class HardwareRegistry(TimeStampedModel):
     caressa_device_id = models.CharField(max_length=100, blank=False, null=False)   # e.g. CA-AMZ-001
     device_id = models.TextField()      # Alexa ID  todo: when Alexa User is changed on Alexa device is it updated?
     notes = models.TextField(default='')
+
+
+class TrackingAction(TimeStampedModel):
+    class Meta:
+        db_table = 'tracking_action'
+        indexes = [
+            models.Index(fields=['segment0', 'segment1', 'segment2', 'segment3', ])
+        ]
+
+    user = models.ForeignKey(to=User, db_index=True, on_delete=models.DO_NOTHING)
+    session = models.ForeignKey(to=Session, db_index=True, on_delete=models.DO_NOTHING)
+    segment0 = models.CharField(max_length=100, default=None, null=True)
+    segment1 = models.CharField(max_length=100, default=None, null=True)
+    segment2 = models.CharField(max_length=100, default=None, null=True)
+    segment3 = models.CharField(max_length=100, default=None, null=True)
+
+
+TrackingAction._meta.get_field('created').db_index = True

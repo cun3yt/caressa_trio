@@ -6,14 +6,8 @@ from alexa.models import AUser, User, Session
 from datetime import datetime
 from django.utils.crypto import get_random_string
 from django.http import JsonResponse
-from streaming.models import PlaylistHasAudio, UserPlaylistStatus
+from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction
 from django.db import transaction
-from botanalytics.amazon import AmazonAlexa
-from caressa.settings import botanalytics_api_token
-
-
-botanalytics = AmazonAlexa(debug=False,
-                           token=botanalytics_api_token)
 
 
 def _create_test_user():
@@ -34,8 +28,15 @@ def _create_test_user():
 def stream_io_wrapper(request):
     request_body = json.loads(request.body)
     response_body = stream_io(request_body)   # type: dict
-    # botanalytics.log(request_body, response_body)
     return JsonResponse(response_body)
+
+
+def save_action(a_user: AUser, session: Session, segment0, segment1):
+    action = TrackingAction(user=a_user.user,
+                            session=session,
+                            segment0=segment0,
+                            segment1=segment1)
+    action.save()
 
 
 def stream_io(req_body):
@@ -70,19 +71,26 @@ def stream_io(req_body):
 
     if req_type in ['LaunchRequest', 'PlaybackController.PlayCommandIssued', ] \
             or intent_name in ['AMAZON.ResumeIntent', ]:
+        save_action(alexa_user, sess, (req_type if req_type else intent_name), 'resume_session')
         return resume_session(alexa_user)
-    elif intent_name in ['AMAZON.NextIntent', ] or req_type in ['PlaybackController.NextCommandIssued', ]:
+    elif req_type in ['PlaybackController.NextCommandIssued', ] or intent_name in ['AMAZON.NextIntent', ]:
+        save_action(alexa_user, sess, (req_type if req_type else intent_name), 'next_intent_response')
         return next_intent_response(alexa_user)
     elif req_type in ['AudioPlayer.PlaybackNearlyFinished', ]:
+        save_action(alexa_user, sess, req_type, 'enqueue_next_song')
         return enqueue_next_song(alexa_user)
     elif req_type in ['AudioPlayer.PlaybackStarted', ]:
+        save_action(alexa_user, sess, req_type, 'filler')
         save_state(alexa_user, req_body)
         return filler()
-    elif intent_name in ['AMAZON.PauseIntent', ] or req_type in ['PlaybackController.PauseCommandIssued', ]:
+    elif req_type in ['PlaybackController.PauseCommandIssued', ] or intent_name in ['AMAZON.PauseIntent', ]:
+        save_action(alexa_user, sess, (req_type if req_type else intent_name), 'pause_session')
         return pause_session(alexa_user)
     elif intent is not None:
+        save_action(alexa_user, sess, intent_name, 'stop_session')
         return stop_session()
 
+    save_action(alexa_user, sess, 'fallback_state', 'filler')
     return filler()
 
 
