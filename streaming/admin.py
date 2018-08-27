@@ -134,7 +134,8 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
         else:
             return False
     is_upcoming_content.boolean = True
-    is_upcoming_content.short_description = 'Upcoming Content'
+    is_upcoming_content.short_description = 'Next Audio'
+
 
 @admin.register(HardwareRegistry)
 class HardwareRegistry(admin.ModelAdmin):
