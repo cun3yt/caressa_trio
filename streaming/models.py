@@ -17,6 +17,7 @@ from django.db.models import Q
 class AudioFile(TimeStampedModel):
     class Meta:
         db_table = 'audio_file'
+        verbose_name_plural = 'Audio Files'
 
     TYPE_SONG = 'song'
     TYPE_PODCAST = 'podcast'
@@ -170,6 +171,7 @@ class PlaylistHasAudio(TimeStampedModel):
     class Meta:
         db_table = 'playlist_has_audio'
         ordering = ['order_id', ]
+        verbose_name_plural = 'Playlist Has Audios'
 
     TIME_MORNING = 'morning'
     TIME_AFTERNOON = 'afternoon'
@@ -276,6 +278,7 @@ class UserPlaylistStatus(TimeStampedModel):
 class HardwareRegistry(TimeStampedModel):
     class Meta:
         db_table = 'hardware_registry'
+        verbose_name_plural = 'Hardware Registries'
 
     caressa_device_id = models.CharField(max_length=100, blank=False, null=False)   # e.g. CA-AMZ-001
     device_id = models.TextField()      # Alexa ID  todo: when Alexa User is changed on Alexa device is it updated?

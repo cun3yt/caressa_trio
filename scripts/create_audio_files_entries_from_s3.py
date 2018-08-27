@@ -7,7 +7,7 @@ from caressa.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, MEDIA_BUC
 
 
 def is_file_importable(filename, public_url):
-    proper_audio_extensions = ('.ra', '.aif', '.aiff', '.aifc', '.wav', '.au', '.snd', '.mp3', '.mp2')
+    proper_audio_extensions = ('.mp3', )
     return filename.endswith(proper_audio_extensions) \
         and (AudioFile.objects.all().filter(url=public_url).count() == 0)
 
