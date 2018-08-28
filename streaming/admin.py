@@ -1,5 +1,5 @@
 from django.contrib import admin
-from streaming.models import AudioFile, Playlist, PlaylistHasAudio, HardwareRegistry
+from streaming.models import AudioFile, Playlist, PlaylistHasAudio, HardwareRegistry, UserPlaylistStatus
 from alexa.models import AUser
 from streaming.forms import AudioFileForm
 from django.utils.html import format_html
@@ -93,6 +93,7 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
                     'order_id',
                     'play_date',
                     'play_time',
+                    'is_upcoming_content',
                     )
 
     list_editable = ('order_id', )
@@ -125,6 +126,15 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
     @staticmethod
     def duration(instance: PlaylistHasAudio):
         return instance.audio.duration_in_minutes
+
+    def is_upcoming_content(self, instance: PlaylistHasAudio):
+        ups = UserPlaylistStatus.objects.all()
+        if ups.filter(playlist_has_audio=instance.pk).count() > 0:
+            return True
+        else:
+            return False
+    is_upcoming_content.boolean = True
+    is_upcoming_content.short_description = 'Next Audio'
 
 
 @admin.register(HardwareRegistry)
