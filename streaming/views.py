@@ -6,7 +6,7 @@ from alexa.models import AUser, User, Session
 from datetime import datetime
 from django.utils.crypto import get_random_string
 from django.http import JsonResponse
-from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction
+from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, AudioFile
 from django.db import transaction
 
 
@@ -108,13 +108,13 @@ def filler():
 
 
 @transaction.atomic()
-def save_state(alexa_user: AUser, req_body):
+def save_state(alexa_user: AUser, req_body):        # todo Problematic!! fix the token logic below..
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
     offset = deep_get(req_body, 'context.AudioPlayer.offsetInMilliseconds')
     token = deep_get(req_body, 'context.AudioPlayer.token')     # this is AudioFile instance's ID
 
     qs_playlist_entry = status.playlist_has_audio.playlist.playlisthasaudio_set.filter(
-        audio_id__exact=token, order_id__gte=status.playlist_has_audio.order_id
+        audio_id__exact=token, order_id__gte=status.playlist_has_audio.order_id # todo : token needs to be playlist-has-audio.id
     )
 
     new_playlist_has_audio = None
@@ -127,24 +127,26 @@ def save_state(alexa_user: AUser, req_body):
 
     status.playlist_has_audio = new_playlist_has_audio
     status.offset = offset
+    status.current_active_audio = AudioFile.objects.get(id=token)
     status.save()
 
     log(' >> LOG SAVE_STATE: pha: {}, audio: {}, order: {}'.format(
         status.playlist_has_audio.id,
-        status.playlist_has_audio.audio.id,
+        status.playlist_has_audio.audio.id if status.playlist_has_audio.audio else status.playlist_has_audio.tag,
         status.playlist_has_audio.order_id))
 
 
 @transaction.atomic()
-def save_state_by_playlist_entry(alexa_user: AUser, pha: PlaylistHasAudio):
+def save_state_by_playlist_entry(alexa_user: AUser, pha: PlaylistHasAudio, audio_to_be_played: AudioFile):
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
     status.playlist_has_audio = pha
+    status.current_active_audio = audio_to_be_played
     status.offset = 0
     status.save()
 
-    log(' >> LOG: SAVE_STATE_BY_PLAYLIST_ENTRY: pha: {}, audio: {}, order: {}'.format(
+    log(' >> LOG: SAVE_STATE_BY_PLAYLIST_ENTRY: pha: {}, audio/tag: {}, order: {}'.format(
         status.playlist_has_audio.id,
-        status.playlist_has_audio.audio.id,
+        status.playlist_has_audio.audio.id if status.playlist_has_audio.audio else status.playlist_has_audio.tag,
         status.playlist_has_audio.order_id))
 
 
@@ -153,7 +155,7 @@ def pause_session(alexa_user: AUser):
     log(' >> LOG: PAUSE')
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
     playlist_has_audio = status.playlist_has_audio.next()
-    save_state_by_playlist_entry(alexa_user, playlist_has_audio)
+    save_state_by_playlist_entry(alexa_user, playlist_has_audio, playlist_has_audio.get_audio())
     return stop_session()
 
 
@@ -161,7 +163,7 @@ def pause_session(alexa_user: AUser):
 def resume_session(alexa_user: AUser):
     log(' >> LOG: RESUME_SESSION')
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
-    return start_session(status.playlist_has_audio, status.offset)
+    return start_session(status.current_active_audio, status.offset)
 
 
 def stop_session():
@@ -182,9 +184,8 @@ def stop_session():
     return data
 
 
-def start_session(playlist_has_audio: PlaylistHasAudio, offset=0):
-    file = playlist_has_audio.audio
-    token = file.id
+def start_session(audio_to_be_played: AudioFile, offset=0):
+    token = audio_to_be_played.id
 
     data = {
         "version": "1.0",
@@ -196,7 +197,7 @@ def start_session(playlist_has_audio: PlaylistHasAudio, offset=0):
                     "playBehavior": "REPLACE_ALL",
                     "audioItem": {
                         "stream": {
-                            "url": file.url,
+                            "url": audio_to_be_played.url,
                             "token": token,
                             "offsetInMilliseconds": offset
                         },
@@ -215,8 +216,9 @@ def start_session(playlist_has_audio: PlaylistHasAudio, offset=0):
 def next_intent_response(alexa_user: AUser):
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
     playlist_has_audio = status.playlist_has_audio.next()
-    save_state_by_playlist_entry(alexa_user, playlist_has_audio)
-    return start_session(playlist_has_audio)
+    audio_to_be_played = playlist_has_audio.get_audio()
+    save_state_by_playlist_entry(alexa_user, playlist_has_audio, audio_to_be_played)
+    return start_session(audio_to_be_played)
 
 
 @transaction.atomic()
@@ -224,7 +226,7 @@ def enqueue_next_song(alexa_user: AUser):
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
     playlist_has_audio = status.playlist_has_audio.next()   # type: PlaylistHasAudio
 
-    file = playlist_has_audio.audio
+    upcoming_file = playlist_has_audio.get_audio()
 
     data = {
         "version": "1.0",
@@ -236,9 +238,9 @@ def enqueue_next_song(alexa_user: AUser):
                     "playBehavior": "ENQUEUE",
                     "audioItem": {
                         "stream": {
-                            "url": file.url,
-                            "token": file.id,
-                            "expectedPreviousToken": status.playlist_has_audio.audio.id,
+                            "url": upcoming_file.url,
+                            "token": upcoming_file.id,
+                            "expectedPreviousToken": status.current_active_audio.id,
                             "offsetInMilliseconds": 0
                         },
                     }
@@ -247,6 +249,6 @@ def enqueue_next_song(alexa_user: AUser):
         }
     }
 
-    log(" >> LOG: EN.Q token: {}, previous token: {}".format(file.id, status.playlist_has_audio.audio.id))
+    log(" >> LOG: EN.Q token: {}, previous token: {}".format(upcoming_file.id, status.current_active_audio.id))
 
     return data

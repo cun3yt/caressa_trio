@@ -12,6 +12,34 @@ from utilities.models.mixins import CacheMixin, CacheMiss
 from utilities.time import seconds_to_minutes
 from datetime import datetime
 from django.db.models import Q
+from random import randint
+from uuid import uuid4
+
+
+class Tag(TimeStampedModel):
+    class Meta:
+        db_table = 'tag'
+
+    name = models.TextField(null=False,
+                            blank=False, )
+
+    @staticmethod
+    def _tag_string_to_list(tag_string: str) -> list:
+        return [el.strip() for el in tag_string.split(',')]
+
+    @staticmethod
+    def _tag_list_to_audio_file(tag_list: list) -> 'AudioFile':
+        tags = Tag.objects.all().filter(name__in=tag_list)
+        qs = AudioFile.objects.all().filter(tags__in=tags)
+        qs_count = qs.count()
+        random_slice = randint(0, qs_count - 1)
+        result_set = qs[random_slice: random_slice + 1]
+        return result_set[0]
+
+    @staticmethod
+    def string_to_audio_file(tag_string: str) -> 'AudioFile':
+        tag_list = Tag._tag_string_to_list(tag_string)
+        return Tag._tag_list_to_audio_file(tag_list)
 
 
 class AudioFile(TimeStampedModel):
@@ -50,6 +78,9 @@ class AudioFile(TimeStampedModel):
                             null=False,
                             db_index=True,
                             help_text='For internal use only', )
+
+    tags = models.ManyToManyField(to=Tag)
+
     description = models.TextField(blank=True,
                                    null=False,
                                    default='',
@@ -188,7 +219,13 @@ class PlaylistHasAudio(TimeStampedModel):
     playlist = models.ForeignKey(to=Playlist,
                                  on_delete=models.DO_NOTHING, )
     audio = models.ForeignKey(to=AudioFile,
-                              on_delete=models.CASCADE, )
+                              on_delete=models.CASCADE,
+                              default=None,
+                              null=True, )
+
+    tag = models.TextField(blank=True,
+                           default='', )        # string combination of tags, e.g. "song-classical, update-{date}"
+
     order_id = models.FloatField(blank=False,
                                  null=False,
                                  db_index=True, )
@@ -197,7 +234,12 @@ class PlaylistHasAudio(TimeStampedModel):
     play_time = models.TextField(null=False,
                                  blank=False,
                                  choices=TIME_SET,
-                                 default=TIME_DAYLONG)
+                                 default=TIME_DAYLONG, )
+
+    hash = models.UUIDField(default=uuid4)
+
+    def get_audio(self):        # todo: use this function instead of direct audio reach..
+        return self.audio if self.audio else Tag.string_to_audio_file(self.tag)
 
     def current_daytime(self):
         now = datetime.utcnow()
@@ -253,6 +295,8 @@ class UserPlaylistStatus(TimeStampedModel):
     # todo think about deletion with user progress case
     playlist_has_audio = models.ForeignKey(to=PlaylistHasAudio,
                                            on_delete=models.DO_NOTHING, )
+    current_active_audio = models.ForeignKey(to=AudioFile,
+                                             on_delete=models.DO_NOTHING, )
 
     offset = models.IntegerField(default=0,
                                  help_text='The place user left the song in milliseconds', )
@@ -264,10 +308,13 @@ class UserPlaylistStatus(TimeStampedModel):
 
     @classmethod
     def get_user_playlist_status_for_user(cls, user: User):
+        playlist_entries_qs = cls.get_users_playlist(user).playlisthasaudio_set.all()
+
         obj_instance, created = cls.objects.select_for_update().get_or_create(
             user=user,
             defaults={
-                'playlist_has_audio': cls.get_users_playlist(user).playlisthasaudio_set.all()[0],
+                'playlist_has_audio': playlist_entries_qs[0],
+                'current_active_audio': playlist_entries_qs[0].get_audio(),
             }
         )
         return obj_instance, created
