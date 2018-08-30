@@ -4,14 +4,14 @@ from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
 import uuid
-from streaming.models import AudioFile
-
-audio_file = AudioFile.objects.all()[0]
+# from streaming.models import AudioFile
+#
+# audio_file = AudioFile.objects.all()[0]
 
 
 def create_uuid(apps, schema_editor):
-    PlaylistHasAudio = apps.get_model('streaming', 'PlaylistHasAudio')
-    for pha in PlaylistHasAudio.objects.all():
+    playlist_has_audio = apps.get_model('streaming', 'PlaylistHasAudio')
+    for pha in playlist_has_audio.objects.all():
         pha.hash = uuid.uuid4()
         pha.save(update_fields=['hash'])
 
@@ -32,7 +32,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='userplayliststatus',
             name='current_active_audio',
-            field=models.ForeignKey(default=str(audio_file.id), on_delete=django.db.models.deletion.DO_NOTHING, to='streaming.AudioFile'),
+            field=models.ForeignKey(default=str(1109),  # todo this is hardcoded!!
+                                    on_delete=django.db.models.deletion.DO_NOTHING,
+                                    to='streaming.AudioFile'),
             preserve_default=False,
         ),
     ]
