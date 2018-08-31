@@ -113,8 +113,12 @@ def save_state(alexa_user: AUser, req_body):        # todo Problematic!! fix the
     offset = deep_get(req_body, 'context.AudioPlayer.offsetInMilliseconds')
     token = deep_get(req_body, 'context.AudioPlayer.token')     # this is AudioFile instance's ID
 
+    pha_and_audio_id_list = token.split(',')  # token is combination of pha_hash and audio_id
+    pha_hash = pha_and_audio_id_list[0]
+    current_audio_file = AudioFile.objects.get(id=pha_and_audio_id_list[1])
+
     qs_playlist_entry = status.playlist_has_audio.playlist.playlisthasaudio_set.filter(
-        audio_id__exact=token, order_id__gte=status.playlist_has_audio.order_id # todo : token needs to be playlist-has-audio.id
+        hash__exact=pha_hash , order_id__gte=status.playlist_has_audio.order_id
     )
 
     new_playlist_has_audio = None
@@ -127,11 +131,12 @@ def save_state(alexa_user: AUser, req_body):        # todo Problematic!! fix the
 
     status.playlist_has_audio = new_playlist_has_audio
     status.offset = offset
-    status.current_active_audio = AudioFile.objects.get(id=token)
+    status.current_active_audio = current_audio_file
     status.save()
 
-    log(' >> LOG SAVE_STATE: pha: {}, audio: {}, order: {}'.format(
+    log(' >> LOG SAVE_STATE: pha: {}, audio: {}, tag: {}, order: {}'.format(
         status.playlist_has_audio.id,
+        current_audio_file,
         status.playlist_has_audio.audio.id if status.playlist_has_audio.audio else status.playlist_has_audio.tag,
         status.playlist_has_audio.order_id))
 
@@ -163,7 +168,8 @@ def pause_session(alexa_user: AUser):
 def resume_session(alexa_user: AUser):
     log(' >> LOG: RESUME_SESSION')
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
-    return start_session(status.current_active_audio, status.offset)
+    token = (str(status.playlist_has_audio.hash) + ',' + str(status.current_active_audio_id))
+    return start_session(status.current_active_audio, token, status.offset)
 
 
 def stop_session():
@@ -184,8 +190,7 @@ def stop_session():
     return data
 
 
-def start_session(audio_to_be_played: AudioFile, offset=0):
-    token = audio_to_be_played.id
+def start_session(audio_to_be_played: AudioFile, token, offset=0):
 
     data = {
         "version": "1.0",
@@ -218,7 +223,7 @@ def next_intent_response(alexa_user: AUser):
     playlist_has_audio = status.playlist_has_audio.next()
     audio_to_be_played = playlist_has_audio.get_audio()
     save_state_by_playlist_entry(alexa_user, playlist_has_audio, audio_to_be_played)
-    return start_session(audio_to_be_played)
+    return start_session(audio_to_be_played, status.playlist_has_audio.hash)
 
 
 @transaction.atomic()
@@ -227,7 +232,9 @@ def enqueue_next_song(alexa_user: AUser):
     playlist_has_audio = status.playlist_has_audio.next()   # type: PlaylistHasAudio
 
     upcoming_file = playlist_has_audio.get_audio()
-
+    upcoming_pha_hash = playlist_has_audio.hash
+    token = str(upcoming_pha_hash) + ',' + str(upcoming_file.id)
+    expected_previous_token = str(status.playlist_has_audio.hash) + ',' + str(status.current_active_audio_id)
     data = {
         "version": "1.0",
         "response": {
@@ -239,8 +246,8 @@ def enqueue_next_song(alexa_user: AUser):
                     "audioItem": {
                         "stream": {
                             "url": upcoming_file.url,
-                            "token": upcoming_file.id,
-                            "expectedPreviousToken": status.current_active_audio.id,
+                            "token": token,
+                            "expectedPreviousToken": expected_previous_token,
                             "offsetInMilliseconds": 0
                         },
                     }
@@ -249,6 +256,6 @@ def enqueue_next_song(alexa_user: AUser):
         }
     }
 
-    log(" >> LOG: EN.Q token: {}, previous token: {}".format(upcoming_file.id, status.current_active_audio.id))
+    log(" >> LOG: EN.Q token: {}, previous token: {}".format(token, expected_previous_token))
 
     return data
