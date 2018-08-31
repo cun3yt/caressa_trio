@@ -66,6 +66,10 @@ flat_router.register(r'jokes', JokeViewSet, 'joke')
 flat_router.register(r'news', NewsViewSet, 'news')
 flat_router.register(r'user-act-on-content', UserActOnContentViewSet, 'user-act-on-content')
 
+admin.site.site_header = 'Caressa Admin'
+admin.site.site_title = 'Caressa Administration'
+admin.site.index_title = 'Welcome to Caressa Admin Page'
+
 urlpatterns = [
     path('', main_view),
     path('discussion', alexa_io),
