@@ -220,6 +220,21 @@ class PlaylistHasAudio(TimeStampedModel):
             .filter(Q(play_time=self.TIME_DAYLONG) | Q(play_time=daytime))
         return qs
 
+    def current_content_time_filter(self, daytime):
+        now = datetime.utcnow()
+        qs = self.playlist.playlisthasaudio_set.select_for_update() \
+            .filter(order_id=self.order_id) \
+            .filter(Q(play_date__isnull=True) | Q(play_date=now.today()))\
+            .filter(Q(play_time=self.TIME_DAYLONG) | Q(play_time=daytime))
+        return qs
+
+    def is_current_content_time_fit(self):
+        current_daytime = self.current_daytime()
+        qs = self.current_content_time_filter(current_daytime)
+        if qs.count() < 1:
+            return False
+        return True
+
     def next(self):
         current_daytime = self.current_daytime()
         qs = self.time_based_filtered_content(current_daytime)
