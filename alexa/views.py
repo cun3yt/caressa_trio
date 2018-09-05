@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from django.shortcuts import render
 from utilities.logger import log
 from random import sample, random
-from alexa.helpers import create_test_user
 
 
 def main_view(request):

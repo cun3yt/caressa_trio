@@ -228,7 +228,7 @@ class AUser(TimeStampedModel):
 
         :param alexa_device_id: string
         :param alexa_user_id: int
-        :return:
+        :return: (AUser, bool)
 
         @todo write test
         """

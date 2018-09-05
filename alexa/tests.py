@@ -3,45 +3,44 @@ from alexa.engines import Question, FactEngine
 from alexa.intents import Intent, YesIntent
 from model_mommy import mommy
 from alexa.slots import SlotType, Slot
-from alexa.models import User, AUser, Circle, EngineSession, Fact, AUserEmotionalState, AUserMedicalState, Song, \
-    CircleMembership
+from alexa.models import User, AUser, Circle, EngineSession, Fact, AUserEmotionalState, AUserMedicalState
 from caressa.settings import HOSTED_ENV
 from unittest.mock import patch
 from django.db.models import signals
+import daiquiri
+import logging
 
+daiquiri.setup(level=logging.WARNING)
 
 
 class BaseIntentTestCase(TestCase):
-    def setUp(self):
-        self.simplest_intent = Intent(name='SimpleIntent',
-                                      response_set=['something', 'else', ],
-                                      slots=None,
-                                      follow_engine=None,
-                                      samples=None,
-                                      process_fn=None,
-                                      question=None,
-                                      end_session=False)
-        self.complex_intent = Intent(name='Complex-Intent',
-                                     response_set=lambda: 'response set',
-                                     slots=Slot(name='slot-name',
-                                                slot_type=SlotType(name='slot-type-name',
-                                                                   values=['abc', 'def'])),
-                                     follow_engine='SomeEngine',
-                                     samples=['Hello', 'Hi'],
-                                     process_fn=lambda: 'processed',
-                                     question=Question(intent_list=[]),
-                                     end_session=True,
-                                     profile_builder=lambda: 'profile is built')
+    @classmethod
+    def setUpTestData(cls):
+        cls.simplest_intent = Intent(name='SimpleIntent',
+                                     response_set=['something', 'else', ],
+                                     slots=None,
+                                     follow_engine=None,
+                                     samples=None,
+                                     process_fn=None,
+                                     question=None,
+                                     end_session=False)
+        cls.complex_intent = Intent(name='Complex-Intent',
+                                    response_set=lambda: 'response set',
+                                    slots=Slot(name='slot-name',
+                                               slot_type=SlotType(name='slot-type-name',
+                                                                  values=['abc', 'def'])),
+                                    follow_engine='SomeEngine',
+                                    samples=['Hello', 'Hi'],
+                                    process_fn=lambda: 'processed',
+                                    question=Question(intent_list=[]),
+                                    end_session=True,
+                                    profile_builder=lambda: 'profile is built')
 
     def test_intent_identifier(self):
         self.assertEqual(Intent.intent_identifier(), 'intent-identifier')
 
     def test_true_end_state(self):
-        self.assertTrue(self.simplest_intent.is_end_state(), True)
-
-    # @patch(sample, return_value='something')
-    # def test_list_response_set(self):
-    #     self.assertEqual(self.simplest_intent.get_random_response(), 'something')
+        self.assertTrue(self.simplest_intent.is_end_state())
 
     def test_none_engine_session(self):
         self.assertIsNone(self.simplest_intent.engine_session)
@@ -49,15 +48,11 @@ class BaseIntentTestCase(TestCase):
     def test_none_profile_builder(self):
         self.assertIsNone(self.simplest_intent.profile_builder)
 
-    # ---
     def test_false_end_state(self):
-        self.assertFalse(self.complex_intent.is_end_state(), False)
+        self.assertFalse(self.complex_intent.is_end_state())
 
     def test_fn_response_set(self):
         self.assertEqual(self.complex_intent.get_random_response(), 'response set')
-
-    def test_engine_session(self):
-        pass    # todo not written since this property is not in use yet.
 
     def test_profile_builder(self):
         self.assertIsNotNone(self.complex_intent.profile_builder)
@@ -65,24 +60,25 @@ class BaseIntentTestCase(TestCase):
 
 
 class QuestionTestCase(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         def version_fn():
             return 'hello'
 
         def reprompt_fn():
             return 'hello reprompt'
 
-        self.q_no_version = Question(versions=None, intent_list=[], reprompt=['hello'])
-        self.q_fn_version = Question(versions=version_fn, intent_list=[])
-        self.q_fn_reprompt = Question(versions=None, intent_list=[], reprompt=reprompt_fn)
-        self.q = Question(versions=['a', 'b', 'c'],
+        cls.q_no_version = Question(versions=None, intent_list=[], reprompt=['hello'])
+        cls.q_fn_version = Question(versions=version_fn, intent_list=[])
+        cls.q_fn_reprompt = Question(versions=None, intent_list=[], reprompt=reprompt_fn)
+        cls.q = Question(versions=['a', 'b', 'c'],
                           intent_list=[
                               YesIntent(response_set=['x', 'y'],
                                         end_session=True)
                           ])
 
     def test_no_version_fields(self):
-        self.assertEqual(self.q_no_version.versions, None)
+        self.assertIsNone(self.q_no_version.versions)
         self.assertEqual(self.q_no_version.reprompt, ['hello'])
         self.assertEqual(self.q_no_version.intents, {})
         self.assertEqual(self.q_no_version.asked_question, '')
@@ -101,22 +97,23 @@ class QuestionTestCase(TestCase):
 
 
 class FactEngineTestCase(TestCase):
-    def setUp(self):
-        self.a_user = mommy.make(AUser, _fill_optional=['alexa_id', ])  # type: AUser
-        self.fact = mommy.make(Fact,
-                               entry_text='entry-text-here',
-                               fact_list=['content-1',
-                                          'content-2',
-                                          'content-3',
-                                          'content-4',
-                                          'content-5',
-                                          'content-6', ],
-                               ending_yes_no_question='question-here')  # type: Fact
-        self.content = self.fact.get_random_content()
-        self.engine_session = mommy.make(EngineSession,
-                                         user=self.a_user,
-                                         name='FactEngine',
-                                         state='continue')
+    @classmethod
+    def setUpTestData(cls):
+        cls.a_user = mommy.make(AUser, _fill_optional=['alexa_id', ])  # type: AUser
+        cls.fact = mommy.make(Fact,
+                              entry_text='entry-text-here',
+                              fact_list=['content-1',
+                                         'content-2',
+                                         'content-3',
+                                         'content-4',
+                                         'content-5',
+                                         'content-6', ],
+                              ending_yes_no_question='question-here')  # type: Fact
+        cls.content = cls.fact.get_random_content()
+        cls.engine_session = mommy.make(EngineSession,
+                                        user=cls.a_user,
+                                        name='FactEngine',
+                                        state='continue')
 
     def test_question_setup(self):
         with patch.object(Fact, 'fetch_random', return_value=self.fact), \
@@ -141,33 +138,34 @@ class FactEngineTestCase(TestCase):
 
 
 class UserModelTestCase(TestCase):
-    def setUp(self):
-        self.user_one = mommy.make_recipe('alexa.user')
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_one = mommy.make_recipe('alexa.user')
 
-        self.user_two = mommy.make_recipe('alexa.user', user_type='FAMILY')
+        cls.user_two = mommy.make_recipe('alexa.user', user_type='FAMILY')
 
-        self.user_three = mommy.make_recipe('alexa.user', user_type='CAREGIVER')
+        cls.user_three = mommy.make_recipe('alexa.user', user_type='CAREGIVER')
 
-        self.user_four = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG')
+        cls.user_four = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG')
 
     def test_get_profile_object(self):
         self.assertEqual(self.user_one.get_profile_pic(), '/statics/TestProfilePic1.png')
 
     def test_is_senior(self):
-        self.assertTrue(self.user_one.is_senior(), True)
-        self.assertFalse(self.user_one.is_family(), False)
-        self.assertFalse(self.user_one.is_provider(), False)
+        self.assertTrue(self.user_one.is_senior())
+        self.assertFalse(self.user_one.is_family())
+        self.assertFalse(self.user_one.is_provider())
 
     def test_is_family(self):
-        self.assertTrue(self.user_two.is_family(), True)
-        self.assertFalse(self.user_two.is_senior(), False)
-        self.assertFalse(self.user_two.is_provider(), False)
+        self.assertTrue(self.user_two.is_family())
+        self.assertFalse(self.user_two.is_senior())
+        self.assertFalse(self.user_two.is_provider())
 
     def test_is_provider(self):
-        self.assertTrue(self.user_three.is_provider(), True)
-        self.assertFalse(self.user_three.is_family(), False)
-        self.assertTrue(self.user_four.is_provider(), True)
-        self.assertFalse(self.user_four.is_senior(), False)
+        self.assertTrue(self.user_three.is_provider())
+        self.assertFalse(self.user_three.is_family())
+        self.assertTrue(self.user_four.is_provider())
+        self.assertFalse(self.user_four.is_senior())
 
     def test_create_initial_circle(self):
         signals.post_save.disconnect(sender=User, dispatch_uid='create_circle_for_user')
@@ -177,14 +175,15 @@ class UserModelTestCase(TestCase):
                          phone_number='+14151234567',
                          profile_pic='TestProfilePic1')
         user_five.save()
-        self.assertFalse(self.user_one.create_initial_circle(), False)
-        self.assertTrue(user_five.create_initial_circle(), True)
+        self.assertFalse(self.user_one.create_initial_circle())
+        self.assertTrue(user_five.create_initial_circle())
 
 
 class CircleModelTestCase(TestCase):
-    def setUp(self):
-        self.user_one = mommy.make_recipe('alexa.user')
-        self.circle = mommy.make(Circle)
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_one = mommy.make_recipe('alexa.user')
+        cls.circle = mommy.make(Circle)
 
     def test_add_member(self):
         self.assertEqual(self.circle.members.count(), 0, "Initial State: No member in a circle")
@@ -204,12 +203,13 @@ class CircleModelTestCase(TestCase):
 
 
 class AUserModelTestCase(TestCase):
-    def setUp(self):
-        self.auser_one = mommy.make_recipe('alexa.auser')
-        self.auser_two = mommy.make(AUser, engine_schedule='')
-        self.auser_emotional_state = mommy.make(AUserEmotionalState)
-        self.auser_medical_state = mommy.make(AUserMedicalState)
-        self.engine_session_one = mommy.make_recipe('alexa.engine_session')
+    @classmethod
+    def setUpTestData(cls):
+        cls.auser_one = mommy.make_recipe('alexa.auser')
+        cls.auser_two = mommy.make(AUser, engine_schedule='')
+        cls.auser_emotional_state = mommy.make(AUserEmotionalState)
+        cls.auser_medical_state = mommy.make(AUserMedicalState)
+        cls.engine_session_one = mommy.make_recipe('alexa.engine_session')
 
     def test_last_engine_session(self):
         user = self.engine_session_one.user
@@ -255,14 +255,53 @@ class AUserModelTestCase(TestCase):
         self.assertIsNone(self.auser_one.profile_get('none.value'))
 
     def test_create_initial_engine_scheduler(self):
-        self.assertFalse(self.auser_one.create_initial_engine_scheduler(), False)
-        self.assertTrue(self.auser_two.create_initial_engine_scheduler(), True)
+        self.assertFalse(self.auser_one.create_initial_engine_scheduler())
+        self.assertTrue(self.auser_two.create_initial_engine_scheduler())
+
+    def test_get_or_create_by_unknown_device_id_and_user_id(self):
+        auser, created = AUser.get_or_create_by('some-new-device-id', 'some-new-user-id')
+        self.assertTrue(created, 'Unknown device ID and user ID must lead to newly created AUser instance')
+        self.assertIsInstance(auser, AUser, 'Unknown device ID and user ID must lead to an AUser instance')
+        self.assertEqual(auser.user.first_name, 'AnonymousFirstName')
+        self.assertEqual(auser.user.last_name, 'AnonymousLastName')
+        self.assertFalse(auser.user.is_staff, 'Newly created user must be non-staff')
+        self.assertFalse(auser.user.is_superuser, 'Newly created user must be no superuser')
+        self.assertEqual(auser.user.email, 'test@caressa.ai')
+        self.assertEqual(auser.user.phone_number, '+14153477898')
+        self.assertEqual(auser.user.profile_pic, 'default_profile_pic')
+
+    def test_get_or_created_by_known_device_id_and_user_id(self):
+        auser, created = AUser.get_or_create_by('TestAlexaDeviceId1', 'TestAlexaUserId1')
+        self.assertFalse(created, 'Known device ID and user ID must lead to an already existing AUser instance')
+        self.assertIsInstance(auser, AUser, 'Known device ID and user ID must lead to an AUser instance')
+        self.assertEqual(auser.user.first_name, 'TestFirstName1')
+        self.assertEqual(auser.user.last_name, 'TestLastName1')
+        self.assertEqual(auser.user.email, 'TestEMail1')
+        self.assertEqual(auser.user.phone_number, '+14151234567')
+        self.assertEqual(auser.user.profile_pic, 'TestProfilePic1')
+
+    def test_get_or_created_by_known_device_id_and_unknown_user_id(self):
+        auser, created = AUser.get_or_create_by('TestAlexaDeviceId1', 'TestAlexaUserId0123-XXXX')
+        self.assertTrue(created, 'Known device ID and unknown user ID must lead to a new AUser instance')
+        self.assertIsInstance(auser, AUser, 'Known device ID and unknown user ID must lead to an AUser instance')
+        self.assertEqual(auser.user.first_name, 'AnonymousFirstName')
+        self.assertEqual(auser.user.last_name, 'AnonymousLastName')
+        self.assertFalse(auser.user.is_staff, 'Newly created user must be non-staff')
+
+    def test_get_or_created_by_unknown_device_id_and_known_user_id(self):
+        auser, created = AUser.get_or_create_by('TestAlexaDeviceId0123-XXX', 'TestAlexaUserId1')
+        self.assertTrue(created, 'Unknown device ID and known user ID must lead to a new AUser instance')
+        self.assertIsInstance(auser, AUser, 'Unknown device ID and known user ID must lead to an AUser instance')
+        self.assertEqual(auser.user.first_name, 'AnonymousFirstName')
+        self.assertEqual(auser.user.last_name, 'AnonymousLastName')
+        self.assertFalse(auser.user.is_staff, 'Newly created user must be non-staff')
 
 
 class SongModelTestCase(TestCase):
-    def setUp(self):
-        self.song = mommy.make_recipe('alexa.song')
-        self.url = HOSTED_ENV + self.song.file_name
+    @classmethod
+    def setUpTestData(cls):
+        cls.song = mommy.make_recipe('alexa.song')
+        cls.url = HOSTED_ENV + cls.song.file_name
 
     def test_url(self):
         self.assertEqual(self.song.url, self.url)
