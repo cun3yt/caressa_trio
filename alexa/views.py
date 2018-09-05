@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from django.shortcuts import render
 from utilities.logger import log
 from random import sample, random
+from alexa.helpers import create_test_user
 
 
 def main_view(request):
@@ -161,13 +162,8 @@ class Conversation:
         session_id = deep_get(req_body, 'session.sessionId', '')
         user_id = deep_get(req_body, 'context.System.user.userId', '')
         device_id = deep_get(req_body, 'context.System.device.deviceId', '')
-        self.alexa_user, is_created = AUser.objects.get_or_create(alexa_device_id=device_id, alexa_user_id=user_id)
-        if is_created:
-            test_user = self._create_test_user()
-            test_user.save()
-            new_device = AUser.objects.get(alexa_device_id=device_id)
-            new_device.user = test_user
-            new_device.save()
+
+        self.alexa_user, _ = AUser.get_or_create_by(alexa_device_id=device_id, alexa_user_id=user_id)
 
         self.engine_session = self.alexa_user.last_engine_session()
         self.sess, self.is_new_session = Session.objects.get_or_create(alexa_id=session_id,
@@ -199,21 +195,6 @@ class Conversation:
             'text': '',
             'should_session_end': False,
         }
-
-    @staticmethod
-    def _create_test_user():
-        username = 'Test{date}'.format(date=datetime.now().strftime('%Y%m%d%H%M'))
-        test_user = User(username=username,
-                         password=get_random_string(),
-                         first_name='AnonymousFirstName',
-                         last_name='AnonymousLastName',
-                         is_staff=False,
-                         is_superuser=False,
-                         email='test@caressa.ai',
-                         phone_number='+14153477898',
-                         profile_pic='default_profile_pic'
-                         )
-        return test_user
 
     @property
     def is_the_engine_session_going_on(self):

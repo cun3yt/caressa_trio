@@ -1,7 +1,7 @@
 from django.db import models
 from model_utils.models import TimeStampedModel
 from jsonfield import JSONField
-from alexa.models import User, Session
+from alexa.models import User, Session, AUser
 from django.db.models import signals
 from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
@@ -346,6 +346,16 @@ class TrackingAction(TimeStampedModel):
     segment1 = models.CharField(max_length=100, default=None, null=True)
     segment2 = models.CharField(max_length=100, default=None, null=True)
     segment3 = models.CharField(max_length=100, default=None, null=True)
+
+    @staticmethod
+    def save_action(a_user: AUser, session: Session, segment0, segment1=None, segment2=None, segment3=None):
+        action = TrackingAction(user=a_user.user,
+                                session=session,
+                                segment0=segment0,
+                                segment1=segment1,
+                                segment2=segment2,
+                                segment3=segment3, )
+        action.save()
 
 
 TrackingAction._meta.get_field('created').db_index = True
