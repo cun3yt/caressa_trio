@@ -212,13 +212,23 @@ class PlaylistHasAudio(TimeStampedModel):
         else:
             return self.TIME_NIGHT
 
-    def time_based_filtered_content(self, daytime):
+    def _time_based_filter(self, daytime):
         now = datetime.utcnow()
-        qs = self.playlist.playlisthasaudio_set.select_for_update() \
-            .filter(order_id__gt=self.order_id) \
-            .filter(Q(play_date__isnull=True) | Q(play_date=now.today()))\
+        qs = self.playlist.playlisthasaudio_set.select_for_update()
+
+        return qs.filter(Q(play_date__isnull=True) | Q(play_date=now.today()))\
             .filter(Q(play_time=self.TIME_DAYLONG) | Q(play_time=daytime))
-        return qs
+
+    def time_based_filtered_content(self, daytime):
+        return self._time_based_filter(daytime).filter(order_id__gt=self.order_id)
+
+    def current_content_time_filter(self, daytime):
+        return self._time_based_filter(daytime).filter(order_id=self.order_id)
+
+    def is_current_content_time_fit(self):
+        current_daytime = self.current_daytime()
+        qs = self.current_content_time_filter(current_daytime)
+        return qs.count() >= 1
 
     def next(self):
         current_daytime = self.current_daytime()

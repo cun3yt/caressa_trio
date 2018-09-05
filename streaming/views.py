@@ -161,6 +161,11 @@ def pause_session(alexa_user: AUser):
 def resume_session(alexa_user: AUser):
     log(' >> LOG: RESUME_SESSION')
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
+    if not status.playlist_has_audio.is_current_content_time_fit():
+        next_content = status.playlist_has_audio.next()
+        save_state_by_playlist_entry(alexa_user, next_content)
+        updated_status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
+        return start_session(updated_status.playlist_has_audio, status.offset)
     return start_session(status.playlist_has_audio, status.offset)
 
 

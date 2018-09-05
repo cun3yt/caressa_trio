@@ -96,7 +96,9 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
                     'is_upcoming_content',
                     )
 
-    list_editable = ('order_id', )
+    list_editable = ('order_id',
+                     'play_date',
+                     'play_time', )
 
     list_filter = ('playlist', )
 
