@@ -223,8 +223,11 @@ class PlaylistHasAudio(TimeStampedModel):
                               default=None,
                               null=True, )
 
+    # tag: string combination of tags, e.g. "song-classical, update-{date}"
     tag = models.TextField(blank=True,
-                           default='', )        # string combination of tags, e.g. "song-classical, update-{date}"
+                           default='',
+                           help_text='If there is an audio file specified in "Audio" section, these tags are going to '
+                                     'be ignored!', )
 
     order_id = models.FloatField(blank=False,
                                  null=False,
@@ -296,7 +299,8 @@ class UserPlaylistStatus(TimeStampedModel):
     playlist_has_audio = models.ForeignKey(to=PlaylistHasAudio,
                                            on_delete=models.DO_NOTHING, )
     current_active_audio = models.ForeignKey(to=AudioFile,
-                                             on_delete=models.DO_NOTHING, )
+                                             on_delete=models.DO_NOTHING,
+                                             null=True, )
 
     offset = models.IntegerField(default=0,
                                  help_text='The place user left the song in milliseconds', )
