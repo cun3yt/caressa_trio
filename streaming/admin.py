@@ -51,6 +51,7 @@ class AudioFileAdmin(admin.ModelAdmin):
 
 @admin.register(Playlist)
 class PlaylistAdmin(admin.ModelAdmin):
+    change_list_template = 'playlist_changelist.html'
     fields = ('user',
               'name',
               'total_duration_in_minutes',

@@ -5,9 +5,10 @@ from utilities.logger import log
 from alexa.models import AUser, User, Session
 from datetime import datetime
 from django.utils.crypto import get_random_string
-from django.http import JsonResponse
-from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.db import transaction
+from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, Playlist
+from alexa.models import User
 
 
 def _create_test_user():
@@ -255,3 +256,51 @@ def enqueue_next_song(alexa_user: AUser):
     log(" >> LOG: EN.Q token: {}, previous token: {}".format(file.id, status.playlist_has_audio.audio.id))
 
     return data
+
+
+def update_user_status_for_new_playlist(status: UserPlaylistStatus, new_playlist):
+    audio_pointed = status.playlist_has_audio.audio
+    status.playlist_has_audio = new_playlist.playlisthasaudio_set.filter(audio=audio_pointed).all()[0]
+    status.save()
+
+
+@transaction.atomic
+def replicate_playlist(request):
+    playlist_name = request.POST['playlist_name']
+    user_id = request.POST['user_id']
+
+    if not request.user.is_staff:
+        return Http404
+
+    log('ARG as Playlist name : {} ARG as user id : {}'.format(playlist_name, user_id))
+    from_playlist = Playlist.objects.filter(name__iexact=playlist_name)[0]
+    user = User.objects.filter(id=user_id)[0]
+
+    log("Replicating the playlist {} for user {}".format(from_playlist.name, user.get_full_name()))
+
+    if Playlist.objects.filter(user=user).count() > 0:
+        log('User Playlist already exists! Ending script')
+        return HttpResponseBadRequest('User Playlist already exists!')
+
+    to_playlist = Playlist(user=user, name='user-{}-playlist'.format(user.id))
+    to_playlist.save()
+    log('Playlist created')
+
+    number_of_entries = from_playlist.playlisthasaudio_set.count()
+    log('Number of entries to copy: {}'.format(number_of_entries))
+
+    for index, entry in enumerate(from_playlist.playlisthasaudio_set.all()):
+        log(' {}/{} is being copied'.format(index+1, number_of_entries))
+        entry.pk = None
+        entry.playlist = to_playlist
+        entry.save()
+
+    log('Playlist successfully copied')
+
+    status, created = UserPlaylistStatus.get_user_playlist_status_for_user(user)    # type: UserPlaylistStatus
+    update_user_status_for_new_playlist(status, to_playlist)
+
+    if created:
+        log('UserPlaylistStatus entry didn\'t exist, created a new one')
+        return HttpResponseRedirect('/admin/streaming/playlist/')
+
