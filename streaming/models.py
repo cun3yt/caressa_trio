@@ -14,6 +14,7 @@ from datetime import datetime
 from django.db.models import Q
 from random import randint
 from uuid import uuid4
+from typing import Union
 
 
 class Tag(TimeStampedModel):
@@ -28,10 +29,14 @@ class Tag(TimeStampedModel):
         return [el.strip() for el in tag_string.split(',')]
 
     @staticmethod
-    def _tag_list_to_audio_file(tag_list: list) -> 'AudioFile':
+    def _tag_list_to_audio_file(tag_list: list) -> Union['AudioFile', None]:
         tags = Tag.objects.all().filter(name__in=tag_list)
         qs = AudioFile.objects.all().filter(tags__in=tags)
         qs_count = qs.count()
+
+        if qs_count < 1:
+            return None
+
         random_slice = randint(0, qs_count - 1)
         result_set = qs[random_slice: random_slice + 1]
         return result_set[0]
@@ -244,7 +249,7 @@ class PlaylistHasAudio(TimeStampedModel):
     def get_audio(self):        # todo: use this function instead of direct audio reach..
         return self.audio if self.audio else Tag.string_to_audio_file(self.tag)
 
-    def current_daytime(self):
+    def _current_daytime(self):
         now = datetime.utcnow()
         if 12 < now.hour <= 19:
             return self.TIME_MORNING
@@ -255,7 +260,7 @@ class PlaylistHasAudio(TimeStampedModel):
         else:
             return self.TIME_NIGHT
 
-    def time_based_filtered_content(self, daytime):
+    def _time_based_filtered_content(self, daytime):
         now = datetime.utcnow()
         qs = self.playlist.playlisthasaudio_set.select_for_update() \
             .filter(order_id__gt=self.order_id) \
@@ -264,8 +269,8 @@ class PlaylistHasAudio(TimeStampedModel):
         return qs
 
     def next(self):
-        current_daytime = self.current_daytime()
-        qs = self.time_based_filtered_content(current_daytime)
+        current_daytime = self._current_daytime()
+        qs = self._time_based_filtered_content(current_daytime)
         if qs.count() < 1:
             return self.playlist.playlisthasaudio_set.all()[0]
         return qs[0]
