@@ -2,6 +2,7 @@ from streaming.models import Playlist, UserPlaylistStatus
 from alexa.models import User
 from utilities.logger import log
 from django.db import transaction
+from streaming.exceptions import PlaylistAlreadyExistException
 
 
 def update_user_status_for_new_playlist(status: UserPlaylistStatus, new_playlist):
@@ -22,7 +23,7 @@ def run(playlist_name, user_id):
 
     if Playlist.objects.filter(user=user).count() > 0:
         log('User Playlist already exists! Ending script')
-        raise Exception('User Playlist already exists!')
+        raise PlaylistAlreadyExistException('User Playlist already exists!')
 
     to_playlist = Playlist(user=user, name='user-{}-playlist'.format(user.id))
     to_playlist.save()
