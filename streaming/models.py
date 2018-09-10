@@ -1,7 +1,7 @@
 from django.db import models
 from model_utils.models import TimeStampedModel
 from jsonfield import JSONField
-from alexa.models import User, Session
+from alexa.models import User, Session, AUser
 from django.db.models import signals
 from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
@@ -14,6 +14,7 @@ from datetime import datetime
 from django.db.models import Q
 from random import randint
 from uuid import uuid4
+from typing import Union
 
 
 class Tag(TimeStampedModel):
@@ -28,10 +29,14 @@ class Tag(TimeStampedModel):
         return [el.strip() for el in tag_string.split(',')]
 
     @staticmethod
-    def _tag_list_to_audio_file(tag_list: list) -> 'AudioFile':
+    def _tag_list_to_audio_file(tag_list: list) -> Union['AudioFile', None]:
         tags = Tag.objects.all().filter(name__in=tag_list)
         qs = AudioFile.objects.all().filter(tags__in=tags)
         qs_count = qs.count()
+
+        if qs_count < 1:
+            return None
+
         random_slice = randint(0, qs_count - 1)
         result_set = qs[random_slice: random_slice + 1]
         return result_set[0]
@@ -223,8 +228,11 @@ class PlaylistHasAudio(TimeStampedModel):
                               default=None,
                               null=True, )
 
+    # tag: string combination of tags, e.g. "song-classical, update-{date}"
     tag = models.TextField(blank=True,
-                           default='', )        # string combination of tags, e.g. "song-classical, update-{date}"
+                           default='',
+                           help_text='If there is an audio file specified in "Audio" section, these tags are going to '
+                                     'be ignored!', )
 
     order_id = models.FloatField(blank=False,
                                  null=False,
@@ -241,7 +249,7 @@ class PlaylistHasAudio(TimeStampedModel):
     def get_audio(self):        # todo: use this function instead of direct audio reach..
         return self.audio if self.audio else Tag.string_to_audio_file(self.tag)
 
-    def current_daytime(self):
+    def _current_daytime(self):
         now = datetime.utcnow()
         if 12 < now.hour <= 19:
             return self.TIME_MORNING
@@ -252,7 +260,7 @@ class PlaylistHasAudio(TimeStampedModel):
         else:
             return self.TIME_NIGHT
 
-    def time_based_filtered_content(self, daytime):
+    def _time_based_filtered_content(self, daytime):
         now = datetime.utcnow()
         qs = self.playlist.playlisthasaudio_set.select_for_update() \
             .filter(order_id__gt=self.order_id) \
@@ -261,8 +269,8 @@ class PlaylistHasAudio(TimeStampedModel):
         return qs
 
     def next(self):
-        current_daytime = self.current_daytime()
-        qs = self.time_based_filtered_content(current_daytime)
+        current_daytime = self._current_daytime()
+        qs = self._time_based_filtered_content(current_daytime)
         if qs.count() < 1:
             return self.playlist.playlisthasaudio_set.all()[0]
         return qs[0]
@@ -296,7 +304,8 @@ class UserPlaylistStatus(TimeStampedModel):
     playlist_has_audio = models.ForeignKey(to=PlaylistHasAudio,
                                            on_delete=models.DO_NOTHING, )
     current_active_audio = models.ForeignKey(to=AudioFile,
-                                             on_delete=models.DO_NOTHING, )
+                                             on_delete=models.DO_NOTHING,
+                                             null=True, )
 
     offset = models.IntegerField(default=0,
                                  help_text='The place user left the song in milliseconds', )
@@ -342,6 +351,16 @@ class TrackingAction(TimeStampedModel):
     segment1 = models.CharField(max_length=100, default=None, null=True)
     segment2 = models.CharField(max_length=100, default=None, null=True)
     segment3 = models.CharField(max_length=100, default=None, null=True)
+
+    @staticmethod
+    def save_action(a_user: AUser, session: Session, segment0, segment1=None, segment2=None, segment3=None):
+        action = TrackingAction(user=a_user.user,
+                                session=session,
+                                segment0=segment0,
+                                segment1=segment1,
+                                segment2=segment2,
+                                segment3=segment3, )
+        action.save()
 
 
 TrackingAction._meta.get_field('created').db_index = True

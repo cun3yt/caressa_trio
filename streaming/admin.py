@@ -80,6 +80,7 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
 
     fields = ('playlist',
               'audio',
+              'tag',
               'duration',
               'order_id',
               'play_date',
@@ -89,6 +90,7 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
                     'playlist',
                     'audio_file',
                     'audio_file_external_link',
+                    'tag',
                     'duration',
                     'order_id',
                     'play_date',
@@ -113,11 +115,16 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
 
     @staticmethod
     def audio_file(instance: PlaylistHasAudio):
-        url = '<a href="{url}">{file_name}</a>'.format(url=reverse('admin:streaming_audiofile_change', args=(instance.audio.id,)),
+        if not instance.audio:
+            return 'tagged!'
+        url = '<a href="{url}">{file_name}</a>'.format(url=reverse('admin:streaming_audiofile_change',
+                                                                   args=(instance.audio.id,)),
                                                        file_name=instance.audio, )
         return mark_safe(url)
 
     def audio_file_external_link(self, instance: PlaylistHasAudio):
+        if not instance.audio:
+            return 'tagged!'
         url = '<a href="{url}" target="_blank">Listen</a>'.format(
             url=instance.audio.url, )
         return mark_safe(url)
@@ -125,7 +132,7 @@ class PlaylistHasAudioAdmin(OrderableAdmin, AdminChangeLinksMixin, admin.ModelAd
 
     @staticmethod
     def duration(instance: PlaylistHasAudio):
-        return instance.audio.duration_in_minutes
+        return instance.audio.duration_in_minutes if instance.audio else 'N/A'
 
     def is_upcoming_content(self, instance: PlaylistHasAudio):
         ups = UserPlaylistStatus.objects.all()

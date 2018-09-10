@@ -22,6 +22,7 @@ from datetime import timedelta, datetime
 from django.utils import timezone
 from random import sample
 from icalendar import Calendar
+from django.utils.crypto import get_random_string
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -74,6 +75,20 @@ class User(AbstractUser, TimeStampedModel):
         circle_member = User.objects.get(id=self.id)
         circle.add_member(circle_member, False)
         return True
+
+    @staticmethod
+    def create_test_user():
+        username = 'Test{date}'.format(date=datetime.now().strftime('%Y%m%d%H%M'))
+        test_user = User(username=username,
+                         password=get_random_string(),
+                         first_name='AnonymousFirstName',
+                         last_name='AnonymousLastName',
+                         is_staff=False,
+                         is_superuser=False,
+                         email='test@caressa.ai',
+                         phone_number='+14153477898',
+                         profile_pic='default_profile_pic', )
+        return test_user
 
     def __repr__(self):
         return self.first_name.title()
@@ -204,6 +219,31 @@ class AUser(TimeStampedModel):
         user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
         user.save()
         return True
+
+    @staticmethod
+    def get_or_create_by(alexa_device_id, alexa_user_id):
+        """
+        For given device ID and user ID, it creates and saves an AUser instance if not found.
+        If alexa user is created, it also creates a User instance and saves it as a side effect.
+
+        :param alexa_device_id: string
+        :param alexa_user_id: int
+        :return: (AUser, bool)
+
+        @todo write test
+        """
+
+        alexa_user, is_created = AUser.objects.get_or_create(alexa_device_id=alexa_device_id,
+                                                             alexa_user_id=alexa_user_id, )
+
+        if is_created:
+            test_user = User.create_test_user()
+            test_user.save()
+            alexa_user.user = test_user
+            alexa_user.save()
+
+        return alexa_user, is_created
+
 
 class AUserEmotionalState(TimeStampedModel):
     class Meta:

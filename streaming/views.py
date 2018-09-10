@@ -2,26 +2,10 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from utilities.dictionaries import deep_get
 from utilities.logger import log
-from alexa.models import AUser, User, Session
-from datetime import datetime
-from django.utils.crypto import get_random_string
+from alexa.models import AUser, Session
 from django.http import JsonResponse
 from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, AudioFile
 from django.db import transaction
-
-
-def _create_test_user():
-    username = 'Test{date}'.format(date=datetime.now().strftime('%Y%m%d%H%M'))
-    test_user = User(username=username,
-                     password=get_random_string(),
-                     first_name='AnonymousFirstName',
-                     last_name='AnonymousLastName',
-                     is_staff=False,
-                     is_superuser=False,
-                     email='test@caressa.ai',
-                     phone_number='+14153477898',
-                     profile_pic='default_profile_pic', )
-    return test_user
 
 
 @csrf_exempt
@@ -29,14 +13,6 @@ def stream_io_wrapper(request):
     request_body = json.loads(request.body)
     response_body = stream_io(request_body)   # type: dict
     return JsonResponse(response_body)
-
-
-def save_action(a_user: AUser, session: Session, segment0, segment1):
-    action = TrackingAction(user=a_user.user,
-                            session=session,
-                            segment0=segment0,
-                            segment1=segment1)
-    action.save()
 
 
 def stream_io(req_body):
@@ -55,13 +31,7 @@ def stream_io(req_body):
     log("Intent: {}".format(intent))
     log("Intent Name: {}".format(intent_name))
 
-    alexa_user, is_created = AUser.objects.get_or_create(alexa_device_id=device_id, alexa_user_id=user_id)
-
-    if is_created:
-        test_user = _create_test_user()
-        test_user.save()
-        alexa_user.user = test_user
-        alexa_user.save()
+    alexa_user, _ = AUser.get_or_create_by(alexa_device_id=device_id, alexa_user_id=user_id)
 
     if req_type == 'SessionEndedRequest':
         return stop_session()
@@ -71,26 +41,26 @@ def stream_io(req_body):
 
     if req_type in ['LaunchRequest', 'PlaybackController.PlayCommandIssued', ] \
             or intent_name in ['AMAZON.ResumeIntent', ]:
-        save_action(alexa_user, sess, (req_type if req_type else intent_name), 'resume_session')
+        TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'resume_session')
         return resume_session(alexa_user)
     elif req_type in ['PlaybackController.NextCommandIssued', ] or intent_name in ['AMAZON.NextIntent', ]:
-        save_action(alexa_user, sess, (req_type if req_type else intent_name), 'next_intent_response')
+        TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'next_intent_response')
         return next_intent_response(alexa_user)
     elif req_type in ['AudioPlayer.PlaybackNearlyFinished', ]:
-        save_action(alexa_user, sess, req_type, 'enqueue_next_song')
+        TrackingAction.save_action(alexa_user, sess, req_type, 'enqueue_next_song')
         return enqueue_next_song(alexa_user)
     elif req_type in ['AudioPlayer.PlaybackStarted', ]:
-        save_action(alexa_user, sess, req_type, 'filler')
+        TrackingAction.save_action(alexa_user, sess, req_type, 'filler')
         save_state(alexa_user, req_body)
         return filler()
     elif req_type in ['PlaybackController.PauseCommandIssued', ] or intent_name in ['AMAZON.PauseIntent', ]:
-        save_action(alexa_user, sess, (req_type if req_type else intent_name), 'pause_session')
+        TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'pause_session')
         return pause_session(alexa_user)
     elif intent is not None:
-        save_action(alexa_user, sess, intent_name, 'stop_session')
+        TrackingAction.save_action(alexa_user, sess, intent_name, 'stop_session')
         return stop_session()
 
-    save_action(alexa_user, sess, 'fallback_state', 'filler')
+    TrackingAction.save_action(alexa_user, sess, 'fallback_state', 'filler')
     return filler()
 
 

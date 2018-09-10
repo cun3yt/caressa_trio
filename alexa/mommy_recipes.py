@@ -10,6 +10,15 @@ user = Recipe(
     profile_pic='TestProfilePic1'
 )
 
+user2 = Recipe(
+    User,
+    first_name='TestFirstName2',
+    last_name='TestLastName2',
+    email='TestEMail2',
+    phone_number='+11112223344',
+    profile_pic='TestProfilePic2'
+)
+
 auser = Recipe(
     AUser,
     alexa_user_id='TestAlexaUserId1',
@@ -18,9 +27,17 @@ auser = Recipe(
     engine_schedule='TestEngineSchedule',
 )
 
+auser2 = Recipe(
+    AUser,
+    alexa_user_id='TestAlexaUserId2',
+    alexa_device_id='TestAlexaDeviceId2',
+    user=foreign_key(user2),
+    engine_schedule='TestEngineSchedule',
+)
+
 engine_session = Recipe(
     EngineSession,
-    user=foreign_key(auser),
+    user=foreign_key(auser2),
     name='TestEngine1',
     state='continue',
     data={},
