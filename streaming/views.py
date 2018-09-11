@@ -5,9 +5,12 @@ from utilities.logger import log
 from alexa.models import AUser, User, Session
 from datetime import datetime
 from django.utils.crypto import get_random_string
-from django.http import JsonResponse
-from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.db import transaction
+from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, Playlist
+from alexa.models import User
+from scripts import replicate_playlist
+from streaming.exceptions import PlaylistAlreadyExistException
 
 
 def _create_test_user():
@@ -255,3 +258,17 @@ def enqueue_next_song(alexa_user: AUser):
     log(" >> LOG: EN.Q token: {}, previous token: {}".format(file.id, status.playlist_has_audio.audio.id))
 
     return data
+
+
+@transaction.atomic
+def playlist_replication(request):
+    playlist_to_be_copied = request.POST['playlist_name']
+    target_user_id = request.POST['user_id']
+    if not request.user.is_staff:
+        return Http404
+    try:
+        replicate_playlist.run(playlist_to_be_copied, target_user_id)
+    except PlaylistAlreadyExistException:
+        return HttpResponseBadRequest('User Playlist already exists!')
+    return HttpResponseRedirect('/admin/streaming/playlist/')
+

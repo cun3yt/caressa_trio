@@ -8,7 +8,8 @@ from jsonfield import JSONField
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    fields = ('username',
+    fields = ('id',
+              'username',
               'first_name',
               'last_name',
               'email',
@@ -19,7 +20,8 @@ class UserAdmin(admin.ModelAdmin):
               'user_type',
               'phone_number',
               'profile_pic', )
-    list_display = ('username',
+    list_display = ('id',
+                    'username',
                     'first_name',
                     'last_name',
                     'email',

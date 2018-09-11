@@ -19,7 +19,7 @@ from django.urls import include, path
 from django.conf.urls.static import static
 from django.conf import settings
 from alexa.views import main_view, alexa_io
-from streaming.views import stream_io_wrapper
+from streaming.views import stream_io_wrapper, playlist_replication
 from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, laugh_at_joke, find_interesting_at_news, \
     new_post
 from alexa.api.views import MedicalViewSet, JokeViewSet, NewsViewSet, UserActOnContentViewSet
@@ -74,6 +74,7 @@ urlpatterns = [
     path('', main_view),
     path('discussion', alexa_io),
     path('streaming', stream_io_wrapper),
+    path('replicate/', playlist_replication),
     path('act/', include(router.urls)),
     path('flat-api/', include(flat_router.urls)),
     path('admin/', admin.site.urls),
