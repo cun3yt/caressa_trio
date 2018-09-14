@@ -48,6 +48,8 @@ class User(AbstractUser, TimeStampedModel):
 
     phone_number = PhoneNumberField(db_index=True, blank=True)
     profile_pic = models.TextField(blank=True, default='')
+    state = models.TextField(blank=False, default='unknown')
+    city = models.TextField(blank=False, default='unknown')
     is_anonymous_user = models.BooleanField(default=True,
                                             help_text='Having this field anonymous means that the content will '
                                                       'not be optimized on the personal level, e.g. calling by '
@@ -87,7 +89,9 @@ class User(AbstractUser, TimeStampedModel):
                          is_superuser=False,
                          email='test@caressa.ai',
                          phone_number='+14153477898',
-                         profile_pic='default_profile_pic', )
+                         profile_pic='default_profile_pic',
+                         state='test_state',
+                         city='test_city', )
         return test_user
 
     def __repr__(self):

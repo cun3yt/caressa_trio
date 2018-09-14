@@ -29,8 +29,14 @@ class Tag(TimeStampedModel):
         return [el.strip() for el in tag_string.split(',')]
 
     @staticmethod
-    def _tag_list_to_audio_file(tag_list: list) -> Union['AudioFile', None]:
-        tags = Tag.objects.all().filter(name__in=tag_list)
+    def _tag_list_to_audio_file(tag_list: list, context={}) -> Union['AudioFile', None]:
+        user = context.get('user', None)
+        format_context = {
+            'city': user.city if user else 'unknown',
+            'date': datetime.today().strftime('%Y-%m-%d')
+        }
+        formatted_tag_list = [tag.format(**format_context) for tag in tag_list]  # list comprehension
+        tags = Tag.objects.all().filter(name__in=formatted_tag_list)
         qs = AudioFile.objects.all().filter(tags__in=tags)
         qs_count = qs.count()
 
@@ -42,9 +48,9 @@ class Tag(TimeStampedModel):
         return result_set[0]
 
     @staticmethod
-    def string_to_audio_file(tag_string: str) -> 'AudioFile':
+    def string_to_audio_file(tag_string: str, context={}) -> 'AudioFile':
         tag_list = Tag._tag_string_to_list(tag_string)
-        return Tag._tag_list_to_audio_file(tag_list)
+        return Tag._tag_list_to_audio_file(tag_list, context)
 
 
 class AudioFile(TimeStampedModel):
@@ -247,7 +253,8 @@ class PlaylistHasAudio(TimeStampedModel):
     hash = models.UUIDField(default=uuid4)
 
     def get_audio(self):        # todo: use this function instead of direct audio reach..
-        return self.audio if self.audio else Tag.string_to_audio_file(self.tag)
+        context = {'user': self.playlist.user}
+        return self.audio if self.audio else Tag.string_to_audio_file(self.tag, context)
 
     def _current_daytime(self):
         now = datetime.utcnow()
