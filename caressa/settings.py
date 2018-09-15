@@ -100,8 +100,10 @@ WSGI_APPLICATION = 'caressa.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.0/ref/settings/#databases
 
+DATABASE_ENV_VARIABLE = 'ACTUAL_DATABASE_URL'
 DATABASES = {
-    'default': dj_database_url.config(conn_max_age=600)
+    'default': dj_database_url.config(env=DATABASE_ENV_VARIABLE,
+                                      conn_max_age=600, )
 }
 
 AUTH_USER_MODEL = 'alexa.User'

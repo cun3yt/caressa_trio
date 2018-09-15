@@ -7,7 +7,9 @@ user = Recipe(
     last_name='TestLastName1',
     email='TestEMail1',
     phone_number='+14151234567',
-    profile_pic='TestProfilePic1'
+    profile_pic='TestProfilePic1',
+    state='TestState1',
+    city='TestCity1',
 )
 
 user2 = Recipe(
@@ -16,7 +18,9 @@ user2 = Recipe(
     last_name='TestLastName2',
     email='TestEMail2',
     phone_number='+11112223344',
-    profile_pic='TestProfilePic2'
+    profile_pic='TestProfilePic2',
+    state='TestState2',
+    city='TestCity2',
 )
 
 auser = Recipe(
