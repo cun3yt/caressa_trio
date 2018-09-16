@@ -1,6 +1,7 @@
 from django.test import TestCase
 from model_mommy import mommy
-from streaming.models import Tag, AudioFile
+from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration
+from django.db.models import signals
 
 
 class TagModelTestCase(TestCase):
@@ -85,20 +86,35 @@ class TagModelTestCase(TestCase):
 class AudioFileModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        pass
+        signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
+                                    sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
+        cls.audio_file1 = mommy.make_recipe('streaming.audio_file_recipe', duration=40)  # type: AudioFile
+        cls.audio_file2 = mommy.make_recipe('streaming.audio_file_recipe', duration=100)  # type: AudioFile
 
     def test_url_hyperlink(self):
-        pass
+        created_html = "<a href='{url}' target='_blank'>{url}</a>".format(url=self.audio_file1.url)
+        format_html = self.audio_file1.url_hyperlink()
+
+        self.assertEqual(created_html, format_html)
 
     def test_duration_in_minutes(self):
-        pass
+        duration_in_minutes1 = self.audio_file1.duration_in_minutes
+        duration_in_minutes2 = self.audio_file2.duration_in_minutes
+        expected_duration1 = '40 sec(s)'
+        expected_duration2 = '01 min(s) 40 sec(s)'
 
-    def test_is_publicly_accessible(self):
+        self.assertEqual(duration_in_minutes1, expected_duration1)
+        self.assertEqual(duration_in_minutes2, expected_duration2)
+
+    def test_is_publicly_accessible(self): # todo how to?
         pass
 
     def test_string_representation(self):
-        pass
+        actual_string_representation = str(self.audio_file1)
+        expected_string_representation = "({audio_type}) {file_name}".format(audio_type=self.audio_file1.audio_type,
+                                                                             file_name=self.audio_file1.name)
 
+        self.assertEqual(actual_string_representation, expected_string_representation)
 
 # class PlaylistModelTestCase(TestCase):
 #     @classmethod
