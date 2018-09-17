@@ -1,6 +1,6 @@
 from django.test import TestCase
 from model_mommy import mommy
-from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration
+from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio
 from django.db.models import signals
 
 
@@ -106,7 +106,7 @@ class AudioFileModelTestCase(TestCase):
         self.assertEqual(duration_in_minutes1, expected_duration1)
         self.assertEqual(duration_in_minutes2, expected_duration2)
 
-    def test_is_publicly_accessible(self): # todo how to?
+    def test_is_publicly_accessible(self):  # todo how to?
         pass
 
     def test_string_representation(self):
@@ -116,29 +116,61 @@ class AudioFileModelTestCase(TestCase):
 
         self.assertEqual(actual_string_representation, expected_string_representation)
 
-# class PlaylistModelTestCase(TestCase):
-#     @classmethod
-#     def setUpTestData(cls):
-#         pass
-#
-#     def test_getting_audio_files(self):
-#         pass
-#
-#     def test_adding_audio_file(self):
-#         pass
-#
-#     def test_total_duration(self):
-#         pass
-#
-#     def test_number_of_audio(self):
-#         pass
-#
-#     def test_get_default(self):
-#         pass
-#
-#     def test_string_representation(self):
-#         pass
-#
+
+class PlaylistModelTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
+                                    sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
+        cls.playlist_has_audio = mommy.make_recipe('streaming.playlist_has_audio_recipe')  # type: PlaylistHasAudio
+        cls.audio_file_1 = mommy.make_recipe('streaming.audio_file_recipe', duration=40)  # type: AudioFile
+
+    def test_getting_audio_files(self):
+        first_audio_file_in_playlist = self.playlist_has_audio.playlist.get_audio_files()[0].name
+        self.playlist_has_audio.playlist.add_audio_file(self.audio_file_1)
+        first_audio_file_name = 'song1'
+
+        self.assertEqual(first_audio_file_in_playlist, first_audio_file_name)
+
+    def test_adding_audio_file(self):
+        audio_file_count = self.playlist_has_audio.playlist.get_audio_files().count()
+        self.playlist_has_audio.playlist.add_audio_file(self.audio_file_1)
+        added_audio_file_count = self.playlist_has_audio.playlist.get_audio_files().count()
+
+        self.assertGreater(added_audio_file_count, audio_file_count)
+
+    def test_total_duration(self):
+        duration = 53
+        self.playlist_has_audio.playlist.add_audio_file(self.audio_file_1)
+        total_duration = self.playlist_has_audio.playlist.total_duration
+
+        self.assertEqual(duration, total_duration)
+
+    def test_number_of_audio(self):
+        audio_count = self.playlist_has_audio.playlist.number_of_audio
+        self.playlist_has_audio.playlist.add_audio_file(self.audio_file_1)
+        added_audio_file_count = self.playlist_has_audio.playlist.get_audio_files().count()
+
+        self.assertEqual(1, audio_count)
+        self.assertEqual(2, added_audio_file_count)
+
+    def test_get_default(self):
+        self.assertRaises(Exception, lambda: Playlist.get_default())
+
+        Playlist.DEFAULT_PLAYLIST_NAME = 'playlist'
+        fetched_default_name = Playlist.get_default()
+        expected_default_name = Playlist.objects.all()[0]
+
+        self.assertEqual(fetched_default_name, expected_default_name)
+
+    def test_string_representation(self):
+        fetched_string_representation = str(Playlist.objects.all()[0])
+        expected_string_representation = "{name} (duration: {duration}," \
+                                         " #files: {num_files})".format(name='playlist',
+                                                                        duration='13 sec(s)',
+                                                                        num_files=1, )
+
+        self.assertEqual(fetched_string_representation, expected_string_representation)
 #
 # class PlaylistHasAudioModelTestCase(TestCase):
 #     @classmethod
