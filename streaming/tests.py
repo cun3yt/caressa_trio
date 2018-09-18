@@ -1,6 +1,7 @@
 from django.test import TestCase
 from model_mommy import mommy
-from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio
+from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio,\
+    UserPlaylistStatus
 from django.db.models import signals
 import datetime
 
@@ -291,22 +292,47 @@ class PlaylistHasAudioModelTestCase(TestCase):
         self.assertNotEqual(playlist_has_audio_2, next_playlist_has_audio)
         self.assertNotEqual(playlist_has_audio_2.order_id, next_playlist_has_audio.order_id)
 
-#
-#
-# class UserPlaylistStatusModelTestCase(TestCase):
-#     @classmethod
-#     def setUpTestData(cls):
-#         pass
-#
-#     def test_ordering(self):
-#         pass
-#
-#     def test_get_users_playlist(self):
-#         pass
-#
-#     def get_user_playlist_status_for_user(self):
-#         pass
-#
+
+class UserPlaylistStatusModelTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_playlist_status_1 = mommy.make_recipe('streaming.user_playlist_status_recipe')
+        cls.user_playlist_status_2 = mommy.make_recipe('streaming.user_playlist_status_recipe')
+        cls.user_playlist_status_3 = mommy.make_recipe('streaming.user_playlist_status_recipe')
+        cls.user_1 = cls.user_playlist_status_1.user
+        cls.user_2 = mommy.make_recipe('alexa.user')
+        cls.audio_file1 = mommy.make_recipe('streaming.audio_file_recipe')  # type: AudioFile
+        cls.user_playlist_status_1.playlist_has_audio.playlist.add_audio_file(cls.audio_file1)
+
+    def test_ordering(self):
+
+        qs = UserPlaylistStatus.objects.all()
+
+        self.assertEqual(self.user_playlist_status_1, qs[0])
+        self.assertEqual(self.user_playlist_status_2, qs[1])
+        self.assertEqual(self.user_playlist_status_3, qs[2])
+
+    def test_get_users_playlist(self):
+        user_1_playlist = UserPlaylistStatus.get_users_playlist(self.user_1)
+        user_2_playlist = UserPlaylistStatus.get_users_playlist(self.user_2)
+        user_2_playlist_default = Playlist.get_default()
+
+        self.assertIsNotNone(user_1_playlist)
+        self.assertIsNotNone(user_2_playlist)
+        self.assertIsInstance(user_1_playlist, Playlist)
+        self.assertIsInstance(user_2_playlist, Playlist)
+        self.assertEqual(user_2_playlist, user_2_playlist_default)
+
+    def test_get_user_playlist_status_for_user(self):
+
+        status_for_user_1, status_is_created_for_user_1= self.user_playlist_status_1\
+            .get_user_playlist_status_for_user(self.user_1)
+        status_for_user_2, status_is_created_for_user_2= self.user_playlist_status_1\
+            .get_user_playlist_status_for_user(self.user_2)
+
+        self.assertNotEqual(status_for_user_1, status_for_user_2)
+        self.assertFalse(status_is_created_for_user_1)
+        self.assertTrue(status_is_created_for_user_2)
 #
 # class TrackingActionModelTestCase(TestCase):
 #     @classmethod
@@ -320,7 +346,7 @@ class PlaylistHasAudioModelTestCase(TestCase):
 #     def save_action_full_segments(self):
 #         # test giving all segments
 #         pass
-#
+
 #
 # class StreamingPlayTestCase(TestCase):
 #     @classmethod
