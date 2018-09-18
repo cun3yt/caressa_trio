@@ -1,7 +1,8 @@
 from django.test import TestCase
 from model_mommy import mommy
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio,\
-    UserPlaylistStatus
+    UserPlaylistStatus, TrackingAction
+from alexa.models import AUser, Session
 from django.db.models import signals
 import datetime
 
@@ -188,12 +189,12 @@ class PlaylistHasAudioModelTestCase(TestCase):
         cls.playlist_has_audio.playlist.add_audio_file(cls.audio_file_1)    # Only Song Name
 
         cls.playlist_has_audio.playlist.add_audio_file(cls.audio_file_1)    # Song Name and Tag
-        play_list_has_audio_2 = type(cls.playlist_has_audio).objects.all()[1]
+        play_list_has_audio_2 = PlaylistHasAudio.objects.all()[1]
         play_list_has_audio_2.tag = 'song-classical'
         play_list_has_audio_2.save()
 
         cls.playlist_has_audio.playlist.add_audio_file(cls.audio_file_1)    # Only Tag
-        play_list_has_audio_3 = type(cls.playlist_has_audio).objects.all()[2]
+        play_list_has_audio_3 = PlaylistHasAudio.objects.all()[2]
         play_list_has_audio_3.tag = 'song-classical'
         play_list_has_audio_3.audio = None
         play_list_has_audio_3.save()
@@ -207,15 +208,15 @@ class PlaylistHasAudioModelTestCase(TestCase):
             else cls.day_time_list[0]
 
     def test_hash_creation(self):
-        hash_01 = type(self.playlist_has_audio).objects.all()[0].hash
-        hash_02 = type(self.playlist_has_audio).objects.all()[1].hash
-        hash_03 = type(self.playlist_has_audio).objects.all()[2].hash
+        hash_01 = PlaylistHasAudio.objects.all()[0].hash
+        hash_02 = PlaylistHasAudio.objects.all()[1].hash
+        hash_03 = PlaylistHasAudio.objects.all()[2].hash
 
         self.assertNotEqual(hash_01, hash_02)
         self.assertNotEqual(hash_02, hash_03)
 
     def test_get_audio_with_static_audio_only(self):
-        playlist_has_audio_1_instance = type(self.playlist_has_audio).objects.all()[0]
+        playlist_has_audio_1_instance = PlaylistHasAudio.objects.all()[0]
         playlist_has_audio_fetched_audio = playlist_has_audio_1_instance .get_audio()
         playlist_has_audio_fetched_audio_name = playlist_has_audio_fetched_audio.name
 
@@ -225,7 +226,7 @@ class PlaylistHasAudioModelTestCase(TestCase):
         self.assertEqual(playlist_has_audio_fetched_audio_name, 'song1')
 
     def test_get_audio_with_static_audio_and_tag(self):
-        playlist_has_audio_2_instance = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2_instance = PlaylistHasAudio.objects.all()[1]
         playlist_has_audio_fetched_audio = playlist_has_audio_2_instance.get_audio()
         playlist_has_audio_fetched_audio_name = playlist_has_audio_fetched_audio.name
 
@@ -237,7 +238,7 @@ class PlaylistHasAudioModelTestCase(TestCase):
         self.assertEqual(playlist_has_audio_fetched_audio_name, 'song2')
 
     def test_get_audio_with_tag_only(self):
-        playlist_has_audio_3_instance = type(self.playlist_has_audio).objects.all()[2]
+        playlist_has_audio_3_instance = PlaylistHasAudio.objects.all()[2]
         playlist_has_audio_fetched_audio = playlist_has_audio_3_instance.get_audio()
         playlist_has_audio_fetched_audio_name = playlist_has_audio_fetched_audio.name
 
@@ -249,7 +250,7 @@ class PlaylistHasAudioModelTestCase(TestCase):
         self.assertEqual(playlist_has_audio_fetched_audio_name, 'song3')
 
     def test_next_no_date_no_time(self):
-        current_playlist_has_audio = type(self.playlist_has_audio).objects.all()[0]
+        current_playlist_has_audio = PlaylistHasAudio.objects.all()[0]
         second_playlist_has_audio = self.playlist_has_audio.next()
         third_playlist_has_audio = second_playlist_has_audio.next()
 
@@ -258,8 +259,8 @@ class PlaylistHasAudioModelTestCase(TestCase):
         self.assertNotEqual(third_playlist_has_audio.order_id, second_playlist_has_audio.order_id)
 
     def test_next_only_date_no_time(self):
-        playlist_has_audio_2 = type(self.playlist_has_audio).objects.all()[1]
-        playlist_has_audio_2_with_date = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2 = PlaylistHasAudio.objects.all()[1]
+        playlist_has_audio_2_with_date = PlaylistHasAudio.objects.all()[1]
         playlist_has_audio_2_with_date.play_date = self.tomorrow
         playlist_has_audio_2_with_date.save()
         next_playlist_has_audio = self.playlist_has_audio.next()
@@ -269,8 +270,8 @@ class PlaylistHasAudioModelTestCase(TestCase):
         self.assertNotEqual(playlist_has_audio_2.order_id, next_playlist_has_audio.order_id)
 
     def test_next_no_date_only_time(self):
-        playlist_has_audio_2 = type(self.playlist_has_audio).objects.all()[1]
-        playlist_has_audio_2_with_time = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2 = PlaylistHasAudio.objects.all()[1]
+        playlist_has_audio_2_with_time = PlaylistHasAudio.objects.all()[1]
         playlist_has_audio_2_with_time.play_time = self.next_day_time
         playlist_has_audio_2_with_time.save()
         next_playlist_has_audio = self.playlist_has_audio.next()
@@ -280,8 +281,8 @@ class PlaylistHasAudioModelTestCase(TestCase):
         self.assertNotEqual(playlist_has_audio_2.order_id, next_playlist_has_audio.order_id)
 
     def test_next_date_and_time(self):
-        playlist_has_audio_2 = type(self.playlist_has_audio).objects.all()[1]
-        playlist_has_audio_2_with_time_and_date = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2 = PlaylistHasAudio.objects.all()[1]
+        playlist_has_audio_2_with_time_and_date = PlaylistHasAudio.objects.all()[1]
         playlist_has_audio_2_with_time_and_date.play_time = self.next_day_time
         playlist_has_audio_2_with_time_and_date.play_date = self.tomorrow
         playlist_has_audio_2_with_time_and_date.save()
@@ -330,53 +331,86 @@ class UserPlaylistStatusModelTestCase(TestCase):
         status_for_user_2, status_is_created_for_user_2= self.user_playlist_status_1\
             .get_user_playlist_status_for_user(self.user_2)
 
+        status_object_for_user_1 = UserPlaylistStatus.objects.all()[0]
+        status_object_for_user_2 = UserPlaylistStatus.objects.all()[3]
+
+        self.assertIsNotNone(status_for_user_1)
+        self.assertIsNotNone(status_for_user_2)
         self.assertNotEqual(status_for_user_1, status_for_user_2)
+        self.assertEqual(status_object_for_user_1, status_for_user_1)
+        self.assertEqual(status_object_for_user_2, status_for_user_2)
         self.assertFalse(status_is_created_for_user_1)
         self.assertTrue(status_is_created_for_user_2)
-#
-# class TrackingActionModelTestCase(TestCase):
-#     @classmethod
-#     def setUpTestData(cls):
-#         pass
-#
-#     def save_action_partial_segments(self):
-#         # test giving only `segment1`
-#         pass
-#
-#     def save_action_full_segments(self):
-#         # test giving all segments
-#         pass
 
-#
-# class StreamingPlayTestCase(TestCase):
-#     @classmethod
-#     def setUpTestData(cls):
-#         pass
-#
-#     def test_cold_start_launch_request(self):
-#         pass
-#
-#     def test_user_playlist_launch_request(self):
-#         pass
-#
-#     def test_cold_start_play_command(self):
-#         pass
-#
-#     def test_user_playlist_play_command(self):
-#         pass
-#
-#     def test_cold_start_resume_intent(self):
-#         pass
-#
-#     def test_user_playlist_resume_intent(self):
-#         pass
-#
-#     def test_cold_start_playback_started_request(self):
-#         pass
-#
-#     def test_user_playlist_playback_started_request(self):
-#         pass
-#
+
+class TrackingActionModelTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.tracking_action_1 = mommy.make_recipe('streaming.tracking_action_recipe')
+        cls.auser = AUser.objects.all()[0]
+        cls.session = Session.objects.all()[0]
+        cls.segment = 'TestSegment'
+
+    def test_save_action_partial_segments(self):
+        # test giving only `segment1` # todo segment0 or segment1 ?
+        TrackingAction.save_action(self.auser, self.session, segment0=self.segment)
+        action_count = TrackingAction.objects.all().count()
+        segment0 = TrackingAction.objects.all()[1].segment0
+        segment1 = TrackingAction.objects.all()[1].segment1
+
+        self.assertIsNotNone(segment0)
+        self.assertIsNone(segment1)
+        self.assertEqual(action_count, 2)
+
+    def test_save_action_full_segments(self):
+        TrackingAction.save_action(self.auser,
+                                   self.session,
+                                   segment0=self.segment,
+                                   segment1=self.segment,
+                                   segment2=self.segment,
+                                   segment3=self.segment,)
+        action_count = TrackingAction.objects.all().count()
+        segment0 = TrackingAction.objects.all()[1].segment0
+        segment1 = TrackingAction.objects.all()[1].segment1
+        segment2 = TrackingAction.objects.all()[1].segment2
+        segment3 = TrackingAction.objects.all()[1].segment3
+
+        self.assertIsNotNone(segment0)
+        self.assertIsNotNone(segment1)
+        self.assertIsNotNone(segment2)
+        self.assertEqual(self.segment, segment3)
+        self.assertEqual(action_count, 2)
+
+
+class StreamingPlayTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        pass
+
+    def test_cold_start_launch_request(self):
+        pass
+
+    def test_user_playlist_launch_request(self):
+        pass
+
+    def test_cold_start_play_command(self):
+        pass
+
+    def test_user_playlist_play_command(self):
+        pass
+
+    def test_cold_start_resume_intent(self):
+        pass
+
+    def test_user_playlist_resume_intent(self):
+        pass
+
+    def test_cold_start_playback_started_request(self):
+        pass
+
+    def test_user_playlist_playback_started_request(self):
+        pass
+
 #
 # class StreamingNextAndQueueTestCase(TestCase):
 #     def test_cold_start_next_command(self):

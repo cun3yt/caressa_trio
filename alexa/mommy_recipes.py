@@ -1,5 +1,5 @@
 from model_mommy.recipe import Recipe, foreign_key
-from alexa.models import User, AUser, EngineSession, Song, Circle, CircleMembership
+from alexa.models import User, AUser, EngineSession, Song, Circle, CircleMembership, Session
 
 user = Recipe(
     User,
@@ -69,3 +69,9 @@ circle_membership = Recipe(
     circle_membership=foreign_key(user)
 )
 
+
+session_recipe = Recipe(
+    Session,
+    alexa_id='TestAlexaId',
+    alexa_user=foreign_key(auser)
+)

@@ -1,6 +1,6 @@
 from model_mommy.recipe import Recipe, seq, foreign_key
-from streaming.models import AudioFile, Playlist, PlaylistHasAudio, UserPlaylistStatus
-from alexa.mommy_recipes import user
+from streaming.models import AudioFile, Playlist, PlaylistHasAudio, UserPlaylistStatus, TrackingAction
+from alexa.mommy_recipes import user, session_recipe
 
 audio_file_recipe = Recipe(
     AudioFile,
@@ -29,4 +29,14 @@ user_playlist_status_recipe = Recipe(
     user=foreign_key(user),
     playlist_has_audio=foreign_key(playlist_has_audio_recipe),
     current_active_audio=foreign_key(audio_file_recipe),
+)
+
+tracking_action_recipe = Recipe(
+    TrackingAction,
+    user=foreign_key(user),
+    session=foreign_key(session_recipe),
+    segment0='{}',
+    segment1='{}',
+    segment2='{}',
+    segment3='{}',
 )
