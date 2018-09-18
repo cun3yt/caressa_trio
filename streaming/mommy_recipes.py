@@ -2,12 +2,6 @@ from model_mommy.recipe import Recipe, seq, foreign_key, related
 from streaming.models import AudioFile, Tag, Playlist, PlaylistHasAudio
 from alexa.mommy_recipes import user
 
-
-tag_recipe = Recipe(
-    Tag,
-    name='tag1'
-)
-
 audio_file_recipe = Recipe(
     AudioFile,
     audio_type='song',

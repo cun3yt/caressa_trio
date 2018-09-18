@@ -2,6 +2,7 @@ from django.test import TestCase
 from model_mommy import mommy
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio
 from django.db.models import signals
+import datetime
 
 
 class TagModelTestCase(TestCase):
@@ -155,7 +156,7 @@ class PlaylistModelTestCase(TestCase):
         self.assertEqual(2, added_audio_file_count)
 
     def test_get_default(self):
-        self.assertRaises(Exception, lambda: Playlist.get_default())
+        self.assertRaises(Exception, Playlist.get_default)
 
         Playlist.DEFAULT_PLAYLIST_NAME = 'playlist'
         fetched_default_name = Playlist.get_default()
@@ -171,36 +172,125 @@ class PlaylistModelTestCase(TestCase):
                                                                         num_files=1, )
 
         self.assertEqual(fetched_string_representation, expected_string_representation)
-#
-# class PlaylistHasAudioModelTestCase(TestCase):
-#     @classmethod
-#     def setUpTestData(cls):
-#         pass
-#
-#     def test_hash_creation(self):
-#         # two instances are expected to have different hash values
-#         pass
-#
-#     def test_get_audio_with_static_audio_only(self):
-#         pass
-#
-#     def test_get_audio_with_static_audio_and_tag(self):
-#         pass
-#
-#     def test_get_audio_with_tag_only(self):
-#         pass
-#
-#     def test_next_no_date_no_time(self):
-#         pass
-#
-#     def test_next_only_date_no_time(self):
-#         pass
-#
-#     def test_next_no_date_only_time(self):
-#         pass
-#
-#     def test_next_date_and_time(self):
-#         pass
+
+
+class PlaylistHasAudioModelTestCase(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+
+        tag1 = mommy.make(Tag, name='song-classical')
+        cls.playlist_has_audio = mommy.make_recipe('streaming.playlist_has_audio_recipe')
+        cls.audio_file_1 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.audio_file_2 = mommy.make_recipe('streaming.audio_file_recipe')
+
+        cls.playlist_has_audio.playlist.add_audio_file(cls.audio_file_1)    # Only Song Name
+
+        cls.playlist_has_audio.playlist.add_audio_file(cls.audio_file_1)    # Song Name and Tag
+        play_list_has_audio_2 = type(cls.playlist_has_audio).objects.all()[1]
+        play_list_has_audio_2.tag = 'song-classical'
+        play_list_has_audio_2.save()
+
+        cls.playlist_has_audio.playlist.add_audio_file(cls.audio_file_1)    # Only Tag
+        play_list_has_audio_3 = type(cls.playlist_has_audio).objects.all()[2]
+        play_list_has_audio_3.tag = 'song-classical'
+        play_list_has_audio_3.audio = None
+        play_list_has_audio_3.save()
+        cls.audio_file_2.tags.add(tag1)
+
+        cls.tomorrow = datetime.datetime.utcnow() + datetime.timedelta(days=1)
+        cls.day_time_list = ['morning', 'afternoon', 'evening', 'night']
+        current_time = cls.playlist_has_audio.current_daytime()
+        cls.current_time_index = cls.day_time_list.index(current_time)
+        cls.next_day_time = cls.day_time_list[cls.current_time_index + 1] if not cls.current_time_index == 3 \
+            else cls.day_time_list[0]
+
+    def test_hash_creation(self):
+        hash_01 = type(self.playlist_has_audio).objects.all()[0].hash
+        hash_02 = type(self.playlist_has_audio).objects.all()[1].hash
+        hash_03 = type(self.playlist_has_audio).objects.all()[2].hash
+
+        self.assertNotEqual(hash_01, hash_02)
+        self.assertNotEqual(hash_02, hash_03)
+
+    def test_get_audio_with_static_audio_only(self):
+        playlist_has_audio_1_instance = type(self.playlist_has_audio).objects.all()[0]
+        playlist_has_audio_fetched_audio = playlist_has_audio_1_instance .get_audio()
+        playlist_has_audio_fetched_audio_name = playlist_has_audio_fetched_audio.name
+
+        self.assertIsNotNone(playlist_has_audio_1_instance.audio)
+        self.assertEqual(playlist_has_audio_1_instance.tag, '')
+        self.assertIsInstance(playlist_has_audio_fetched_audio, AudioFile)
+        self.assertEqual(playlist_has_audio_fetched_audio_name, 'song1')
+
+    def test_get_audio_with_static_audio_and_tag(self):
+        playlist_has_audio_2_instance = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_fetched_audio = playlist_has_audio_2_instance.get_audio()
+        playlist_has_audio_fetched_audio_name = playlist_has_audio_fetched_audio.name
+
+        self.assertIsInstance(playlist_has_audio_2_instance, PlaylistHasAudio)
+        self.assertIsNotNone(playlist_has_audio_2_instance.audio)
+        self.assertIsNotNone(playlist_has_audio_2_instance.tag)
+        self.assertNotEqual(playlist_has_audio_2_instance.tag, '')
+        self.assertIsInstance(playlist_has_audio_fetched_audio, AudioFile)
+        self.assertEqual(playlist_has_audio_fetched_audio_name, 'song2')
+
+    def test_get_audio_with_tag_only(self):
+        playlist_has_audio_3_instance = type(self.playlist_has_audio).objects.all()[2]
+        playlist_has_audio_fetched_audio = playlist_has_audio_3_instance.get_audio()
+        playlist_has_audio_fetched_audio_name = playlist_has_audio_fetched_audio.name
+
+        self.assertIsNone(playlist_has_audio_3_instance.audio)
+        self.assertIsNotNone(playlist_has_audio_3_instance.tag)
+        self.assertNotEqual(playlist_has_audio_3_instance.tag, '')
+        self.assertEqual(playlist_has_audio_3_instance.tag, 'song-classical')
+        self.assertIsInstance(playlist_has_audio_fetched_audio, AudioFile)
+        self.assertEqual(playlist_has_audio_fetched_audio_name, 'song3')
+
+    def test_next_no_date_no_time(self):
+        current_playlist_has_audio = type(self.playlist_has_audio).objects.all()[0]
+        second_playlist_has_audio = self.playlist_has_audio.next()
+        third_playlist_has_audio = second_playlist_has_audio.next()
+
+        self.assertNotEqual(current_playlist_has_audio, second_playlist_has_audio)
+        self.assertNotEqual(current_playlist_has_audio.order_id, second_playlist_has_audio.order_id)
+        self.assertNotEqual(third_playlist_has_audio.order_id, second_playlist_has_audio.order_id)
+
+    def test_next_only_date_no_time(self):
+        playlist_has_audio_2 = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2_with_date = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2_with_date.play_date = self.tomorrow
+        playlist_has_audio_2_with_date.save()
+        next_playlist_has_audio = self.playlist_has_audio.next()
+
+        self.assertNotEqual(playlist_has_audio_2_with_date.play_date, playlist_has_audio_2.play_date)
+        self.assertNotEqual(playlist_has_audio_2, next_playlist_has_audio)
+        self.assertNotEqual(playlist_has_audio_2.order_id, next_playlist_has_audio.order_id)
+
+    def test_next_no_date_only_time(self):
+        playlist_has_audio_2 = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2_with_time = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2_with_time.play_time = self.next_day_time
+        playlist_has_audio_2_with_time.save()
+        next_playlist_has_audio = self.playlist_has_audio.next()
+
+        self.assertNotEqual(playlist_has_audio_2_with_time.play_time, playlist_has_audio_2.play_time)
+        self.assertNotEqual(playlist_has_audio_2, next_playlist_has_audio)
+        self.assertNotEqual(playlist_has_audio_2.order_id, next_playlist_has_audio.order_id)
+
+    def test_next_date_and_time(self):
+        playlist_has_audio_2 = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2_with_time_and_date = type(self.playlist_has_audio).objects.all()[1]
+        playlist_has_audio_2_with_time_and_date.play_time = self.next_day_time
+        playlist_has_audio_2_with_time_and_date.play_date = self.tomorrow
+        playlist_has_audio_2_with_time_and_date.save()
+        next_playlist_has_audio = self.playlist_has_audio.next()
+
+        self.assertNotEqual(playlist_has_audio_2_with_time_and_date.play_time, playlist_has_audio_2.play_time)
+        self.assertNotEqual(playlist_has_audio_2_with_time_and_date.play_date, playlist_has_audio_2.play_date)
+        self.assertNotEqual(playlist_has_audio_2, next_playlist_has_audio)
+        self.assertNotEqual(playlist_has_audio_2.order_id, next_playlist_has_audio.order_id)
+
 #
 #
 # class UserPlaylistStatusModelTestCase(TestCase):
