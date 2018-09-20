@@ -193,7 +193,7 @@ def next_intent_response(alexa_user: AUser):
     playlist_has_audio = status.playlist_has_audio.next()
     audio_to_be_played = playlist_has_audio.get_audio()
     save_state_by_playlist_entry(alexa_user, playlist_has_audio, audio_to_be_played)
-    token = (str(status.playlist_has_audio.hash) + ',' + str(audio_to_be_played.id))
+    token = (str(playlist_has_audio.hash) + ',' + str(audio_to_be_played.id))
     return start_session(audio_to_be_played, token)
 
 
