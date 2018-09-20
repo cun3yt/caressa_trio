@@ -2,9 +2,482 @@ from django.test import TestCase
 from model_mommy import mommy
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio,\
     UserPlaylistStatus, TrackingAction
+from streaming.views import stream_io
 from alexa.models import AUser, Session
 from django.db.models import signals
 import datetime
+
+
+def request_body_creator(is_cold_start, request_type, token=None):
+    if 'Intent' in request_type:
+        request_body_1 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId1',
+                'application': {
+                    'applicationId': 'TestAlexaUserId1'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId1'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    'playerActivity': 'IDLE'
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId1'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId1'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId1',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {
+
+                            }
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': 'IntentRequest',
+                'requestId': 'TestAlexaRequestId1',
+                'timestamp': '2018-09-19T00:50:17Z',
+                'locale': 'en-US',
+                'intent': {
+                    'name': request_type,
+                    'confirmationStatus': 'NONE',
+                },
+            },
+        }
+        request_body_2 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId2',
+                'application': {
+                    'applicationId': 'TestAlexaUserId2'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId2'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    'playerActivity': 'IDLE'
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId2'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId2'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId2',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {
+
+                            }
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': 'IntentRequest',
+                'requestId': 'TestAlexaRequestId1',
+                'timestamp': '2018-09-19T00:50:17Z',
+                'locale': 'en-US',
+                'intent': {
+                    'name': request_type,
+                    'confirmationStatus': 'NONE',
+                },
+            }
+        }
+        if is_cold_start:
+            return request_body_1
+        else:
+            return request_body_2
+    elif 'AudioPlayer' in request_type:
+        request_body_1 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId1',
+                'application': {
+                    'applicationId': 'TestAlexaUserId1'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId1'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    "offsetInMilliseconds": 0,
+                    "token": token,
+                    "playerActivity": "PLAYING"
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId1'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId1'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId1',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {
+
+                            }
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': request_type,
+                'requestId': 'TestAlexaRequestId1',
+                'timestamp': '2018-09-20T00:08:02Z',
+                'locale': 'en-US',
+                'token': token,
+                'offsetInMilliseconds': 0
+            },
+        }
+        request_body_2 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId2',
+                'application': {
+                    'applicationId': 'TestAlexaUserId2'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId2'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    "offsetInMilliseconds": 0,
+                    "token": token,
+                    "playerActivity": "PLAYING"
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId2'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId2'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId2',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {}
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': request_type,
+                'requestId': 'TestAlexaRequestId2',
+                'timestamp': '2018-09-20T00:08:02Z',
+                'locale': 'en-US',
+                'token': token,
+                'offsetInMilliseconds': 0
+            },
+        }
+        if is_cold_start:
+            return request_body_1
+        else:
+            return request_body_2
+    elif 'PlaybackController.NextCommandIssued' in request_type:
+        request_body_1 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId1',
+                'application': {
+                    'applicationId': 'TestAlexaUserId1'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId1'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    "offsetInMilliseconds": 5,
+                    "token": token,
+                    "playerActivity": "PLAYING"
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId1'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId1'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId1',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {
+
+                            }
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': 'PlaybackController.NextCommandIssued',
+                'requestId': 'TestAlexaRequestId1',
+                'timestamp': '2018-09-20T00:08:02Z',
+                'locale': 'en-US',
+            },
+        }
+        request_body_2 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId2',
+                'application': {
+                    'applicationId': 'TestAlexaUserId2'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId2'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    "offsetInMilliseconds": 0,
+                    "token": token,
+                    "playerActivity": "PLAYING"
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId2'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId2'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId2',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {}
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': 'PlaybackController.NextCommandIssued',
+                'requestId': 'TestAlexaRequestId2',
+                'timestamp': '2018-09-20T00:08:02Z',
+                'locale': 'en-US',
+                'token': token,
+                'offsetInMilliseconds': 0
+            },
+        }
+        if is_cold_start:
+            return request_body_1
+        else:
+            return request_body_2
+    elif 'PlaybackController.PauseCommandIssued' in request_type:
+        request_body_1 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId1',
+                'application': {
+                    'applicationId': 'TestAlexaUserId1'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId1'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    "offsetInMilliseconds": 5,
+                    "token": token,
+                    "playerActivity": "STOPPED"
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId1'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId1'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId1',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {
+
+                            }
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': 'PlaybackController.PauseCommandIssued',
+                'requestId': 'TestAlexaRequestId1',
+                'timestamp': '2018-09-20T00:08:02Z',
+                'locale': 'en-US',
+            },
+        }
+        request_body_2 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId2',
+                'application': {
+                    'applicationId': 'TestAlexaUserId2'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId2'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    "offsetInMilliseconds": 0,
+                    "token": token,
+                    "playerActivity": "STOPPED"
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId2'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId2'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId2',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {}
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': 'PlaybackController.PauseCommandIssued',
+                'requestId': 'TestAlexaRequestId2',
+                'timestamp': '2018-09-20T00:08:02Z',
+                'locale': 'en-US',
+                'token': token,
+                'offsetInMilliseconds': 0
+            },
+        }
+        if is_cold_start:
+            return request_body_1
+        else:
+            return request_body_2
+    else:
+        request_body_1 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId1',
+                'application': {
+                    'applicationId': 'TestAlexaUserId1'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId1'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    'playerActivity': 'IDLE'
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId1'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId1'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId1',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {
+
+                            }
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': request_type,
+                'requestId': 'TestAlexaRequestId1',
+                'timestamp': '2018-09-19T00:50:17Z',
+                'locale': 'en-US',
+                'shouldLinkResultBeReturned': False,
+            }
+        }
+        request_body_2 = {
+            'version': '1.0',
+            'session': {
+                'new': True,
+                'sessionId': 'TestAlexaSessionId2',
+                'application': {
+                    'applicationId': 'TestAlexaUserId2'
+                },
+                'user': {
+                    'userId': 'TestAlexaUserId2'
+                }
+            },
+            'context': {
+                'AudioPlayer': {
+                    'playerActivity': 'IDLE'
+                },
+                'System': {
+                    'application': {
+                        'applicationId': 'TestAlexaUserId2'
+                    },
+                    'user': {
+                        'userId': 'TestAlexaUserId2'
+                    },
+                    'device': {
+                        'deviceId': 'TestAlexaDeviceId2',
+                        'supportedInterfaces': {
+                            'AudioPlayer': {
+
+                            }
+                        }
+                    },
+                    'apiEndpoint': 'https://api.amazonalexa.com',
+                    'apiAccessToken': 'TestAlexaApiAccessToken1'
+                }
+            },
+            'request': {
+                'type': request_type,
+                'requestId': 'TestAlexaRequestId1',
+                'timestamp': '2018-09-19T00:50:17Z',
+                'locale': 'en-US',
+                'shouldLinkResultBeReturned': False,
+            }
+        }
+        if is_cold_start:
+            return request_body_1
+        else:
+            return request_body_2
 
 
 class TagModelTestCase(TestCase):
@@ -158,18 +631,20 @@ class PlaylistModelTestCase(TestCase):
         self.assertEqual(2, added_audio_file_count)
 
     def test_get_default(self):
-        self.assertRaises(Exception, Playlist.get_default)
 
         Playlist.DEFAULT_PLAYLIST_NAME = 'playlist'
-        fetched_default_name = Playlist.get_default()
-        expected_default_name = Playlist.objects.all()[0]
+        self.assertRaises(Exception, Playlist.get_default)
+
+        Playlist.DEFAULT_PLAYLIST_NAME = 'cold-start'
+        fetched_default_name = str(Playlist.get_default())
+        expected_default_name = str(Playlist.objects.all()[0])
 
         self.assertEqual(fetched_default_name, expected_default_name)
 
     def test_string_representation(self):
         fetched_string_representation = str(Playlist.objects.all()[0])
         expected_string_representation = "{name} (duration: {duration}," \
-                                         " #files: {num_files})".format(name='playlist',
+                                         " #files: {num_files})".format(name='cold-start',
                                                                         duration='13 sec(s)',
                                                                         num_files=1, )
 
@@ -326,9 +801,9 @@ class UserPlaylistStatusModelTestCase(TestCase):
 
     def test_get_user_playlist_status_for_user(self):
 
-        status_for_user_1, status_is_created_for_user_1= self.user_playlist_status_1\
+        status_for_user_1, status_is_created_for_user_1 = self.user_playlist_status_1\
             .get_user_playlist_status_for_user(self.user_1)
-        status_for_user_2, status_is_created_for_user_2= self.user_playlist_status_1\
+        status_for_user_2, status_is_created_for_user_2 = self.user_playlist_status_1\
             .get_user_playlist_status_for_user(self.user_2)
 
         status_object_for_user_1 = UserPlaylistStatus.objects.all()[0]
@@ -385,68 +860,387 @@ class TrackingActionModelTestCase(TestCase):
 class StreamingPlayTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        pass
+        cls.play_list_has_audio_1 = mommy.make_recipe('streaming.playlist_has_audio_recipe')
+        cls.playlist_2 = mommy.make_recipe('streaming.playlist_recipe_2')   # second time user2 recipe runs
+
+        cls.auser_2 = mommy.make(AUser,
+                                 user=cls.playlist_2.user,
+                                 alexa_user_id='TestAlexaUserId2',
+                                 alexa_device_id='TestAlexaDeviceId2',
+                                 engine_schedule='TestEngineSchedule', )
+
+        cls.audio_file_1 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.audio_file_2 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.audio_file_3 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.playlist_2.add_audio_file(cls.audio_file_1)
+        cls.playlist_2.add_audio_file(cls.audio_file_2)
+        cls.play_list_has_audio_1.playlist.add_audio_file(cls.audio_file_3)
+        u = Playlist.objects.all()[0]  # to make sure default playlist have no user assigned
+        u.user_id = None
+        u.save()
 
     def test_cold_start_launch_request(self):
-        pass
+        request_body = request_body_creator(True, 'LaunchRequest')
+        data = stream_io(request_body)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        expected_url_from_db = AudioFile.objects.all()[0].url
+        playlist_count = Playlist.objects.all().count()
+
+        self.assertIsNone(Playlist.objects.all()[0].user_id)
+        self.assertEqual(response_audio_url, expected_url_from_db)
+        self.assertEqual(playlist_count, 2)
 
     def test_user_playlist_launch_request(self):
-        pass
+        request_body = request_body_creator(False, 'LaunchRequest')
+        data = stream_io(request_body)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        expected_url_from_db = AudioFile.objects.all()[1].url
+        playlist_count = Playlist.objects.all().count()
+
+        self.assertIsNotNone(Playlist.objects.all()[1].user_id)
+        self.assertEqual(response_audio_url, expected_url_from_db)
+        self.assertEqual(playlist_count, 2)
 
     def test_cold_start_play_command(self):
-        pass
+        request_body = request_body_creator(True, 'PlaybackController.PlayCommandIssued')
+        data = stream_io(request_body)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        expected_url_from_db = AudioFile.objects.all()[0].url
+        playlist_count = Playlist.objects.all().count()
+
+        self.assertIsNone(Playlist.objects.all()[0].user_id)
+        self.assertEqual(response_audio_url, expected_url_from_db)
+        self.assertEqual(playlist_count, 2)
 
     def test_user_playlist_play_command(self):
-        pass
+        request_body = request_body_creator(False, 'PlaybackController.PlayCommandIssued')
+        data = stream_io(request_body)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        expected_url_from_db = AudioFile.objects.all()[1].url
+        playlist_count = Playlist.objects.all().count()
+
+        self.assertIsNotNone(Playlist.objects.all()[1].user_id)
+        self.assertEqual(response_audio_url, expected_url_from_db)
+        self.assertEqual(playlist_count, 2)
 
     def test_cold_start_resume_intent(self):
-        pass
+        request_body = request_body_creator(True, 'AMAZON.ResumeIntent')
+        data = stream_io(request_body)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        expected_url_from_db = AudioFile.objects.all()[0].url
+        playlist_count = Playlist.objects.all().count()
+        self.assertIsNone(Playlist.objects.all()[0].user_id)
+        self.assertEqual(response_audio_url, expected_url_from_db)
+        self.assertEqual(playlist_count, 2)
 
     def test_user_playlist_resume_intent(self):
-        pass
+        request_body = request_body_creator(False, 'AMAZON.ResumeIntent')
+        data = stream_io(request_body)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        expected_url_from_db = AudioFile.objects.all()[1].url
+        playlist_count = Playlist.objects.all().count()
+
+        self.assertIsNotNone(Playlist.objects.all()[1].user_id)
+        self.assertEqual(response_audio_url, expected_url_from_db)
+        self.assertEqual(playlist_count, 2)
 
     def test_cold_start_playback_started_request(self):
-        pass
+
+        ups_count_before_save_state = UserPlaylistStatus.objects.all().count()
+        self.assertEqual(ups_count_before_save_state, 0)
+
+        pha_object = type(self.play_list_has_audio_1).objects.all()[1]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body = request_body_creator(True, 'AudioPlayer.PlaybackStarted', token)
+        data = stream_io(request_body)
+
+        response = data['response']['shouldEndSession']
+        ups_current_active_audio = UserPlaylistStatus.objects.all()[0].current_active_audio_id
+        ups_count_after_save_state = UserPlaylistStatus.objects.all().count()
+
+        self.assertEqual(ups_current_active_audio, pha_object.audio_id)
+        self.assertEqual(ups_count_after_save_state, 1)
+        self.assertTrue(response)
 
     def test_user_playlist_playback_started_request(self):
-        pass
+        ups_count_before_save_state = UserPlaylistStatus.objects.all().count()
+        self.assertEqual(ups_count_before_save_state, 0)
 
-#
-# class StreamingNextAndQueueTestCase(TestCase):
-#     def test_cold_start_next_command(self):
-#         pass
-#
-#     def test_user_playlist_next_command(self):
-#         pass
-#
-#     def test_cold_start_next_intent(self):
-#         pass
-#
-#     def test_user_playlist_next_intent(self):
-#         pass
-#
-#     def test_cold_start_nearly_finished_request(self):
-#         pass
-#
-#     def test_user_playlist_nearly_finished_request(self):
-#         pass
-#
-#
-# class StreamingPauseAndFillerTestCase(TestCase):
-#     def test_cold_start_pause_command(self):
-#         pass
-#
-#     def test_user_playlist_pause_command(self):
-#         pass
-#
-#     def test_cold_start_pause_intent(self):
-#         pass
-#
-#     def test_user_playlist_pause_intent(self):
-#         pass
-#
-#     def test_none_intent(self):
-#         pass
-#
-#     def test_fallback_filler(self):
-#         pass
+        pha_object = type(self.play_list_has_audio_1).objects.all()[0]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body = request_body_creator(False, 'AudioPlayer.PlaybackStarted', token)
+        data = stream_io(request_body)
+
+        response = data['response']['shouldEndSession']
+        ups_current_active_audio = UserPlaylistStatus.objects.all()[0].current_active_audio_id
+        ups_count_after_save_state = UserPlaylistStatus.objects.all().count()
+
+        self.assertEqual(ups_current_active_audio, pha_object.audio_id)
+        self.assertEqual(ups_count_after_save_state, 1)
+        self.assertTrue(response)
+
+
+class StreamingNextAndQueueTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.play_list_has_audio_1 = mommy.make_recipe('streaming.playlist_has_audio_recipe')
+        cls.playlist_2 = mommy.make_recipe('streaming.playlist_recipe_2')  # second time user2 recipe runs
+
+        cls.auser_2 = mommy.make(AUser,
+                                 user=cls.playlist_2.user,
+                                 alexa_user_id='TestAlexaUserId2',
+                                 alexa_device_id='TestAlexaDeviceId2',
+                                 engine_schedule='TestEngineSchedule', )
+
+        cls.audio_file_1 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.audio_file_2 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.audio_file_3 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.playlist_2.add_audio_file(cls.audio_file_1)
+        cls.playlist_2.add_audio_file(cls.audio_file_2)
+        cls.play_list_has_audio_1.playlist.add_audio_file(cls.audio_file_3)
+        u = Playlist.objects.all()[0]  # to make sure default playlist have no user assigned
+        u.user_id = None
+        u.save()
+
+    def test_cold_start_next_command(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[1]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(True, 'AudioPlayer.PlaybackStarted', token)
+        stream_io(request_body_playback_start)
+
+        request_body_playback_next_command = request_body_creator(True, 'PlaybackController.NextCommandIssued', token)
+        data = stream_io(request_body_playback_next_command)
+
+        expected_url = PlaylistHasAudio.objects.all()[3].audio.url
+        response_url = data['response']['directives'][0]['audioItem']['stream']['url']
+
+        expected_next_token = str(
+            PlaylistHasAudio.objects.all()[3].hash) + ',' + str(PlaylistHasAudio.objects.all()[3].audio_id)
+        response_token = data['response']['directives'][0]['audioItem']['stream']['token']
+
+        self.assertEqual(expected_url, response_url)
+        self.assertEqual(expected_next_token, response_token)
+
+    def test_user_playlist_next_command(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[0]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(False, 'AudioPlayer.PlaybackStarted', token)
+        stream_io(request_body_playback_start)
+
+        request_body_playback_next_command = request_body_creator(False, 'PlaybackController.NextCommandIssued', token)
+        data = stream_io(request_body_playback_next_command)
+
+        expected_url = PlaylistHasAudio.objects.all()[2].audio.url
+        response_url = data['response']['directives'][0]['audioItem']['stream']['url']
+
+        expected_next_token = str(
+            PlaylistHasAudio.objects.all()[2].hash) + ',' + str(PlaylistHasAudio.objects.all()[2].audio_id)
+        response_token = data['response']['directives'][0]['audioItem']['stream']['token']
+
+        self.assertEqual(expected_url, response_url)
+        self.assertEqual(expected_next_token, response_token)
+
+    def test_cold_start_next_intent(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[1]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(True, 'AudioPlayer.PlaybackStarted', token)
+        stream_io(request_body_playback_start)
+
+        request_body_playback_next_command = request_body_creator(True, 'AMAZON.NextIntent', token)
+        data = stream_io(request_body_playback_next_command)
+
+        expected_url = PlaylistHasAudio.objects.all()[3].audio.url
+        response_url = data['response']['directives'][0]['audioItem']['stream']['url']
+
+        expected_next_token = str(
+            PlaylistHasAudio.objects.all()[3].hash) + ',' + str(PlaylistHasAudio.objects.all()[3].audio_id)
+        response_token = data['response']['directives'][0]['audioItem']['stream']['token']
+
+        self.assertEqual(expected_url, response_url)
+        self.assertEqual(expected_next_token, response_token)
+
+    def test_user_playlist_next_intent(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[0]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(False, 'AudioPlayer.PlaybackStarted', token)
+        stream_io(request_body_playback_start)
+
+        request_body_playback_next_command = request_body_creator(False, 'AMAZON.NextIntent', token)
+        data = stream_io(request_body_playback_next_command)
+
+        expected_url = PlaylistHasAudio.objects.all()[2].audio.url
+        response_url = data['response']['directives'][0]['audioItem']['stream']['url']
+
+        expected_next_token = str(
+            PlaylistHasAudio.objects.all()[2].hash) + ',' + str(PlaylistHasAudio.objects.all()[2].audio_id)
+        response_token = data['response']['directives'][0]['audioItem']['stream']['token']
+
+        self.assertEqual(expected_url, response_url)
+        self.assertEqual(expected_next_token, response_token)
+
+    def test_cold_start_nearly_finished_request(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[1]
+        expected_previous_token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(True,
+                                                           'AudioPlayer.PlaybackStarted',
+                                                           expected_previous_token
+                                                           )
+        stream_io(request_body_playback_start)
+
+        request_body_playback_nearly_finished = request_body_creator(True,
+                                                                     'AudioPlayer.PlaybackNearlyFinished',
+                                                                     expected_previous_token
+                                                                     )
+        data = stream_io(request_body_playback_nearly_finished)
+
+        expected_url = PlaylistHasAudio.objects.all()[3].audio.url
+        response_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        expected_next_token = str(
+            PlaylistHasAudio.objects.all()[3].hash) + ',' + str(PlaylistHasAudio.objects.all()[3].audio_id)
+        response_next_token = data['response']['directives'][0]['audioItem']['stream']['token']
+        response_previous_token = data['response']['directives'][0]['audioItem']['stream']['expectedPreviousToken']
+
+        self.assertEqual(expected_url, response_url)
+        self.assertEqual(expected_next_token,  response_next_token)
+        self.assertEqual(response_previous_token, expected_previous_token)
+
+    def test_user_playlist_nearly_finished_request(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[0]
+        expected_previous_token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(False,
+                                                           'AudioPlayer.PlaybackStarted',
+                                                           expected_previous_token
+                                                           )
+        stream_io(request_body_playback_start)
+
+        request_body_playback_nearly_finished = request_body_creator(False,
+                                                                     'AudioPlayer.PlaybackNearlyFinished',
+                                                                     expected_previous_token
+                                                                     )
+        data = stream_io(request_body_playback_nearly_finished)
+
+        expected_url = PlaylistHasAudio.objects.all()[2].audio.url
+        response_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        expected_next_token = str(
+            PlaylistHasAudio.objects.all()[2].hash) + ',' + str(PlaylistHasAudio.objects.all()[2].audio_id)
+        response_next_token = data['response']['directives'][0]['audioItem']['stream']['token']
+        response_previous_token = data['response']['directives'][0]['audioItem']['stream']['expectedPreviousToken']
+
+        self.assertEqual(expected_url, response_url)
+        self.assertEqual(expected_next_token, response_next_token)
+        self.assertEqual(response_previous_token, expected_previous_token)
+
+
+class StreamingPauseAndFillerTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.play_list_has_audio_1 = mommy.make_recipe('streaming.playlist_has_audio_recipe')
+        cls.playlist_2 = mommy.make_recipe('streaming.playlist_recipe_2')  # second time user2 recipe runs
+
+        cls.auser_2 = mommy.make(AUser,
+                                 user=cls.playlist_2.user,
+                                 alexa_user_id='TestAlexaUserId2',
+                                 alexa_device_id='TestAlexaDeviceId2',
+                                 engine_schedule='TestEngineSchedule', )
+
+        cls.audio_file_1 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.audio_file_2 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.audio_file_3 = mommy.make_recipe('streaming.audio_file_recipe')
+        cls.playlist_2.add_audio_file(cls.audio_file_1)
+        cls.playlist_2.add_audio_file(cls.audio_file_2)
+        cls.play_list_has_audio_1.playlist.add_audio_file(cls.audio_file_3)
+        u = Playlist.objects.all()[0]  # to make sure default playlist have no user assigned
+        u.user_id = None
+        u.save()
+
+    def test_cold_start_pause_command(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[1]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(True, 'AudioPlayer.PlaybackStarted', token)
+        stream_io(request_body_playback_start)
+
+        request_body_pause_command = request_body_creator(True, 'PlaybackController.PauseCommandIssued', token)
+        data = stream_io(request_body_pause_command)
+
+        response = data['response']['shouldEndSession']
+        expected_ups_audio = PlaylistHasAudio.objects.all()[3].audio
+        next_ups_audio = UserPlaylistStatus.objects.all()[0].current_active_audio
+
+        self.assertTrue(response)
+        self.assertEqual(next_ups_audio, expected_ups_audio)
+
+    def test_user_playlist_pause_command(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[0]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(False, 'AudioPlayer.PlaybackStarted', token)
+        stream_io(request_body_playback_start)
+
+        request_body_pause_command = request_body_creator(False, 'PlaybackController.PauseCommandIssued', token)
+        data = stream_io(request_body_pause_command)
+
+        response = data['response']['shouldEndSession']
+        expected_ups_audio = PlaylistHasAudio.objects.all()[2].audio
+        next_ups_audio = UserPlaylistStatus.objects.all()[0].current_active_audio
+
+        self.assertTrue(response)
+        self.assertEqual(next_ups_audio, expected_ups_audio)
+
+    def test_cold_start_pause_intent(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[1]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(True, 'AudioPlayer.PlaybackStarted', token)
+        stream_io(request_body_playback_start)
+
+        request_body_pause_command = request_body_creator(True, 'AMAZON.PauseIntent', token)
+        data = stream_io(request_body_pause_command)
+
+        response = data['response']['shouldEndSession']
+        expected_ups_audio = PlaylistHasAudio.objects.all()[3].audio
+        next_ups_audio = UserPlaylistStatus.objects.all()[0].current_active_audio
+
+        self.assertTrue(response)
+        self.assertEqual(next_ups_audio, expected_ups_audio)
+
+    def test_user_playlist_pause_intent(self):
+        pha_object = type(self.play_list_has_audio_1).objects.all()[0]
+        token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
+
+        request_body_playback_start = request_body_creator(False, 'AudioPlayer.PlaybackStarted', token)
+        stream_io(request_body_playback_start)
+
+        request_body_pause_command = request_body_creator(False, 'AMAZON.PauseIntent', token)
+        data = stream_io(request_body_pause_command)
+
+        response = data['response']['shouldEndSession']
+        expected_ups_audio = PlaylistHasAudio.objects.all()[2].audio
+        next_ups_audio = UserPlaylistStatus.objects.all()[0].current_active_audio
+
+        self.assertTrue(response)
+        self.assertEqual(next_ups_audio, expected_ups_audio)
+
+    def test_none_intent(self):
+        none_intent = request_body_creator(False, 'None_Intent')
+        data = stream_io(none_intent)
+        is_session_ended = data['response']['shouldEndSession']
+        audio_player_directive = data['response']['directives'][0]['type']
+
+        self.assertTrue(is_session_ended)
+        self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
+
+    def test_fallback_filler(self):
+        fallback_request = request_body_creator(False, 'fallback')
+        data = stream_io(fallback_request)
+        is_session_ended = data['response']['shouldEndSession']
+
+        self.assertTrue(is_session_ended)
