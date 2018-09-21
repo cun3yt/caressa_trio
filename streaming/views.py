@@ -78,17 +78,17 @@ def filler():
 
 
 @transaction.atomic()
-def save_state(alexa_user: AUser, req_body):        # todo Problematic!! fix the token logic below..
+def save_state(alexa_user: AUser, req_body):
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
     offset = deep_get(req_body, 'context.AudioPlayer.offsetInMilliseconds')
-    token = deep_get(req_body, 'context.AudioPlayer.token')     # this is AudioFile instance's ID
+    token = deep_get(req_body, 'context.AudioPlayer.token')  # token is combination of pha_hash and audio_id
 
-    pha_and_audio_id_list = token.split(',')  # token is combination of pha_hash and audio_id
+    pha_and_audio_id_list = token.split(',')
     pha_hash = pha_and_audio_id_list[0]
     current_audio_file = AudioFile.objects.get(id=pha_and_audio_id_list[1])
 
     qs_playlist_entry = status.playlist_has_audio.playlist.playlisthasaudio_set.filter(
-        hash__exact=pha_hash , order_id__gte=status.playlist_has_audio.order_id
+        hash__exact=pha_hash, order_id__gte=status.playlist_has_audio.order_id
     )
 
     new_playlist_has_audio = None
@@ -138,7 +138,8 @@ def pause_session(alexa_user: AUser):
 def resume_session(alexa_user: AUser):
     log(' >> LOG: RESUME_SESSION')
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
-    token = (str(status.playlist_has_audio.hash) + ',' + str(status.current_active_audio_id))
+    token = '{hash},{audio_id}'.format(hash=str(status.playlist_has_audio.hash),
+                                       audio_id=str(status.current_active_audio_id))
     return start_session(status.current_active_audio, token, status.offset)
 
 
@@ -193,7 +194,8 @@ def next_intent_response(alexa_user: AUser):
     playlist_has_audio = status.playlist_has_audio.next()
     audio_to_be_played = playlist_has_audio.get_audio()
     save_state_by_playlist_entry(alexa_user, playlist_has_audio, audio_to_be_played)
-    token = (str(playlist_has_audio.hash) + ',' + str(audio_to_be_played.id))
+    token = '{hash},{audio_id}'.format(hash=str(status.playlist_has_audio.hash),
+                                       audio_id=str(status.current_active_audio_id))
     return start_session(audio_to_be_played, token)
 
 
@@ -204,8 +206,9 @@ def enqueue_next_song(alexa_user: AUser):
 
     upcoming_file = playlist_has_audio.get_audio()
     upcoming_pha_hash = playlist_has_audio.hash
-    token = str(upcoming_pha_hash) + ',' + str(upcoming_file.id)
-    expected_previous_token = str(status.playlist_has_audio.hash) + ',' + str(status.current_active_audio_id)
+    token = '{hash},{audio_id}'.format(hash=str(upcoming_pha_hash), audio_id=str(upcoming_file.id))
+    expected_previous_token = '{hash},{audio_id}'.format(hash=str(status.playlist_has_audio.hash),
+                                                         audio_id=str(status.current_active_audio_id))
     data = {
         "version": "1.0",
         "response": {
