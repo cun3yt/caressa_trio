@@ -126,7 +126,7 @@ def audio_file_accessibility_and_duration(sender, instance, raw, using, update_f
 
 
 signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
-                         sender=AudioFile)
+                         sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
 
 
 class Playlist(CacheMixin, TimeStampedModel):
