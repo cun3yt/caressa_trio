@@ -256,7 +256,7 @@ class PlaylistHasAudio(TimeStampedModel):
         context = {'user': self.playlist.user}
         return self.audio if self.audio else Tag.string_to_audio_file(self.tag, context)
 
-    def current_daytime(self):
+    def _current_daytime(self):
         now = datetime.utcnow()
         if 12 < now.hour <= 19:
             return self.TIME_MORNING
@@ -276,7 +276,7 @@ class PlaylistHasAudio(TimeStampedModel):
         return qs
 
     def next(self):
-        current_daytime = self.current_daytime()
+        current_daytime = self._current_daytime()
         qs = self._time_based_filtered_content(current_daytime)
         if qs.count() < 1:
             return self.playlist.playlisthasaudio_set.all()[0]
