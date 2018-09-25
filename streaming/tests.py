@@ -1,4 +1,5 @@
 from django.test import TestCase
+from mock import patch
 from model_mommy import mommy
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio,\
     UserPlaylistStatus, TrackingAction
@@ -577,7 +578,7 @@ class AudioFileModelTestCase(TestCase):
         self.assertEqual(duration_in_minutes1, expected_duration1)
         self.assertEqual(duration_in_minutes2, expected_duration2)
 
-    def test_is_publicly_accessible(self):  # todo how to?
+    def test_is_publicly_accessible(self):
         signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
                                  sender=AudioFile,
                                  dispatch_uid='audio_file_accessibility_and_duration')
@@ -701,12 +702,12 @@ class PlaylistHasAudioModelTestCase(TestCase):
         play_list_has_audio_3.save()
         cls.audio_file_2.tags.add(tag1)
 
+        cls.current_day_time_patch = patch('streaming.models.PlaylistHasAudio.current_daytime')
+        cls.mock_current_day_time = cls.current_day_time_patch.start()
+        cls.mock_current_day_time.return_value = 'morning'
         cls.tomorrow = datetime.datetime.utcnow() + datetime.timedelta(days=1)
-        cls.day_time_list = ['morning', 'afternoon', 'evening', 'night']
-        current_time = cls.playlist_has_audio.current_daytime()
-        cls.current_time_index = cls.day_time_list.index(current_time)
-        cls.next_day_time = cls.day_time_list[cls.current_time_index + 1] if not cls.current_time_index == 3 \
-            else cls.day_time_list[0]
+        cls.day_time_list = ['morning', 'afternoon']
+        cls.next_day_time = 'afternoon'
 
     def test_hash_creation(self):
         hash_01 = PlaylistHasAudio.objects.all()[0].hash
@@ -853,7 +854,6 @@ class TrackingActionModelTestCase(TestCase):
         cls.segment = 'TestSegment'
 
     def test_save_action_partial_segments(self):
-        # test giving only `segment1` # todo segment0 or segment1 ?
         TrackingAction.save_action(self.auser, self.session, segment0=self.segment)
         action_count = TrackingAction.objects.all().count()
         segment0 = TrackingAction.objects.all()[1].segment0
