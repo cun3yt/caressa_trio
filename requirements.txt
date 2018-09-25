@@ -26,7 +26,8 @@ model_mommy==1.6.0
 timeago==1.0.8
 mutagen==1.41.0
 boto==2.49.0
-moto==1.3.6
+boto3==1.7.84
+mock==2.0.0
 botanalytics==0.2.5
 django-admin-ordering==0.8.1
 django-admin-relation-links==0.0.5
