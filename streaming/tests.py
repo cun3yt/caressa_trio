@@ -7,8 +7,8 @@ from alexa.models import AUser, Session
 from django.db.models import signals
 import datetime
 import boto3
+from random import randint
 import botocore
-from moto import mock_s3
 
 
 def request_body_creator_for_intent(is_cold_start, request_type):
@@ -578,7 +578,38 @@ class AudioFileModelTestCase(TestCase):
         self.assertEqual(duration_in_minutes2, expected_duration2)
 
     def test_is_publicly_accessible(self):  # todo how to?
+        signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
+                                 sender=AudioFile,
+                                 dispatch_uid='audio_file_accessibility_and_duration')
+        bucket_name = 'caressa-test-{random_number}'.format(random_number=randint(1, 100000))
+        s3 = boto3.client('s3')
+        s3.create_bucket(Bucket=bucket_name)
+        file_path = 'streaming/sample_files/sample_audio.mp3'
+        file_name = 'sample_audio.mp3'
 
+        s3.upload_file(file_path, bucket_name, file_name, ExtraArgs={'ACL': 'public-read'})
+
+        audio_type = 'TestAudioType1'
+        url = '{s3}/{bucket_name}/{file_name}'.format(s3='https://s3.amazonaws.com',
+                                                          bucket_name=bucket_name,
+                                                          file_name=file_name)
+        name = 'TestAudioFile1'
+        description = 'TestDescription1'
+
+        sample_audio_file = AudioFile(audio_type=audio_type,
+                                      url=url,
+                                      name=name,
+                                      description=description)
+        sample_audio_file.save()
+        is_public = sample_audio_file.is_publicly_accessible()
+
+        self.assertIsInstance(sample_audio_file.duration, int)
+        self.assertTrue(is_public)
+
+        bucket = boto3.resource('s3').Bucket(bucket_name)
+        for key in bucket.objects.all():
+            key.delete()
+        bucket.delete()
 
     def test_string_representation(self):
         actual_string_representation = str(self.audio_file1)
