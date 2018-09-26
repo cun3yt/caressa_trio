@@ -106,7 +106,7 @@ def save_state(alexa_user: AUser, req_body):
 
     log(' >> LOG SAVE_STATE: pha: {}, audio: {}, tag: {}, order: {}'.format(
         status.playlist_has_audio.id,
-        current_audio_file,
+        current_audio_file.id,
         status.playlist_has_audio.audio.id if status.playlist_has_audio.audio else status.playlist_has_audio.tag,
         status.playlist_has_audio.order_id))
 
@@ -194,8 +194,8 @@ def next_intent_response(alexa_user: AUser):
     playlist_has_audio = status.playlist_has_audio.next()
     audio_to_be_played = playlist_has_audio.get_audio()
     save_state_by_playlist_entry(alexa_user, playlist_has_audio, audio_to_be_played)
-    token = '{hash},{audio_id}'.format(hash=str(status.playlist_has_audio.hash),
-                                       audio_id=str(status.current_active_audio_id))
+    token = '{hash},{audio_id}'.format(hash=str(playlist_has_audio.hash),
+                                       audio_id=str(audio_to_be_played.id))
     return start_session(audio_to_be_played, token)
 
 
