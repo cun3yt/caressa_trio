@@ -6,6 +6,10 @@ from actions.api.serializers import ActionSerializer, CommentSerializer, Reactio
 from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
+from streaming.models import Messages
+import boto3
+import datetime
+from random import randint
 
 
 class ActionViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
@@ -93,5 +97,34 @@ def new_post(request):
 
     post = UserPost(user=user, data=request.data['selections'])
     post.save()
+
+    return Response({'message': 'Saved...'})
+
+
+@api_view(['POST'])
+def pre_signed_url_for_s3(request):
+    key = request.data['key']
+    s3 = boto3.client('s3')
+    post = s3.generate_presigned_post(
+        Bucket='caressa-upload',
+        Key=key
+    )
+    return Response(post)
+
+
+@api_view(['POST'])
+def new_job_for_message_queue(request):
+    a = request
+    user_id = 2
+    message_type = request.data['type']
+    message_key = request.data['key']
+
+    message = {
+        'user': user_id,
+        'message_type': message_type,
+        'key': message_key
+    }
+    new_message = Messages(message=message)
+    new_message.save()
 
     return Response({'message': 'Saved...'})

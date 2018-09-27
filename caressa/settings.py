@@ -197,6 +197,9 @@ pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pu
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 MEDIA_BUCKET = os.environ.get('MEDIA_BUCKET')
+S3_RAW_UPLOAD_BUCKET = 'caressa-upload'
+S3_PRODUCTION_BUCKET = 'caressa-prod'
+S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 
 botanalytics_api_token = os.environ.get('BOTANALYTICS_API_TOKEN')
 

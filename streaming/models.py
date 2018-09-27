@@ -384,3 +384,27 @@ class TrackingAction(TimeStampedModel):
 
 
 TrackingAction._meta.get_field('created').db_index = True
+
+
+class Messages(TimeStampedModel):
+    class Meta:
+        db_table = 'message_queue'
+
+    PROCESS_QUEUED = 'queued'
+    PROCESS_COMPLETE = 'complete'
+    PROCESS_FAILED = 'failed'
+    PROCESS_RUNNING = 'running'
+
+    PROCESS_SET = (
+        (PROCESS_QUEUED, 'Queued'),
+        (PROCESS_COMPLETE, 'Complete'),
+        (PROCESS_FAILED, 'Failed'),
+        (PROCESS_RUNNING, 'Running'),
+    )
+
+    message = JSONField(default={})
+
+    process_state = models.CharField(max_length=50,
+                                     choices=PROCESS_SET,
+                                     default=PROCESS_QUEUED
+                                     )
