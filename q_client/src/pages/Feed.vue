@@ -118,7 +118,7 @@ export default {
   },
   created () {
     this.setupContent({
-      title: 'Feed'
+      title: 'Maggy'
     })
     window.addEventListener('scroll', () => {
       this.moreFeedsNeeded = this.bottomVisible()

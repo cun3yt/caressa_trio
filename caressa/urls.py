@@ -21,7 +21,7 @@ from django.conf import settings
 from alexa.views import main_view, alexa_io
 from streaming.views import stream_io_wrapper, playlist_replication
 from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, laugh_at_joke, find_interesting_at_news, \
-    new_post, pre_signed_url_for_s3, new_job_for_message_queue
+    new_post, pre_signed_url_for_s3, new_job_for_message_queue, personalize_content
 from alexa.api.views import MedicalViewSet, JokeViewSet, NewsViewSet, UserActOnContentViewSet
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
@@ -84,6 +84,7 @@ urlpatterns = [
     path('post/', new_post),
     path('generate_signed_url/', pre_signed_url_for_s3),
     path('new_message/', new_job_for_message_queue),
+    path('personalize/', personalize_content),
 
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -8,8 +8,6 @@ from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 from streaming.models import Messages
 import boto3
-import datetime
-from random import randint
 
 
 class ActionViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
@@ -114,15 +112,38 @@ def pre_signed_url_for_s3(request):
 
 @api_view(['POST'])
 def new_job_for_message_queue(request):
-    a = request
     user_id = 2
     message_type = request.data['type']
     message_key = request.data['key']
+    key = 'content'
+
+    if key in request.data:
+        content = request.data['content']['text'][0]
+    else:
+        content = ''
 
     message = {
         'user': user_id,
         'message_type': message_type,
-        'key': message_key
+        'key': message_key,
+        'content': content
+    }
+    new_message = Messages(message=message)
+    new_message.save()
+
+    return Response({'message': 'Saved...'})
+
+
+@api_view(['POST'])
+def personalize_content(request):
+    user_id = 2
+    message_type = request.data['type']
+    message_list = request.data['list']
+
+    message = {
+        'user': user_id,
+        'message_type': message_type,
+        'list': message_list,
     }
     new_message = Messages(message=message)
     new_message.save()

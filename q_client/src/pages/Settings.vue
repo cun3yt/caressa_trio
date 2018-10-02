@@ -43,6 +43,29 @@
           </template>
             <textarea placeholder="What went wrong?" class="full-width no-border"></textarea>
         </q-collapsible>
+      </q-list><div class="q-pa-sm"></div>
+      <q-list>
+        <q-list-header>
+         <q-item-main label="Personalize"></q-item-main>
+        </q-list-header>
+        <q-collapsible icon="library_music" label="Music Genres">
+          <q-list-header >What {{user}} would love to listen?</q-list-header>
+          <q-list>
+            <q-item v-for="(item, index) in genres" :key="index" tag="label">
+              <q-item-side>
+                <q-checkbox v-model="genres[index].checked" />
+              </q-item-side>
+              <q-item-main>
+                <q-item-tile title>{{genres[index].genre}}</q-item-tile>
+              </q-item-main>
+            </q-item>
+            <q-item>
+                <q-item-main>
+                <q-btn @click="sendInterests('genres')" label="Apply" color="primary" size="0.9rem" icon="done_outline"/>
+              </q-item-main>
+              </q-item>
+      </q-list>
+          </q-collapsible>
       </q-list>
       <div class="q-pa-sm"></div>
       <q-list>
@@ -55,7 +78,7 @@
                   <q-item-tile icon="email" color="primary"/>
                 </q-item-side>
                 <q-item-main>
-                  <q-input v-model="email" type="email" stack-label="New Member Mail" />
+                  <q-input value="" type="email" stack-label="New Member Mail" />
                 </q-item-main>
               </q-item>
               <q-item>
@@ -68,19 +91,19 @@
                   label="Pick Role"
                 >
                   <q-list link>
-                    <q-item v-close-overlay @click.native="handlerFunction">
+                    <q-item @click.native="handlerFunction">
                       <q-item-side icon="supervisor account" inverted color="secondary" />
                       <q-item-main>
                         <q-item-tile label>Family Member</q-item-tile>
                       </q-item-main>
                     </q-item>
-                    <q-item v-close-overlay @click.native="handlerFunction">
+                    <q-item @click.native="handlerFunction">
                       <q-item-side icon="person outline" inverted color="secondary" />
                       <q-item-main>
                         <q-item-tile label>Caregiver</q-item-tile>
                       </q-item-main>
                     </q-item>
-                    <q-item v-close-overlay @click.native="handlerFunction">
+                    <q-item @click.native="handlerFunction">
                       <q-item-side icon="business" inverted color="secondary" />
                       <q-item-main>
                         <q-item-tile label>Caregiver Org.</q-item-tile>
@@ -241,11 +264,34 @@ export default {
   props: ['setupContent'],
   created () {
     this.setupContent({
-      title: 'Settings'
+      title: this.user
     })
   },
   data () {
     return {
+      user: 'Maggy',
+      genres: [
+        {
+          'genre': 'Classical',
+          'checked': false
+        },
+        {
+          'genre': 'Jazz',
+          'checked': false
+        },
+        {
+          'genre': 'Blues',
+          'checked': false
+        },
+        {
+          'genre': 'Pop',
+          'checked': false
+        },
+        {
+          'genre': 'R&B',
+          'checked': false
+        }
+      ],
       checked_one: true,
       checked_two: false,
       checked_three: false,
@@ -285,13 +331,25 @@ export default {
     newPage (link) {
       const baseUrl = 'https://www.caressa.ai/'
       window.open(baseUrl + link)
+    },
+    sendInterests (type) {
+      let checkedItems = []
+      for (let i = 0; i < this[`${type}`].length; i++) {
+        if (this[`${type}`][i].checked) {
+          checkedItems.push(this[`${type}`][i]['genre'])
+        }
+      }(this.$http.post(`${this.$root.$options.hosts.rest}/personalize/`, {
+        'type': type,
+        'list': checkedItems
+      }))
     }
   }
 }
 </script>
 
 <style lang="stylus">
-.main-content
-  width: 500px
-  max-width: 90vw
+.main-content {
+  width: 500px;
+  max-width: 90vw;
+}
 </style>

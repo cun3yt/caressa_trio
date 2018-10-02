@@ -29,17 +29,11 @@
           <q-btn round icon="play_arrow" color="brown" @click="playRecord(msg.url)">  </q-btn>
           </q-chat-message>
         </div>
-        <q-chat-message
-          name="Maggy"
-          :avatar="avatars['1']"
-        >
-          <q-spinner-dots size="2rem" />
-        </q-chat-message>
       </div>
 
       <div style="width: 500px; max-width: 90vw; padding: 20px;">
-        <q-input type="textarea" name="new-comment" placeholder="Message" value="" />
-        <q-btn class="action-btn" side="right" color="primary">Send Message</q-btn>
+        <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
+        <q-btn class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
         <q-btn v-on:mousedown.native="startRecord"
         v-on:mouseleave.native="stopRecord"
         v-on:mouseup.native="stopRecord"
@@ -62,7 +56,7 @@ export default {
   props: ['setupContent'],
   created () {
     this.setupContent({
-      title: 'Chat'
+      title: 'Maggy'
     })
   },
   methods: {
@@ -71,12 +65,53 @@ export default {
         return this.avatars[msg.id]
       }
     },
+    sendMessage: function () {
+      console.log('sending message')
+      console.log(this.$refs.newMessage.value)
+      let textMessageObj = {}
+      let today = new Date()
+      let dd = today.getDate()
+      let mm = today.getMonth() + 1
+      let yyyy = today.getFullYear()
+
+      if (dd < 10) {
+        dd = '0' + dd
+      }
+      if (mm < 10) {
+        mm = '0' + mm
+      }
+      today = mm + '-' + dd + '-' + yyyy
+      let randomInt = Math.floor(Math.random() * Math.floor(99999999))
+
+      let key = today + '-' + randomInt
+      textMessageObj.key = key
+      textMessageObj.name = 'John'
+      textMessageObj.sent = true
+      textMessageObj.id = '2'
+      textMessageObj.stamp = 'Today at 13:50'
+      textMessageObj.type = 'text'
+      textMessageObj.text = []
+
+      this.textMessageObj = textMessageObj
+
+      if (this.messageText !== '') {
+        this.textMessageObj.text.push(this.messageText)
+      }(this.messages.push(this.textMessageObj))
+      this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
+        'userId': textMessageObj.id,
+        'type': 'text',
+        'key': key,
+        'content': this.textMessageObj
+      }).then(response => {
+        this.messageText = ''
+      })
+    },
     startRecord: function () {
       console.log('recording start')
       navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
         this.audio.mediaRecorder = new MediaRecorder(stream)
         this.audio.mediaRecorder.start()
-        let messageObj = {}
+        let audioMessageObj = {}
         let today = new Date()
         let dd = today.getDate()
         let mm = today.getMonth() + 1
@@ -92,19 +127,19 @@ export default {
         let randomInt = Math.floor(Math.random() * Math.floor(99999999))
 
         let key = today + '-' + randomInt
-        messageObj.key = key
-        messageObj.name = 'John'
-        messageObj.sent = true
-        messageObj.id = '2'
-        messageObj.stamp = 'Today at 13:50'
-        messageObj.type = 'audio'
-        messageObj.audioChunks = []
+        audioMessageObj.key = key
+        audioMessageObj.name = 'John'
+        audioMessageObj.sent = true
+        audioMessageObj.id = '2'
+        audioMessageObj.stamp = 'Today at 13:50'
+        audioMessageObj.type = 'audio'
+        audioMessageObj.audioChunks = []
 
-        this.messageObj = messageObj
+        this.audioMessageObj = audioMessageObj
 
         this.audio.mediaRecorder.addEventListener('dataavailable', event => {
-          this.messageObj.audioChunks.push(event.data)
-          console.log(this.messageObj)
+          this.audioMessageObj.audioChunks.push(event.data)
+          console.log(this.audioMessageObj)
         })
       })
     },
@@ -112,10 +147,10 @@ export default {
       if (this.audio.mediaRecorder && this.audio.mediaRecorder.state === 'recording') {
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
           this.audio.mediaRecorder.addEventListener('stop', () => {
-            const audioArray = this.messageObj.audioChunks
+            const audioArray = this.audioMessageObj.audioChunks
             const audioBlob = new Blob(audioArray)
             const audioUrl = URL.createObjectURL(audioBlob)
-            this.messageObj.url = audioUrl
+            this.audioMessageObj.url = audioUrl
           })
           this.audio.mediaRecorder.stop()
         }).then(data => {
@@ -132,7 +167,7 @@ export default {
         'userId': this.$root.$options.user.id,
         'audio': 'audio',
         'job-type': '1',
-        'key': this.messageObj.key
+        'key': this.audioMessageObj.key
       }).then(response => {
         let responseBody = response.body['fields']
         let boundary = Math.random().toString().substr(2)
@@ -143,11 +178,11 @@ export default {
         let headers = {
           'Content-Type': 'multipart/form-data; boundary=' + boundary
         }
-        const audioArray = this.messageObj.audioChunks
+        const audioArray = this.audioMessageObj.audioChunks
         const audioBlob = new Blob(audioArray)
         let fileContent = audioBlob
         var audioFormData = new FormData()
-        audioFormData.append('key', this.messageObj.key)
+        audioFormData.append('key', this.audioMessageObj.key)
         audioFormData.append('AWSAccessKeyId', AWSAccessKeyId)
         audioFormData.append('policy', policy)
         audioFormData.append('signature', signature)
@@ -160,7 +195,7 @@ export default {
               'key': key
             }).then(response => {
               this.showNotif('Audio')
-              this.messages.push(this.messageObj)
+              this.messages.push(this.audioMessageObj)
             })
           })
       })
@@ -182,6 +217,8 @@ export default {
         '1': this.$root.$options.user.circleCenter.profilePic,
         '2': this.$root.$options.user.profilePic
       },
+      messageText: '',
+      textMessageObj: {},
       messages: [
         {
           label: 'Friday, 18th',
