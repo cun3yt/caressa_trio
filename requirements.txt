@@ -31,3 +31,4 @@ mock==2.0.0
 botanalytics==0.2.5
 django-admin-ordering==0.8.1
 django-admin-relation-links==0.0.5
+google-cloud-texttospeech==0.2.0
