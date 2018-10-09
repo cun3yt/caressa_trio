@@ -34,12 +34,9 @@
       <div style="width: 500px; max-width: 90vw; padding: 20px;">
         <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
         <q-btn class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
+        <q-btn class="action-btn" @click="uploadRecord" side="right" color="primary">Send the record</q-btn>
         <q-btn v-on:mousedown.native="startRecord"
-        v-on:mouseleave.native="stopRecord"
-        v-on:mouseup.native="stopRecord"
         v-on:touchstart.native="startRecord"
-        v-on:touchend.native="stopRecord"
-        v-on:touchcancel.native="stopRecord"
         side="left"
         style="margin-left: 20em"
         round
@@ -107,60 +104,45 @@ export default {
       })
     },
     startRecord: function () {
-      console.log('recording start')
-      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        this.audio.mediaRecorder = new MediaRecorder(stream)
-        this.audio.mediaRecorder.start()
-        let audioMessageObj = {}
-        let today = new Date()
-        let dd = today.getDate()
-        let mm = today.getMonth() + 1
-        let yyyy = today.getFullYear()
+      let today = new Date()
+      let dd = today.getDate()
+      let mm = today.getMonth() + 1
+      let yyyy = today.getFullYear()
+      if (dd < 10) {
+        dd = '0' + dd
+      }
+      if (mm < 10) {
+        mm = '0' + mm
+      }
+      today = mm + '-' + dd + '-' + yyyy
+      let randomInt = Math.floor(Math.random() * Math.floor(99999999))
+      let key = today + '-' + randomInt
+      this.audioMessageObj.key = key
+      let newRecord = key + '.wav'
 
-        if (dd < 10) {
-          dd = '0' + dd
-        }
-        if (mm < 10) {
-          mm = '0' + mm
-        }
-        today = mm + '-' + dd + '-' + yyyy
-        let randomInt = Math.floor(Math.random() * Math.floor(99999999))
-
-        let key = today + '-' + randomInt
-        audioMessageObj.key = key
-        audioMessageObj.name = 'John'
-        audioMessageObj.sent = true
-        audioMessageObj.id = '2'
-        audioMessageObj.stamp = 'Today at 13:50'
-        audioMessageObj.type = 'audio'
-        audioMessageObj.audioChunks = []
-
-        this.audioMessageObj = audioMessageObj
-
-        this.audio.mediaRecorder.addEventListener('dataavailable', event => {
-          this.audioMessageObj.audioChunks.push(event.data)
-          console.log(this.audioMessageObj)
+      let src = 'documents://' + newRecord
+      let mediaRec = new window.Media(src,
+        function () {
+          console.log('recordAudio():Audio Success')
+          console.log('cordova.file.documentsDirectory : ' + cordova.file.documentsDirectory)
+        },
+        function (err) {
+          console.log('recordAudio():Audio Error: ')
+          console.log(err)
         })
-      })
+      mediaRec.startRecord()
+
+      setTimeout(function () {
+        mediaRec.stopRecord()
+      }, 2000)
     },
     stopRecord: function () {
-      if (this.audio.mediaRecorder && this.audio.mediaRecorder.state === 'recording') {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-          this.audio.mediaRecorder.addEventListener('stop', () => {
-            const audioArray = this.audioMessageObj.audioChunks
-            const audioBlob = new Blob(audioArray)
-            const audioUrl = URL.createObjectURL(audioBlob)
-            this.audioMessageObj.url = audioUrl
-          })
-          this.audio.mediaRecorder.stop()
-        }).then(data => {
-          this.uploadRecord()
-        })
-      }
+      // TODO: need to be implemented.
+      console.log('No Effect')
     },
-    playRecord: function (url) {
-      const audio = new Audio(url)
-      audio.play()
+    playRecord: function () {
+      let myMedia = new window.Media(this.audioMessageObj.url)
+      myMedia.play()
     },
     uploadRecord: function () {
       this.$http.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
@@ -169,35 +151,36 @@ export default {
         'job-type': '1',
         'key': this.audioMessageObj.key
       }).then(response => {
-        let responseBody = response.body['fields']
-        let boundary = Math.random().toString().substr(2)
-        let key = responseBody['key']
-        let AWSAccessKeyId = responseBody['AWSAccessKeyId']
-        let policy = responseBody['policy']
-        let signature = responseBody['signature']
-        let headers = {
-          'Content-Type': 'multipart/form-data; boundary=' + boundary
+        console.log('response :' + response.body)
+
+        let vm = this
+        let ft = new window.FileTransfer()
+        var options = new window.FileUploadOptions()
+        options.fileKey = this.audioMessageObj.key
+        console.log('OPTIONS FILE KEY:' + this.audioMessageObj.key)
+        options.chunkedMode = false
+        options.httpMethod = 'PUT'
+        options.mimeType = 'audio/wav'
+        options.headers = {
+          'Content-Type': 'audio/wav'
         }
-        const audioArray = this.audioMessageObj.audioChunks
-        const audioBlob = new Blob(audioArray)
-        let fileContent = audioBlob
-        var audioFormData = new FormData()
-        audioFormData.append('key', this.audioMessageObj.key)
-        audioFormData.append('AWSAccessKeyId', AWSAccessKeyId)
-        audioFormData.append('policy', policy)
-        audioFormData.append('signature', signature)
-        audioFormData.append('file', fileContent)
-        this.$http.post('https://caressa-upload.s3.amazonaws.com/', audioFormData, {headers})
-          .then(response => {
-            this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
-              'userId': this.$root.$options.user.id,
-              'type': 'audio',
-              'key': key
-            }).then(response => {
-              this.showNotif('Audio')
-              this.messages.push(this.audioMessageObj)
-            })
-          })
+        window.resolveLocalFileSystemURL(cordova.file.documentsDirectory, function (dir) {
+          console.log('got main dir', dir)
+          dir.getFile(vm.audioMessageObj.key + '.wav', {create: true}, function (file) {
+            console.log('file itself', file)
+            ft.upload(file.nativeURL, response.body,
+              function (res) {
+                console.log('response : ' + res)
+              },
+              function (error) {
+                debugger
+                console.log(error)
+              },
+              options)
+            console.log('got the file')
+            // console.log(audioFormData)
+          }, function (err) { console.log(err) })
+        })
       })
     },
     showNotif: function (data) {
@@ -212,6 +195,7 @@ export default {
   },
   data () {
     return {
+      formData1: [],
       audio: {},
       avatars: {
         '1': this.$root.$options.user.circleCenter.profilePic,
@@ -219,6 +203,7 @@ export default {
       },
       messageText: '',
       textMessageObj: {},
+      audioMessageObj: {},
       messages: [
         {
           label: 'Friday, 18th',

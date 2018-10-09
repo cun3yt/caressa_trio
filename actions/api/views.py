@@ -8,6 +8,7 @@ from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 from streaming.models import Messages
 import boto3
+from caressa import settings
 
 
 class ActionViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
@@ -102,12 +103,21 @@ def new_post(request):
 @api_view(['POST'])
 def pre_signed_url_for_s3(request):
     key = request.data['key']
+    content_type = request.data['content-type']
+    request_type = request.data['request_type']
+    client_method = request_type['client-method']
     s3 = boto3.client('s3')
-    post = s3.generate_presigned_post(
-        Bucket='caressa-upload',
-        Key=key
+
+    url = s3.generate_presigned_url(
+        ClientMethod=client_method,
+        Params={
+            'Bucket': settings.S3_RAW_UPLOAD_BUCKET,
+            'Key': key,
+            'ContentType': content_type
+        },
+        HttpMethod=request_type
     )
-    return Response(post)
+    return Response(url)
 
 
 @api_view(['POST'])

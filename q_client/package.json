@@ -12,13 +12,16 @@
   },
   "dependencies": {
     "chart.js": "^2.7.2",
+    "cordova-plugin-ios-microphone-permissions": "^1.0.0",
+    "cordova-plugin-media-stub": "^2.1.0",
     "moment": "^2.22.2",
+    "pusher-js": "^4.2.2",
     "vue-chartjs": "^3.3.1",
-    "vue-resource": "^1.5.1",
-    "pusher-js": "^4.2.2"
+    "vue-resource": "^1.5.1"
   },
   "devDependencies": {
     "babel-eslint": "^8.2.1",
+    "babel-plugin-dynamic-import-node": "^2.1.0",
     "eslint": "^4.18.2",
     "eslint-config-standard": "^11.0.0",
     "eslint-friendly-formatter": "^4.0.1",
