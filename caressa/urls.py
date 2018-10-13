@@ -25,6 +25,7 @@ from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, la
 from alexa.api.views import MedicalViewSet, JokeViewSet, NewsViewSet, UserActOnContentViewSet
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
+from voice_service.views import speech_to_text
 
 
 router = ExtendedSimpleRouter()
@@ -74,6 +75,7 @@ urlpatterns = [
     path('', main_view),
     path('discussion', alexa_io),
     path('streaming', stream_io_wrapper),
+    path('speech-to-text', speech_to_text),
     path('replicate/', playlist_replication),
     path('act/', include(router.urls)),
     path('flat-api/', include(flat_router.urls)),

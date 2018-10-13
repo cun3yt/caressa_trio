@@ -7,7 +7,7 @@ S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 S3_PRODUCTION_BUCKET = 'caressa-prod'
 
 
-def tts(**kwargs) -> str:
+def tts(**kwargs) -> (str, str):
     text = kwargs.get('text', None)
     ssml = kwargs.get('ssml', None)
 
@@ -31,11 +31,16 @@ def tts(**kwargs) -> str:
     filename = '{now}-{random}.mp3'.format(now=datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%S"),
                                            random=get_random_string(25))
     local_file_path = '/tmp/{filename}'.format(filename=filename)
-    file_key = 'tts/{filename}'.format(filename=filename)
 
     with open(local_file_path, 'wb') as out:
         out.write(response.audio_content)
 
+    return filename, local_file_path
+
+
+def tts_to_s3(**kwargs) -> str:
+    filename, local_file_path = tts(**kwargs)
+    file_key = 'tts/{filename}'.format(filename=filename)
     s3_client = boto3_client('s3')
     s3_client.upload_file(local_file_path,
                           S3_PRODUCTION_BUCKET,

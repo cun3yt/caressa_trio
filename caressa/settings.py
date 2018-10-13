@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'alexa',
     'actions',
     'streaming',
+    'voice_service',
 ]
 
 MIDDLEWARE = [
