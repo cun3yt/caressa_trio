@@ -1,7 +1,6 @@
 import os
 
-from django.shortcuts import render
-from django.http import JsonResponse, FileResponse, HttpResponse
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
