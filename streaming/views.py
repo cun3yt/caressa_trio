@@ -3,8 +3,6 @@ import json
 from utilities.dictionaries import deep_get
 from utilities.logger import log
 from alexa.models import AUser, User, Session
-from datetime import datetime
-from django.utils.crypto import get_random_string
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.db import transaction
 from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, Playlist, AudioFile
