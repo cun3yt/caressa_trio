@@ -1,4 +1,4 @@
-"""https://docs.djangoproject.com/en/2.0/topics/http/urls/
+"""
 Examples:
 Function views
     1. Add an import:  from my_app import views
@@ -21,6 +21,7 @@ from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, la
 from alexa.api.views import MedicalViewSet, JokeViewSet, NewsViewSet, UserActOnContentViewSet
 from actions.api.views import laugh_at_joke, find_interesting_at_news, \
     new_post
+from actions.api.views import laugh_at_joke, find_interesting_at_news, new_post
 
 from actions.urls import register_nested_routes as register_nested_action_urls, \
     register_flat_routes as register_flat_action_routes
@@ -42,7 +43,6 @@ router = register_nested_alexa_urls(router)
 flat_router = routers.DefaultRouter()
 flat_router = register_flat_action_routes(flat_router)
 flat_router = register_flat_alexa_routes(flat_router)
-
 
 urlpatterns = [
     path('', main_view),
