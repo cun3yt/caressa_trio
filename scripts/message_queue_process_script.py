@@ -17,7 +17,7 @@ def run():
 
     file_key = message['key']
 
-    if message['message_type'] == 'audio':
+    if message['message_type'] == 'ios-audio':
 
         next_queued_job.process_state = Messages.PROCESS_RUNNING
         next_queued_job.save()
@@ -25,7 +25,7 @@ def run():
 
         s3 = boto3.resource('s3')
         s3.Bucket(S3_RAW_UPLOAD_BUCKET).download_file(file_key, '/tmp/{}'.format(file_key))
-        webm_audio = AudioSegment.from_file('/tmp/{}'.format(file_key), format='webm')
+        webm_audio = AudioSegment.from_file('/tmp/{}'.format(file_key), format='wav')
         webm_audio.export('/tmp/{}.mp3'.format(file_key), format='mp3')
         s3_client = boto3.client('s3')
         s3_client.upload_file('/tmp/{}.mp3'.format(file_key),

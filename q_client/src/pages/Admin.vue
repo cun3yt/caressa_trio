@@ -4,7 +4,7 @@
       <div style="width: 500px; max-width: 90vw;">
         <div v-for="(msg, index) in messages" :key="`reg-${index}`">
           <q-chat-message
-            v-if="msg.type === 'text'"
+            v-if="msg.type == 'text'"
             :key="`reg-${index}`"
             :label="msg.label"
             :sent="msg.sent"
@@ -16,7 +16,7 @@
             :stamp="msg.stamp"
           />
           <q-chat-message
-            v-else-if="msg.type === 'audio'"
+            v-else-if="msg.type == 'audio'"
             :key="`reg-${index}`"
             :label="msg.label"
             :sent="msg.sent"
@@ -26,7 +26,7 @@
             :avatar="getAvatar(msg)"
             :stamp="msg.stamp"
           >
-            <q-btn round icon="play_arrow" color="brown" @click="playRecord">  </q-btn>
+            <q-btn round icon="play_arrow" color="brown" @click="playRecord(msg.url)">  </q-btn>
           </q-chat-message>
         </div>
       </div>
@@ -34,60 +34,20 @@
       <div style="width: 500px; max-width: 90vw; padding: 20px;">
         <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
         <q-btn class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
-      </div>
-      <div class="doc-container with-bg">
-        <div class="row justify-center">
-          <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
-          <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
-        </div>
-        </div>
-      <div class="row justify-start">
-        <div class="col-2" style="padding-top: 3em; padding-left: 3em">
-          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="deleteRecord"
-                 v-on:touchstart.native="deleteRecord"
-                 side="left"
-                 size="20px"
-                 round
-                 color="negative"
-                 icon="fas fa-trash"></q-btn>
-        </div>
-        <div class="col-2"></div>
-        <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false"
-               class="col-4" v-on:mousedown.native="uploadRecord"
-               v-on:touchstart.native="uploadRecord"
+        <q-btn class="action-btn" @click="uploadRecord" side="right" color="primary">Send the record</q-btn>
+        <q-btn v-on:mousedown.native="startRecord"
+               v-on:touchstart.native="startRecord"
                side="left"
-               size="40px"
-               style="padding-right: 0.2em"
+               style="margin-left: 20em"
                round
-               color="positive"
-               icon="fas fa-paper-plane"
-        ></q-btn>
-        <q-btn v-else class="col-4" v-on:mousedown.native="toggleRecord"
-               v-on:touchstart.native="toggleRecord"
-               side="left"
-               size="40px"
-               round
-               :outline="recordingState"
-               :color="recordingState ? 'negative' : 'primary' "
-               :icon="recordingState ? 'fas fa-stop' : 'fas fa-microphone'"></q-btn>
-        <div class="col-2" style="padding-top: 3em; padding-left: 1em">
-          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="playRecord"
-                 v-on:touchstart.native="playRecord"
-                 side="left"
-                 size="20px"
-                 style="padding-left: 0.3em"
-                 round
-                 color="info"
-                 icon="fas fa-play"></q-btn>
-        </div>
-
+               color="info"
+               icon='mic'></q-btn>
       </div>
-      </div>
+    </div>
   </q-page>
 </template>
 
 <script>
-
 export default {
   name: 'chat',
   props: ['setupContent'],
@@ -140,63 +100,48 @@ export default {
         'key': key,
         'content': this.textMessageObj
       }).then(response => {
-        console.log('Response : ', response)
         this.messageText = ''
       })
     },
-    toggleRecord: function () {
-      if (!this.recordingState) {
-        let today = new Date()
-        let dd = today.getDate()
-        let mm = today.getMonth() + 1
-        let yyyy = today.getFullYear()
-        if (dd < 10) {
-          dd = '0' + dd
-        }
-        if (mm < 10) {
-          mm = '0' + mm
-        }
-        today = mm + '-' + dd + '-' + yyyy
-        let randomInt = Math.floor(Math.random() * Math.floor(99999999))
-        let key = today + '-' + randomInt
-        this.audioMessageObj.key = key
-        let newRecord = key + '.wav'
-
-        let src = 'documents://' + newRecord
-        this.audioMessageObj.url = src
-        this.recording = new window.Media(src,
-          function () {
-            console.log('recordAudio():Audio Success')
-            console.log('cordova.file.documentsDirectory : ' + cordova.file.documentsDirectory)
-          },
-          function (err) {
-            console.log('recordAudio():Audio Error: ')
-            console.log(err)
-          })
-        this.recording.startRecord()
-        this.recordingState = true
-      } else {
-        this.recording.stopRecord()
-        this.recordingState = false
-        this.audioMessageObj.sent = false
+    startRecord: function () {
+      let today = new Date()
+      let dd = today.getDate()
+      let mm = today.getMonth() + 1
+      let yyyy = today.getFullYear()
+      if (dd < 10) {
+        dd = '0' + dd
       }
+      if (mm < 10) {
+        mm = '0' + mm
+      }
+      today = mm + '-' + dd + '-' + yyyy
+      let randomInt = Math.floor(Math.random() * Math.floor(99999999))
+      let key = today + '-' + randomInt
+      this.audioMessageObj.key = key
+      let newRecord = key + '.wav'
+
+      let src = 'documents://' + newRecord
+      let mediaRec = new window.Media(src,
+        function () {
+          console.log('recordAudio():Audio Success')
+          console.log('cordova.file.documentsDirectory : ' + cordova.file.documentsDirectory)
+        },
+        function (err) {
+          console.log('recordAudio():Audio Error: ')
+          console.log(err)
+        })
+      mediaRec.startRecord()
+
+      setTimeout(function () {
+        mediaRec.stopRecord()
+      }, 2000)
     },
-    deleteRecord: function () {
-      this.audioMessageObj = {}
-      this.showNotif('Record Deleted')
+    stopRecord: function () {
+      // TODO: need to be implemented.
+      console.log('No Effect')
     },
     playRecord: function () {
-      let vm = this
-      let myMedia = new window.Media(vm.audioMessageObj.url,
-        function () {
-          console.log('playAudio():Audio Success')
-          console.log(vm.audioMessageObj.url)
-        },
-        // error callback
-        function (err) {
-          console.log('playAudio():Audio Error: ')
-          console.dir(err)
-        })
+      let myMedia = new window.Media(this.audioMessageObj.url)
       myMedia.play()
     },
     uploadRecord: function () {
@@ -213,7 +158,7 @@ export default {
 
         let vm = this
         let ft = new window.FileTransfer()
-        let options = new window.FileUploadOptions()
+        var options = new window.FileUploadOptions()
         options.fileKey = this.audioMessageObj.key
         console.log('OPTIONS FILE KEY:' + this.audioMessageObj.key)
         options.chunkedMode = false
@@ -227,21 +172,14 @@ export default {
           dir.getFile(vm.audioMessageObj.key + '.wav', {create: true}, function (file) {
             console.log('file itself', file)
             ft.upload(file.nativeURL, response.body,
-              function (response) {
-                console.log(response)
+              function (res) {
+                console.log('response : ' + res)
                 vm.$http.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
                   'userId': vm.$root.$options.user.id,
                   'type': 'ios-audio',
                   'key': vm.audioMessageObj.key
                 }).then(response => {
-                  console.log('Response: ', response)
-                  vm.showNotif('Audio Submitted')
-                  vm.audioMessageObj.name = 'John'
-                  vm.audioMessageObj.sent = true
-                  vm.audioMessageObj.id = '2'
-                  vm.audioMessageObj.stamp = 'Today at 13:50'
-                  vm.audioMessageObj.type = 'audio'
-                  vm.messages.push(vm.audioMessageObj)
+                  console.log(response)
                 })
               },
               function (error) {
@@ -258,7 +196,7 @@ export default {
     showNotif: function (data) {
       this.$q.notify({
         color: 'secondary',
-        message: data,
+        message: data + ' is submitted.',
         position: 'top-right',
         icon: 'check_circle_outline'
         // detail: this.toString()
@@ -276,8 +214,6 @@ export default {
       messageText: '',
       textMessageObj: {},
       audioMessageObj: {},
-      recordingState: false,
-      recording: null,
       messages: [
         {
           label: 'Friday, 18th',

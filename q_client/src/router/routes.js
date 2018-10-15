@@ -1,6 +1,6 @@
 console.log('routes.js is running...')
 import Main from '../layouts/Main'
-import Feed from '../pages/Feed'
+import Admin from '../pages/Admin'
 import Post from '../pages/Post'
 import Chat from '../pages/Chat'
 import HealthNumbers from '../pages/HealthNumbers'
@@ -15,10 +15,10 @@ export default [
     component: Main,
     children: [
       {
-        path: 'feed',
+        path: 'admin',
         // component: () => import('pages/Feed'),
-        component: Feed,
-        name: 'feed'
+        component: Admin,
+        name: 'admin'
       },
       {
         path: 'post',

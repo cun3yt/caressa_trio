@@ -104,8 +104,8 @@ def new_post(request):
 def pre_signed_url_for_s3(request):
     key = request.data['key']
     content_type = request.data['content-type']
-    request_type = request.data['request_type']
-    client_method = request_type['client-method']
+    request_type = request.data['request-type']
+    client_method = request.data['client-method']
     s3 = boto3.client('s3')
 
     url = s3.generate_presigned_url(

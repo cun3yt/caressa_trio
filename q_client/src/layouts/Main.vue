@@ -224,9 +224,9 @@ export default {
       },
       pages: [
         {
-          name: 'feed',
-          label: 'Feed',
-          icon: 'date_range'
+          name: 'admin',
+          label: 'Admin',
+          icon: 'supervised_user_circle'
         },
         {
           name: 'chat',
