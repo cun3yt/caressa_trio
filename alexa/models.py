@@ -21,8 +21,8 @@ from caressa.settings import CONVERSATION_ENGINES, HOSTED_ENV
 from datetime import timedelta, datetime
 from django.utils import timezone
 from random import sample
-from icalendar import Calendar
 from django.utils.crypto import get_random_string
+from utilities.calendar import create_empty_calendar
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -216,11 +216,7 @@ class AUser(TimeStampedModel):
             return False
         auser_id = self.id
         user = AUser.objects.get(id=auser_id)
-        cal = Calendar()
-        cal.add('dtstart', datetime.now())
-        cal.add('summary', 'schedule of user:{}'.format(auser_id))
-
-        user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
+        user.engine_schedule = create_empty_calendar(summary='schedule of user:{}'.format(auser_id))
         user.save()
         return True
 
