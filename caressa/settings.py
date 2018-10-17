@@ -178,7 +178,9 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 5,
 }
 
-if ENV == 'dev':
+DB_DEBUG = os.environ.get('DB_DEBUG', False)
+
+if DB_DEBUG:
     LOGGING = {
         'version': 1,
         'loggers': {
