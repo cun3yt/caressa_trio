@@ -5,7 +5,7 @@
         <q-list-header>General</q-list-header>
         <q-item>
           <q-item-side>
-            <q-item-tile icon="person outline" color="primary" />
+            <q-item-tile icon="fas fa-user" color="primary" />
           </q-item-side>
           <q-item-main>
             <q-item-tile label>Edit Profile</q-item-tile>
@@ -15,13 +15,13 @@
             <q-btn
               color="primary"
               size="sm"
-              icon="create"
+              icon="fas fa-pencil-alt"
             />
           </q-item-side>
         </q-item>
         <q-item>
           <q-item-side>
-            <q-item-tile icon="help outline" color="primary" />
+            <q-item-tile icon="fas fa-question-circle" color="primary" />
           </q-item-side>
           <q-item-main>
             <q-item-tile label>Help</q-item-tile>
@@ -31,13 +31,13 @@
             <q-btn
               color="primary"
               size="sm"
-              icon="dialpad"
+              icon="fas fa-phone"
             />
           </q-item-side>
         </q-item>
         <q-collapsible highlight>
           <template slot="header">
-            <q-item-side icon="feedback" color="primary" small>
+            <q-item-side icon="fas fa-exclamation-circle" color="primary" small>
             </q-item-side>
             <q-item-main label="Submit Feedback" />
           </template>
@@ -48,7 +48,7 @@
         <q-list-header>
          <q-item-main label="Personalize"></q-item-main>
         </q-list-header>
-        <q-collapsible icon="library_music" label="Music Genres">
+        <q-collapsible icon="fas fa-music" label="Music Genres">
           <q-list-header >What {{user}} would love to listen?</q-list-header>
           <q-list>
             <q-item v-for="(item, index) in genres" :key="index" tag="label">
@@ -61,7 +61,7 @@
             </q-item>
             <q-item>
                 <q-item-main>
-                <q-btn @click="sendInterests('genres')" label="Apply" color="primary" size="0.9rem" icon="done_outline"/>
+                <q-btn @click="sendInterests('genres')" label="Apply" color="primary" size="0.9rem" icon="fas fa-check"/>
               </q-item-main>
               </q-item>
       </q-list>
@@ -75,7 +75,7 @@
             <q-list highlight>
               <q-item>
                 <q-item-side>
-                  <q-item-tile icon="email" color="primary"/>
+                  <q-item-tile icon="fas fa-envelope" color="primary"/>
                 </q-item-side>
                 <q-item-main>
                   <q-input value="" type="email" stack-label="New Member Mail" />
@@ -83,28 +83,28 @@
               </q-item>
               <q-item>
                 <q-item-side>
-                  <q-item-tile icon="style" color="primary" />
+                  <q-item-tile icon="fas fa-clipboard-list" color="primary" />
                 </q-item-side>
                 <q-item-main>
                 <q-btn-dropdown
-                  color="secondary"
+                  color="primary"
                   label="Pick Role"
                 >
                   <q-list link>
                     <q-item @click.native="handlerFunction">
-                      <q-item-side icon="supervisor account" inverted color="secondary" />
+                      <q-item-side icon="fas fa-user-tie" inverted color="positive" />
                       <q-item-main>
                         <q-item-tile label>Family Member</q-item-tile>
                       </q-item-main>
                     </q-item>
                     <q-item @click.native="handlerFunction">
-                      <q-item-side icon="person outline" inverted color="secondary" />
+                      <q-item-side icon="fas fa-user-tie" inverted color="positive" />
                       <q-item-main>
                         <q-item-tile label>Caregiver</q-item-tile>
                       </q-item-main>
                     </q-item>
                     <q-item @click.native="handlerFunction">
-                      <q-item-side icon="business" inverted color="secondary" />
+                      <q-item-side icon="fas fa-building" inverted color="positive" />
                       <q-item-main>
                         <q-item-tile label>Caregiver Org.</q-item-tile>
                       </q-item-main>
@@ -119,16 +119,16 @@
                   label="Add"
                   color="primary"
                   size="sm"
-                  icon="add"
+                  icon="fas fa-plus"
                 />
               </q-item-main>
               </q-item>
             </q-list>
-        <q-collapsible icon="supervised_user_circle" label="Circle Members">
+        <q-collapsible icon="fas fa-users-cog" label="Circle Members">
             <q-list highlight inset-separator>
               <q-item>
                 <q-item-side>
-                  <q-item-tile icon="person" color="primary" />
+                  <q-item-tile icon="fas fa-user" color="primary" />
                 </q-item-side>
                 <q-item-main
                   label="Marie D."
@@ -139,12 +139,12 @@
                 <q-btn
                   color="primary"
                   size="sm"
-                  icon="create"
+                  icon="fas fa-pencil-alt"
                 />
               </q-item>
               <q-item>
                 <q-item-side>
-                  <q-item-tile icon="supervisor account" color="primary" />
+                  <q-item-tile icon="fas fa-user" color="primary" />
                 </q-item-side>
                 <q-item-main
                   label="Andrew D."
@@ -155,12 +155,12 @@
                 <q-btn
                   color="primary"
                   size="sm"
-                  icon="create"
+                  icon="fas fa-pencil-alt"
                 />
               </q-item>
               <q-item>
                 <q-item-side>
-                  <q-item-tile icon="supervisor account" color="primary" />
+                  <q-item-tile icon="fas fa-user" color="primary" />
                 </q-item-side>
                 <q-item-main
                   label="Lisa W."
@@ -171,12 +171,12 @@
                 <q-btn
                   color="primary"
                   size="sm"
-                  icon="create"
+                  icon="fas fa-pencil-alt"
                 />
               </q-item>
               <q-item>
                 <q-item-side>
-                  <q-item-tile icon="person outline" color="primary" />
+                  <q-item-tile icon="fas fa-user-tie" color="primary" />
                 </q-item-side>
                 <q-item-main
                   label="Tracy S."
@@ -187,12 +187,12 @@
                 <q-btn
                   color="primary"
                   size="sm"
-                  icon="create"
+                  icon="fas fa-pencil-alt"
                 />
               </q-item>
               <q-item>
                 <q-item-side>
-                  <q-item-tile icon="business" color="primary" />
+                  <q-item-tile icon="fas fa-building" color="primary" />
                 </q-item-side>
                 <q-item-main
                   label="Longevity Corp."
@@ -203,7 +203,7 @@
                 <q-btn
                   color="primary"
                   size="sm"
-                  icon="create"
+                  icon="fas fa-pencil-alt"
                 />
               </q-item>
             </q-list>
@@ -252,7 +252,7 @@
         </q-collapsible>
       </q-list>
         <q-item>
-          <q-btn style="background:white; color:red" class="full-width" label="Sign Out Caressa" />
+          <q-btn style="background:white; color:#de5866" class="full-width" label="Sign Out Caressa" />
         </q-item>
     </div>
   </q-page>

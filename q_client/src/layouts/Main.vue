@@ -6,28 +6,9 @@
 
     <q-layout-header>
       <q-toolbar>
-
         <q-toolbar-title>
           {{activeSenior}}
-          <q-icon name="expand_more">
-          </q-icon>
-          <q-popover
-              anchor="top middle"
-              self="top middle"
-            >
-              <q-list link style="min-width: 220px">
-                <q-item
-                  v-for="(senior, index) in this.seniors"
-                  :key="index"
-                  v-close-overlay
-                  @click.native="notify(senior)"
-                >
-                  <q-item-main :label="senior.name" />
-                </q-item>
-              </q-list>
-            </q-popover>
         </q-toolbar-title>
-
         <q-btn v-if="header.cta"
                class="within-iframe-hide"
                flat
@@ -113,7 +94,7 @@
       class="btn-fixed-widt"
       style="color:#2FCD8C; padding: 1em; margin-top: 2em"
       @click="goBacktoPreviousModal"
-      icon="arrow_back"
+      icon="fas fa-arrow-left"
       label="GO BACK"
       />
       </div>
@@ -130,7 +111,7 @@
         <q-input v-model="deviceCode" type="number" float-label="Number On Device" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
         </div>
     </div>
-    <q-btn style="color:#2FCD8C; margin-top: 2em" @click="addSeniorModal = false; foundSeniorModal = true" icon="person_add" label="Add" />
+    <q-btn style="color:#2FCD8C; margin-top: 2em" @click="addSeniorModal = false; foundSeniorModal = true" icon="fas fa-user-plus" label="Add" />
     </div>
     <div style="padding: 2.5em; margin-top: 1.5em">
       <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
@@ -226,17 +207,17 @@ export default {
         {
           name: 'admin',
           label: 'Admin',
-          icon: 'supervised_user_circle'
+          icon: 'fas fa-users'
         },
         {
           name: 'chat',
           label: 'Messages',
-          icon: 'forum'
+          icon: 'fas fa-comments'
         },
         {
           name: 'settings',
           label: 'Settings',
-          icon: 'settings'
+          icon: 'fas fa-cog'
         }
       ]
     }
@@ -264,7 +245,7 @@ export default {
       this.$q.notify({
         color: 'green',
         message: 'Switching to ' + data.name + '\'s profile',
-        icon: 'info'
+        icon: 'fas fa-info-circle'
       })
       this.activeSenior = data.name
     }

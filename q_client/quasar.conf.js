@@ -70,6 +70,7 @@ module.exports = function (ctx) {
         'QToggle',
         'QRange',
         'QSelect',
+        'QPageSticky',
         'QChatMessage',
         'QInput',
         'QSpinnerDots',
@@ -106,8 +107,8 @@ module.exports = function (ctx) {
         // description: 'Best PWA App in town!',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#ffffff',
-        theme_color: '#027be3',
+        background_color: '#abb7cb',
+        theme_color: '#21566e',
         icons: [
           {
             'src': 'statics/icons/icon-128x128.png',

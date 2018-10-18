@@ -4,7 +4,7 @@
       <div style="width: 500px; max-width: 90vw;">
         <div v-for="(msg, index) in messages" :key="`reg-${index}`">
           <q-chat-message
-            v-if="msg.type == 'text'"
+            v-if="msg.type === 'text'"
             :key="`reg-${index}`"
             :label="msg.label"
             :sent="msg.sent"
@@ -16,7 +16,7 @@
             :stamp="msg.stamp"
           />
           <q-chat-message
-            v-else-if="msg.type == 'audio'"
+            v-else-if="msg.type === 'audio'"
             :key="`reg-${index}`"
             :label="msg.label"
             :sent="msg.sent"
@@ -26,28 +26,84 @@
             :avatar="getAvatar(msg)"
             :stamp="msg.stamp"
           >
-            <q-btn round icon="play_arrow" color="brown" @click="playRecord(msg.url)">  </q-btn>
+            <q-btn round icon="fas fa-play" color="brown" @click="playRecord">  </q-btn>
           </q-chat-message>
         </div>
       </div>
 
-      <div style="width: 500px; max-width: 90vw; padding: 20px;">
-        <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
-        <q-btn class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
-        <q-btn class="action-btn" @click="uploadRecord" side="right" color="primary">Send the record</q-btn>
-        <q-btn v-on:mousedown.native="startRecord"
-               v-on:touchstart.native="startRecord"
-               side="left"
-               style="margin-left: 20em"
-               round
-               color="info"
-               icon='mic'></q-btn>
-      </div>
+      <q-page-sticky position="bottom" :offset="[10, 10]">
+        <div style="width: 500px; max-width: 90vw; padding: 20px;">
+          <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
+          <q-btn-dropdown style="width: 9.5em;" color="primary" :label="activeOption">
+            <q-list link style="min-width: 220px">
+              <q-item
+                v-for="(option, index) in this.options"
+                :key="index"
+                v-close-overlay
+                @click.native="changeAnouncementChannel(option.name)"
+              >
+                <q-item-main :label="option.name" />
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+          <q-btn style="margin-left: 4.2em" class="action-btn" @click="sendMessage" color="primary">Send Message</q-btn>
+        </div>
+
+        <div class="doc-container with-bg">
+          <div class="row justify-center">
+            <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
+            <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
+          </div>
+        </div>
+        <div class="row justify-start">
+          <div class="col-2" style="padding-top: 3em; padding-left: 3em">
+            <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="deleteRecord"
+                   v-on:touchstart.native="deleteRecord"
+                   side="left"
+                   size="20px"
+                   round
+                   color="negative"
+                   icon="fas fa-trash"></q-btn>
+          </div>
+          <div class="col-2"></div>
+          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false"
+                 class="col-4" v-on:mousedown.native="uploadRecord"
+                 v-on:touchstart.native="uploadRecord"
+                 side="left"
+                 size="40px"
+                 style="padding-right: 0.2em"
+                 round
+                 color="positive"
+                 icon="fas fa-paper-plane"
+          ></q-btn>
+          <q-btn v-else class="col-4" v-on:mousedown.native="toggleRecord"
+                 v-on:touchstart.native="toggleRecord"
+                 side="left"
+                 size="40px"
+                 round
+                 :outline="recordingState"
+                 :color="recordingState ? 'negative' : 'primary' "
+                 :icon="recordingState ? 'fas fa-stop' : 'fas fa-microphone'"></q-btn>
+          <div class="col-2" style="padding-top: 3em; padding-left: 1em">
+            <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="playRecord"
+                   v-on:touchstart.native="playRecord"
+                   side="left"
+                   size="20px"
+                   style="padding-left: 0.3em"
+                   round
+                   color="info"
+                   icon="fas fa-play"></q-btn>
+          </div>
+
+        </div>
+      </q-page-sticky>
     </div>
+
   </q-page>
 </template>
 
 <script>
+
 export default {
   name: 'chat',
   props: ['setupContent'],
@@ -61,6 +117,10 @@ export default {
       if (msg && ('id' in msg)) {
         return this.avatars[msg.id]
       }
+    },
+    changeAnouncementChannel: function (key) {
+      console.log(key)
+      this.activeOption = key
     },
     sendMessage: function () {
       console.log('sending message')
@@ -100,48 +160,63 @@ export default {
         'key': key,
         'content': this.textMessageObj
       }).then(response => {
+        console.log('Response : ', response)
         this.messageText = ''
       })
     },
-    startRecord: function () {
-      let today = new Date()
-      let dd = today.getDate()
-      let mm = today.getMonth() + 1
-      let yyyy = today.getFullYear()
-      if (dd < 10) {
-        dd = '0' + dd
-      }
-      if (mm < 10) {
-        mm = '0' + mm
-      }
-      today = mm + '-' + dd + '-' + yyyy
-      let randomInt = Math.floor(Math.random() * Math.floor(99999999))
-      let key = today + '-' + randomInt
-      this.audioMessageObj.key = key
-      let newRecord = key + '.wav'
+    toggleRecord: function () {
+      if (!this.recordingState) {
+        let today = new Date()
+        let dd = today.getDate()
+        let mm = today.getMonth() + 1
+        let yyyy = today.getFullYear()
+        if (dd < 10) {
+          dd = '0' + dd
+        }
+        if (mm < 10) {
+          mm = '0' + mm
+        }
+        today = mm + '-' + dd + '-' + yyyy
+        let randomInt = Math.floor(Math.random() * Math.floor(99999999))
+        let key = today + '-' + randomInt
+        this.audioMessageObj.key = key
+        let newRecord = key + '.wav'
 
-      let src = 'documents://' + newRecord
-      let mediaRec = new window.Media(src,
-        function () {
-          console.log('recordAudio():Audio Success')
-          console.log('cordova.file.documentsDirectory : ' + cordova.file.documentsDirectory)
-        },
-        function (err) {
-          console.log('recordAudio():Audio Error: ')
-          console.log(err)
-        })
-      mediaRec.startRecord()
-
-      setTimeout(function () {
-        mediaRec.stopRecord()
-      }, 2000)
+        let src = 'documents://' + newRecord
+        this.audioMessageObj.url = src
+        this.recording = new window.Media(src,
+          function () {
+            console.log('recordAudio():Audio Success')
+            console.log('cordova.file.documentsDirectory : ' + cordova.file.documentsDirectory)
+          },
+          function (err) {
+            console.log('recordAudio():Audio Error: ')
+            console.log(err)
+          })
+        this.recording.startRecord()
+        this.recordingState = true
+      } else {
+        this.recording.stopRecord()
+        this.recordingState = false
+        this.audioMessageObj.sent = false
+      }
     },
-    stopRecord: function () {
-      // TODO: need to be implemented.
-      console.log('No Effect')
+    deleteRecord: function () {
+      this.audioMessageObj = {}
+      this.showNotif('Record Deleted')
     },
     playRecord: function () {
-      let myMedia = new window.Media(this.audioMessageObj.url)
+      let vm = this
+      let myMedia = new window.Media(vm.audioMessageObj.url,
+        function () {
+          console.log('playAudio():Audio Success')
+          console.log(vm.audioMessageObj.url)
+        },
+        // error callback
+        function (err) {
+          console.log('playAudio():Audio Error: ')
+          console.dir(err)
+        })
       myMedia.play()
     },
     uploadRecord: function () {
@@ -158,7 +233,7 @@ export default {
 
         let vm = this
         let ft = new window.FileTransfer()
-        var options = new window.FileUploadOptions()
+        let options = new window.FileUploadOptions()
         options.fileKey = this.audioMessageObj.key
         console.log('OPTIONS FILE KEY:' + this.audioMessageObj.key)
         options.chunkedMode = false
@@ -172,18 +247,24 @@ export default {
           dir.getFile(vm.audioMessageObj.key + '.wav', {create: true}, function (file) {
             console.log('file itself', file)
             ft.upload(file.nativeURL, response.body,
-              function (res) {
-                console.log('response : ' + res)
+              function (response) {
+                console.log(response)
                 vm.$http.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
                   'userId': vm.$root.$options.user.id,
                   'type': 'ios-audio',
                   'key': vm.audioMessageObj.key
                 }).then(response => {
-                  console.log(response)
+                  console.log('Response: ', response)
+                  vm.showNotif('Audio Submitted')
+                  vm.audioMessageObj.name = 'John'
+                  vm.audioMessageObj.sent = true
+                  vm.audioMessageObj.id = '2'
+                  vm.audioMessageObj.stamp = 'Today at 13:50'
+                  vm.audioMessageObj.type = 'audio'
+                  vm.messages.push(vm.audioMessageObj)
                 })
               },
               function (error) {
-                debugger
                 console.log(error)
               },
               options)
@@ -196,15 +277,27 @@ export default {
     showNotif: function (data) {
       this.$q.notify({
         color: 'secondary',
-        message: data + ' is submitted.',
+        message: data,
         position: 'top-right',
-        icon: 'check_circle_outline'
+        icon: 'far fa-check-circle'
         // detail: this.toString()
       })
     }
   },
   data () {
     return {
+      activeOption: 'Deliver To:',
+      options: [
+        {
+          name: 'Maggy'
+        },
+        {
+          name: 'Duke'
+        },
+        {
+          name: 'Announce'
+        }
+      ],
       formData1: [],
       audio: {},
       avatars: {
@@ -214,67 +307,11 @@ export default {
       messageText: '',
       textMessageObj: {},
       audioMessageObj: {},
+      recordingState: false,
+      recording: null,
       messages: [
         {
-          label: 'Friday, 18th',
-          type: 'text'
-        },
-        {
-          name: 'Maggy',
-          id: '1',
-          text: ['How are you?'],
-          stamp: 'Yesterday 13:34',
-          type: 'text'
-        },
-        {
-          name: 'John',
-          id: '2',
-          text: ['I\'m good, mom!', 'How is your day?'],
-          sent: true,
-          stamp: 'Yesterday at 13:50',
-          type: 'text'
-        },
-        {
-          name: 'Maggy',
-          id: '1',
-          text: ['Perfect!', 'Caressa is so cool that we can keep up with little to no effort!'],
-          stamp: 'Yesterday at 13:52',
-          type: 'text'
-        },
-        {
-          name: 'John',
-          id: '2',
-          text: ['I know ma!', 'I love you.'],
-          sent: true,
-          stamp: 'Yesterday at 13:53',
-          type: 'text'
-        },
-
-        {
-          label: 'Sunday, 20th',
-          type: 'text'
-        },
-        {
-          name: 'John',
-          id: '2',
-          text: ['Nice weather here today. How is it over there?'],
-          sent: true,
-          stamp: 'Yesterday at 11:13',
-          type: 'text'
-        },
-        {
-          name: 'Maggy',
-          id: '1',
-          text: ['Pretty good.', 'By the way, my caregiver is with me now. We\'ll take a walk now'],
-          stamp: 'Yesterday at 11:18',
-          type: 'text'
-        },
-        {
-          name: 'John',
-          id: '2',
-          text: ['That\'s great! Talk to you later mom'],
-          sent: true,
-          stamp: 'Yesterday at 11:19',
+          label: 'Mon, 22th',
           type: 'text'
         }
       ]

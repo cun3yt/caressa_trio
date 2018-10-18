@@ -408,3 +408,34 @@ class Messages(TimeStampedModel):
                                      choices=PROCESS_SET,
                                      default=PROCESS_QUEUED
                                      )
+
+
+class VoiceMessageStatus(TimeStampedModel):
+    class Meta:
+        db_table = 'voice_message_status'
+
+    VOICE_STATUS_LISTENED = 'listened'
+    VOICE_STATUS_WAITING = 'waiting'
+
+    VOICE_STATUS_SET = (
+        (VOICE_STATUS_LISTENED, 'Listened'),
+        (VOICE_STATUS_WAITING, 'Waiting')
+    )
+    source = models.ForeignKey(to=User,
+                               null=False,
+                               help_text='Voice Source User',
+                               on_delete=models.DO_NOTHING,
+                               related_name='voice_source_user'
+                               )
+    destination = models.ForeignKey(to=User,
+                                    null=False,
+                                    help_text='Voice Destination User',
+                                    on_delete=models.DO_NOTHING,
+                                    related_name='voice_destination_user'
+                                    )
+    key = models.TextField(null=False,
+                           help_text='File name that will be listened by destination', )
+    list_status = models.CharField(max_length=50,
+                                   choices=VOICE_STATUS_SET,
+                                   default=VOICE_STATUS_WAITING,
+                                   )

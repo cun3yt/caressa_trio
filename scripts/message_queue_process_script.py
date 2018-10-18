@@ -1,9 +1,10 @@
-from streaming.models import Messages, AudioFile, Tag
+from streaming.models import Messages, AudioFile, Tag, VoiceMessageStatus
+from alexa.models import User
 from caressa.settings import S3_RAW_UPLOAD_BUCKET, S3_REGION, S3_PRODUCTION_BUCKET
 import boto3
 from utilities.logger import log
 from pydub import AudioSegment
-
+from caressa.settings import pusher_client
 
 def run():
     if not Messages.objects.filter(process_state='queued').count() > 0:
@@ -50,7 +51,13 @@ def run():
         log(next_queued_job.process_state)
         next_queued_job.save()
 
+        pusher_client.trigger('family.senior.1',
+                              'urgent_mail',
+                              url)
+
+        source = User.objects.get(pk=2)
+        destination = User.objects.get(pk=1)
+        new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
+        new_voice_message_status.save()
+
         return 'Job Finished...'
-
-
-

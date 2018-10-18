@@ -26,15 +26,17 @@
             :avatar="getAvatar(msg)"
             :stamp="msg.stamp"
           >
-            <q-btn round icon="play_arrow" color="brown" @click="playRecord">  </q-btn>
+            <q-btn round icon="fas fa-play" color="brown" @click="playRecord">  </q-btn>
           </q-chat-message>
         </div>
       </div>
 
+      <q-page-sticky position="bottom" :offset="[10, 10]">
       <div style="width: 500px; max-width: 90vw; padding: 20px;">
         <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
         <q-btn class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
       </div>
+
       <div class="doc-container with-bg">
         <div class="row justify-center">
           <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
@@ -82,7 +84,9 @@
         </div>
 
       </div>
+      </q-page-sticky>
       </div>
+
   </q-page>
 </template>
 
@@ -260,7 +264,7 @@ export default {
         color: 'secondary',
         message: data,
         position: 'top-right',
-        icon: 'check_circle_outline'
+        icon: 'far fa-check-circle'
         // detail: this.toString()
       })
     }
@@ -280,65 +284,7 @@ export default {
       recording: null,
       messages: [
         {
-          label: 'Friday, 18th',
-          type: 'text'
-        },
-        {
-          name: 'Maggy',
-          id: '1',
-          text: ['How are you?'],
-          stamp: 'Yesterday 13:34',
-          type: 'text'
-        },
-        {
-          name: 'John',
-          id: '2',
-          text: ['I\'m good, mom!', 'How is your day?'],
-          sent: true,
-          stamp: 'Yesterday at 13:50',
-          type: 'text'
-        },
-        {
-          name: 'Maggy',
-          id: '1',
-          text: ['Perfect!', 'Caressa is so cool that we can keep up with little to no effort!'],
-          stamp: 'Yesterday at 13:52',
-          type: 'text'
-        },
-        {
-          name: 'John',
-          id: '2',
-          text: ['I know ma!', 'I love you.'],
-          sent: true,
-          stamp: 'Yesterday at 13:53',
-          type: 'text'
-        },
-
-        {
-          label: 'Sunday, 20th',
-          type: 'text'
-        },
-        {
-          name: 'John',
-          id: '2',
-          text: ['Nice weather here today. How is it over there?'],
-          sent: true,
-          stamp: 'Yesterday at 11:13',
-          type: 'text'
-        },
-        {
-          name: 'Maggy',
-          id: '1',
-          text: ['Pretty good.', 'By the way, my caregiver is with me now. We\'ll take a walk now'],
-          stamp: 'Yesterday at 11:18',
-          type: 'text'
-        },
-        {
-          name: 'John',
-          id: '2',
-          text: ['That\'s great! Talk to you later mom'],
-          sent: true,
-          stamp: 'Yesterday at 11:19',
+          label: 'Mon, 22th',
           type: 'text'
         }
       ]

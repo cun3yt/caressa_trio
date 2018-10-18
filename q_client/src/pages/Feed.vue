@@ -97,7 +97,7 @@ export default {
         actions: [
           {
             label: 'One New Feed Arrived',
-            icon: 'arrow_upward',
+            icon: 'fas fa-arrow-up',
             handler: () => {
               window.scrollTo({
                 top: 0,
