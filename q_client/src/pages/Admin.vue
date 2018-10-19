@@ -46,7 +46,7 @@
               </q-item>
             </q-list>
           </q-btn-dropdown>
-          <q-btn style="margin-left: 4.2em" class="action-btn" @click="sendMessage" color="primary">Send Message</q-btn>
+          <q-btn :disable="recording!=null" style="margin-left: 4.2em" class="action-btn" @click="sendMessage" color="primary">Send Message</q-btn>
         </div>
 
         <div class="doc-container with-bg">
@@ -156,12 +156,15 @@ export default {
       }(this.messages.push(this.textMessageObj))
       this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'userId': textMessageObj.id,
-        'type': 'text',
+        'type': 'facility_ios_text',
         'key': key,
         'content': this.textMessageObj
       }).then(response => {
         console.log('Response : ', response)
+        console.log('messageText')
+        console.log(this.messageText)
         this.messageText = ''
+        console.log(this.messageText)
       })
     },
     toggleRecord: function () {
@@ -203,6 +206,7 @@ export default {
     },
     deleteRecord: function () {
       this.audioMessageObj = {}
+      this.recording = null
       this.showNotif('Record Deleted')
     },
     playRecord: function () {
@@ -251,7 +255,7 @@ export default {
                 console.log(response)
                 vm.$http.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
                   'userId': vm.$root.$options.user.id,
-                  'type': 'ios-audio',
+                  'type': 'facility_ios_audio',
                   'key': vm.audioMessageObj.key
                 }).then(response => {
                   console.log('Response: ', response)
@@ -262,6 +266,7 @@ export default {
                   vm.audioMessageObj.stamp = 'Today at 13:50'
                   vm.audioMessageObj.type = 'audio'
                   vm.messages.push(vm.audioMessageObj)
+                  vm.recording = null
                 })
               },
               function (error) {

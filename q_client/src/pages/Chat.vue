@@ -4,7 +4,7 @@
       <div style="width: 500px; max-width: 90vw;">
         <div v-for="(msg, index) in messages" :key="`reg-${index}`">
           <q-chat-message
-            v-if="msg.type === 'text'"
+            v-if="msg.type === 'family_ios_text'"
             :key="`reg-${index}`"
             :label="msg.label"
             :sent="msg.sent"
@@ -34,7 +34,7 @@
       <q-page-sticky position="bottom" :offset="[10, 10]">
       <div style="width: 500px; max-width: 90vw; padding: 20px;">
         <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
-        <q-btn class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
+        <q-btn :disable="recording!=null" class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
       </div>
 
       <div class="doc-container with-bg">
@@ -130,7 +130,7 @@ export default {
       textMessageObj.sent = true
       textMessageObj.id = '2'
       textMessageObj.stamp = 'Today at 13:50'
-      textMessageObj.type = 'text'
+      textMessageObj.type = 'family_ios_text'
       textMessageObj.text = []
 
       this.textMessageObj = textMessageObj
@@ -140,7 +140,7 @@ export default {
       }(this.messages.push(this.textMessageObj))
       this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'userId': textMessageObj.id,
-        'type': 'text',
+        'type': 'family_ios_text',
         'key': key,
         'content': this.textMessageObj
       }).then(response => {
@@ -187,6 +187,7 @@ export default {
     },
     deleteRecord: function () {
       this.audioMessageObj = {}
+      this.recording = null
       this.showNotif('Record Deleted')
     },
     playRecord: function () {
@@ -235,7 +236,7 @@ export default {
                 console.log(response)
                 vm.$http.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
                   'userId': vm.$root.$options.user.id,
-                  'type': 'ios-audio',
+                  'type': 'family_ios_audio',
                   'key': vm.audioMessageObj.key
                 }).then(response => {
                   console.log('Response: ', response)
@@ -246,6 +247,7 @@ export default {
                   vm.audioMessageObj.stamp = 'Today at 13:50'
                   vm.audioMessageObj.type = 'audio'
                   vm.messages.push(vm.audioMessageObj)
+                  vm.recording = null
                 })
               },
               function (error) {

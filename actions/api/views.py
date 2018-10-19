@@ -122,6 +122,7 @@ def pre_signed_url_for_s3(request):
 
 @api_view(['POST'])
 def new_job_for_message_queue(request):
+    print(request.data)
     user_id = 2
     message_type = request.data['type']
     message_key = request.data['key']

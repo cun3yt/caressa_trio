@@ -131,6 +131,7 @@ CORS_ORIGIN_WHITELIST = (
     '127.0.0.1:8080',
     'localhost:8080',
     '192.168.1.76:8080',
+    '192.168.1.76:8081',
     '10.0.1.169:8080',  # todo this line needed to be configured for each developer who is trying to debug the app in
     # his/her phone according to their local requirements
 )
