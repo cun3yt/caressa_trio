@@ -130,7 +130,9 @@ AUTH_PASSWORD_VALIDATORS = [
 CORS_ORIGIN_WHITELIST = (
     '127.0.0.1:8080',
     'localhost:8080',
-    # '10.0.1.169:8080' todo this line needed to be configured for each developer who is trying to debug the app in
+    '192.168.1.76:8080',
+    '192.168.1.76:8081',
+    '10.0.1.169:8080',  # todo this line needed to be configured for each developer who is trying to debug the app in
     # his/her phone according to their local requirements
 )
 
@@ -200,6 +202,9 @@ pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pu
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 MEDIA_BUCKET = os.environ.get('MEDIA_BUCKET')
+S3_RAW_UPLOAD_BUCKET = 'caressa-upload'
+S3_PRODUCTION_BUCKET = 'caressa-prod'
+S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 
 botanalytics_api_token = os.environ.get('BOTANALYTICS_API_TOKEN')
 

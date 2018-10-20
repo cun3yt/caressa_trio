@@ -38,7 +38,7 @@ def tts(**kwargs) -> (str, str):
     return filename, local_file_path
 
 
-def tts_to_s3(**kwargs) -> str:
+def tts_to_s3(return_format: str, **kwargs) -> str:
     filename, local_file_path = tts(**kwargs)
     file_key = 'tts/{filename}'.format(filename=filename)
     s3_client = boto3_client('s3')
@@ -46,6 +46,9 @@ def tts_to_s3(**kwargs) -> str:
                           S3_PRODUCTION_BUCKET,
                           file_key,
                           ExtraArgs={'ACL': 'public-read', 'ContentType': 'audio/mp3'})
+
+    if return_format == 'key':
+        return file_key
 
     url = '{region}/{bucket}/{file_key}'.format(region=S3_REGION,
                                                 bucket=S3_PRODUCTION_BUCKET,

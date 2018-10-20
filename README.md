@@ -4,7 +4,7 @@
 
 Welcome to Caressa's code repository. Currently it includes two main repositories in this central location:
 
-1. Django codebase including 
+1. Django codebase including
     * Data (ORM) models
     * HTTP endpoints for Voice devices (currently only Alexa)
     * REST API for mobile clients
@@ -73,14 +73,14 @@ This setup is written for Mac OS.
     ln -s -f ../scripts/githooks/ .hooks
     ```
     * Now every time you try to push your Python changes in commits, tests under version control will be triggered. If tests run and there is any failure the push will not be executed. Please note:  
-        * If there is not Python change tests will not be executed. 
+        * If there is not Python change tests will not be executed.
         * If you have any tests that are not committed yet they will not be executed.
 
 ## Specific to PyCharm & Possibly IntelliJ
 
 * PyCharm's debug server is extremely useful for debugging. In order to use it is needed to specify the Python interpreter properly: The one that is available in the virtual environment. It can be set under `PyCharm > Preferences > Project: xxx > Project Interpreter > Project Interpreter`
 * Make sure that the IDE is set properly for Django: Go to `PyCharm > Preferences > Language & Frameworks > Django`. Mark `Enable Django Support` checked, set the "Django Project Root" to the folder where `settings.py` file is in (absolute url of the directory), set "Settings" to `settings.py` (just file name), specify the Manage script to the absolute url of `manage.py` file.
- 
+
 
 # Quasar Codebase
 
@@ -101,22 +101,24 @@ This setup is written for Mac OS.
 
 
 1. You need to sign your development team in project. I think there is a better way to do that but I did it like this, first open the project in Xcode and choose the development team as yourself manually in Xcode.
-1. q_client/src/plugins/resource.js 
+1. q_client/src/plugins/resource.js
 ```
 app.hosts = {
     rest:'http://127.0.0.1:9900'
 }
-``` 
-changed to 
+```
+changed to
 ```
 app.hosts = {
     rest:'https://yourserver.serveo.net'
 }
 ```
-where you are serving your REST globally. Check it out [Serveo](serveo.net). Your phone need to be able to reach that url so it is better to have something global. 
+where you are serving your REST globally. Check it out [Serveo](serveo.net). Your phone need to be able to reach that url so it is better to have something global.
 1. You need to config CORS: Caressa > settings.py > CORS_ORIGIN_WHITELIST add your IP that is trying to reach resources you can see in debugger configured at Debugging your IOS Build section.
 1. Start dev server: `quasar dev -m cordova -T ios`. If build is successful application will automatically open in your phone. Well in most cases..
 1. If any problem occurs you can check debugging feature.  
+1. We need to use legacy build option for Cordova built. To do that in XCode open your project. File > Workspace Settings > Build System choose Legacy Build System
+1. npm i cordova-plugin-ios-microphone-permissions
 
 
 ## Debugging Your IOS Build.  
@@ -133,8 +135,8 @@ In order to do development against an Alexa skill each developer will need one A
 1. Open JSON editor on Alexa web dashboard and insert the seed skill info (ask to a coworker if it is not available somewhere yet).
     * This skill is subject to change and not dynamic for others for now. So if any change done on the skill `alexa-sample.json` needed to be updated so others can implement the changes to their skills.
 1. Alexa skill expects an HTTPS endpoint to reach to the skill. In order to make it work on the local machine you need to create a world-wide accessible HTTP server. There are two alternatives that we have identified so far without going through lots of configurations for firewalls etc:
-    * Install `ngrok` (available on Homebrew as a cask: `brew cask install ngrok`) and run it: 
-    @todo ... specs will be here... 
+    * Install `ngrok` (available on Homebrew as a cask: `brew cask install ngrok`) and run it:
+    @todo ... specs will be here...
     The free account generates a different URL for each run.
     * Create reverse SSH for global-local server via service Serveo. Example run is like this: `ssh -R letatio.serveo.net:80:localhost:9900 serveo.net`. The good thing about Serveo is that it tries to stick with the URL based on the IP and it is for free. It is not always available so keep `ngrok` in mind, too.
 1. Once you have worldwide accessible HTTP server you'll need to tell it to the Alexa on its web dashboard, it must be under endpoints.

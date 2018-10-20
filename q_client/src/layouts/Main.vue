@@ -7,10 +7,8 @@
     <q-layout-header>
       <q-toolbar>
         <q-toolbar-title>
-          {{header.title}}
-          <span slot="subtitle">{{header.subtitle}}</span>
+          {{activeSenior}}
         </q-toolbar-title>
-
         <q-btn v-if="header.cta"
                class="within-iframe-hide"
                flat
@@ -23,16 +21,142 @@
     </q-layout-header>
 
     <q-page-container>
-      <router-view :setup-content="setupContent" />
-    </q-page-container>
+      <router-view :setup-content="setupContent"></router-view>
 
+      <q-modal v-model="signUpModal" maximized>
+      <div style="padding: 2.5em; margin-top: 1.5em">
+        <div class="q-display-3 text-weight-light">
+          <span style="color:#2FCD8C">Care</span>
+          <span style="color:#83ddba">ssa</span>
+        </div>
+        <div style="padding-top: 3em">
+          <p class="q-display-1 text-weight-thin">Welcome,</p>
+          <p class="q-display-1 text-weight-thin">Lets get started.</p>
+          <div>
+          <q-input
+          v-model="signUpEmail"
+          type="email"
+          float-label="e-mail"
+          color="#2FCD8C"
+          />
+          <q-input
+           v-model="signUpPassword"
+           type="password"
+           float-label="password"
+           color="#2FCD8C"
+           />
+          </div>
+      </div>
+      <q-btn style="color:#2FCD8C; margin-top: 2em"
+      @click="signUpModal = !signUpModal; noSeniorModal = !noSeniorModal"
+      label="SIGN UP"
+      />
+     </div>
+      <div style="padding: 2.5em; margin-top: 1.5em">
+        <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+        <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+          What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+        </div>
+      </div>
+    </q-modal>
+
+    <q-modal v-model="noSeniorModal" maximized>
+      <div style="padding: 1.5em 2.5em; margin-top: 1.5em">
+        <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+        <div style="padding-top: 3em">
+          <p class="q-display-2 text-weight-thin">Oops!</p>
+          <p class="q-display-1 text-weight-light">Nobody is in your list.</p>
+      </div>
+      <q-btn class="q-display-1 text-weight-light"
+      style="color:#83ddba; padding: 0.2em; margin-top: 2em"
+      @click="noSeniorModal = false; addSeniorModal = true"
+      label="add your beloved elder"
+      />
+      </div>
+      <div style="padding: 1.5em; margin-top: 1.5em">
+        <div @click="videoDirection('noSeniorModal')" class="q-title text-weight-light">
+          <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Login</span></p>
+          What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+        </div>
+      </div>
+    </q-modal>
+
+    <q-modal v-model="videoModal" maximized>
+      <div style="padding: 0.8em; margin-top: 5em">
+        <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+        <p class="q-title text-weight-thin">Connecting Seniors with their Family</p>
+        <q-video
+          src="https://www.youtube.com/embed/uilkmUoXoLU?rel=0&amp;showinfo=0"
+          style="width: 22.2em; height: 18em"
+        />
+      <q-btn
+      align="between"
+      class="btn-fixed-widt"
+      style="color:#2FCD8C; padding: 1em; margin-top: 2em"
+      @click="goBacktoPreviousModal"
+      icon="fas fa-arrow-left"
+      label="GO BACK"
+      />
+      </div>
+    </q-modal>
+
+    <q-modal v-model="addSeniorModal" maximized>
+    <div style="padding: 2.5em; margin-top: 1.5em">
+      <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+      <div style="padding-top: 3em">
+        <p class="q-display-1 text-weight-thin">Connect your beloved. &lt;3</p>
+        <div>
+        <q-input v-model="appPhoneNumber" type="number" float-label="Your Phone Number" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em" />
+        <q-input v-model="seniorPhoneNumber" type="number" float-label="Elder Phone Number" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
+        <q-input v-model="deviceCode" type="number" float-label="Number On Device" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
+        </div>
+    </div>
+    <q-btn style="color:#2FCD8C; margin-top: 2em" @click="addSeniorModal = false; foundSeniorModal = true" icon="fas fa-user-plus" label="Add" />
+    </div>
+    <div style="padding: 2.5em; margin-top: 1.5em">
+      <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+      <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+        What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+      </div>
+    </div>
+  </q-modal>
+
+  <q-modal v-model="foundSeniorModal" maximized>
+  <div style="padding: 2.5em; margin-top: 1.5em">
+    <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+    <div style="padding-top: 3em">
+      <div>
+        <q-icon size="5em" style="color:#2FCD8C" name="check_circle_outline" />
+      </div>
+      <p class="q-display-1 text-weight-thin" style="margin-top: 2em">Found Beloved &lt;3</p>
+      <q-btn
+      v-for="(senior, index) in seniors"
+      :key="index"
+      style="color:#2FCD8C; margin-top: 1em; padding:0 1em 0 1em"
+      class="q-title"
+      @click="foundSeniorModal = false"
+      icon-right="arrow_forward_ios"
+      :label="senior.name" />
+      </div>
+  </div>
+  <div style="padding: 2.5em; margin-top: 1.5em">
+    <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+    <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+      What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+    </div>
+  </div>
+</q-modal>
+
+    </q-page-container>
     <q-layout-footer>
       <q-tabs>
-        <q-route-tab slot="title" icon="date_range" :to="{ name: 'feed' }" replace label="Feed" />
-        <q-route-tab slot="title" icon="show_chart" :to="{ name: 'health-numbers' }" replace label="Status" />
-        <q-route-tab slot="title" icon="add_box" :to="{ name: 'post' }" replace label="Post" />
-        <q-route-tab slot="title" icon="forum" :to="{ name: 'chat' }" replace label="Chat" />
-        <q-route-tab slot="title" icon="settings" :to="{ name: 'settings' }" replace label="Settings" />
+        <q-route-tab v-for="(item, index) in pages"
+        :key="index"
+        slot="title"
+        :icon="item.icon"
+        :to="{name: item.name}"
+        replace
+        :label="item.label" />
       </q-tabs>
     </q-layout-footer>
 
@@ -43,11 +167,59 @@
 export default {
   data () {
     return {
+      signUpEmail: '',
+      signUpPassword: '',
+      signUpModal: false,
+      noSeniorModal: false,
+      videoModal: false,
+      addSeniorModal: false,
+      foundSeniorModal: false,
+      seniorPhoneNumber: '',
+      deviceCode: '',
+      appPhoneNumber: '',
+      lastPosition: '',
+      types: [
+        {
+          label: 'Always Maximized',
+          show: () => { this.maximizedModal = true }
+        }
+      ],
       header: {
         cta: null,
         title: '',
-        subtitle: ''
-      }
+        subtitle: '..'
+      },
+      seniors: [
+        {
+          name: 'Maggy'
+        },
+        {
+          name: 'Duke'
+        }
+      ],
+      activeSenior: 'Maggy',
+      user: {
+        name: '',
+        id: '',
+        state: false
+      },
+      pages: [
+        {
+          name: 'admin',
+          label: 'Admin',
+          icon: 'fas fa-users'
+        },
+        {
+          name: 'chat',
+          label: 'Messages',
+          icon: 'fas fa-comments'
+        },
+        {
+          name: 'settings',
+          label: 'Settings',
+          icon: 'fas fa-cog'
+        }
+      ]
     }
   },
   methods: {
@@ -55,6 +227,27 @@ export default {
       this.header.cta = cta
       this.header.title = title
       this.header.subtitle = subtitle
+    },
+    loginRedirect: function () {
+      alert('OMG I have an account!')
+    },
+    videoDirection: function (calledFrom) {
+      this.lastPosition = calledFrom
+      this.videoModal = true
+      this[`${calledFrom}`] = false
+    },
+    goBacktoPreviousModal: function () {
+      this.videoModal = false
+      const lastModal = this.lastPosition
+      this[`${lastModal}`] = true
+    },
+    notify (data) {
+      this.$q.notify({
+        color: 'green',
+        message: 'Switching to ' + data.name + '\'s profile',
+        icon: 'fas fa-info-circle'
+      })
+      this.activeSenior = data.name
     }
   },
   watch: {

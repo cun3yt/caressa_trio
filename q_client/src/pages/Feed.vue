@@ -97,7 +97,7 @@ export default {
         actions: [
           {
             label: 'One New Feed Arrived',
-            icon: 'arrow_upward',
+            icon: 'fas fa-arrow-up',
             handler: () => {
               window.scrollTo({
                 top: 0,
@@ -118,7 +118,7 @@ export default {
   },
   created () {
     this.setupContent({
-      title: 'Feed'
+      title: 'Maggy'
     })
     window.addEventListener('scroll', () => {
       this.moreFeedsNeeded = this.bottomVisible()
