@@ -14,14 +14,11 @@ Including another URLconf
 from django.urls import include, path
 from django.conf.urls.static import static
 from django.conf import settings
+
 from alexa.views import main_view, alexa_io
 from streaming.views import stream_io_wrapper, playlist_replication
-from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, laugh_at_joke, find_interesting_at_news, \
-    new_post, pre_signed_url_for_s3, new_job_for_message_queue, personalize_content
-from alexa.api.views import MedicalViewSet, JokeViewSet, NewsViewSet, UserActOnContentViewSet
-from actions.api.views import laugh_at_joke, find_interesting_at_news, \
-    new_post
-from actions.api.views import laugh_at_joke, find_interesting_at_news, new_post
+from actions.api.views import pre_signed_url_for_s3, new_job_for_message_queue, laugh_at_joke, \
+    find_interesting_at_news,new_post
 
 from actions.urls import register_nested_routes as register_nested_action_urls, \
     register_flat_routes as register_flat_action_routes
@@ -59,7 +56,6 @@ urlpatterns = [
     path('post/', new_post),
     path('generate_signed_url/', pre_signed_url_for_s3),
     path('new_message/', new_job_for_message_queue),
-    path('personalize/', personalize_content),
 
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

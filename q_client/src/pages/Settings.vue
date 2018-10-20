@@ -338,9 +338,10 @@ export default {
         if (this[`${type}`][i].checked) {
           checkedItems.push(this[`${type}`][i]['genre'])
         }
-      }(this.$http.post(`${this.$root.$options.hosts.rest}/personalize/`, {
+      }(this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
+        'userId': 2,
         'type': type,
-        'list': checkedItems
+        'key': checkedItems
       }))
     }
   }
