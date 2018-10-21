@@ -2,6 +2,7 @@ from django.db import models
 from model_utils.models import TimeStampedModel
 from alexa.models import User
 from utilities.calendar import create_empty_calendar
+from utilities.logger import log
 
 
 class SeniorLivingFacility(TimeStampedModel):
@@ -21,9 +22,12 @@ class SeniorLivingFacility(TimeStampedModel):
     residents = models.ManyToManyField(User, related_name='senior_living_facilities', )
     calendar = models.TextField(null=False, blank=True, default="")
 
-    def create_initial_calendar(self):
-        if not self.calendar == '':
+    def create_initial_calendar(self, override=False):
+        if not self.calendar == '' and not override:
             raise ValueError('Calendar already set, you cannot re-initialize it')
+
+        log('calendar is already set' if self.calendar else 'calendar is not set')
+        log('override is ON' if override else 'override is OFF')
 
         self.calendar = create_empty_calendar(summary='Calendar of Facility:{}'.format(self.facility_id))
         self.save()
