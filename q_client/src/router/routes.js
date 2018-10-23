@@ -25,7 +25,7 @@ export default [
         name: 'chat'
       },
       {
-        path: 'settings',
+        path: 'settings',se
         // component: () => import('pages/Settings'),
         component: Settings,
         name: 'settings'
