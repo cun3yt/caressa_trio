@@ -7,7 +7,7 @@ from pydub import AudioSegment
 from caressa.settings import pusher_client
 from voice_service.google import tts
 from time import sleep
-
+import traceback
 
 pusher_channel = 'family.senior.1'    # todo move to `hard-coding`
 
@@ -99,6 +99,42 @@ def text_worker(publisher, next_queued_job):
     return 'Job Finished...'
 
 
+def personalization_worker(publisher, next_queued_job):
+    text = 'Your music preferences updated by John'  # todo move to `hard-coding`
+    mail_type = 'voice_mail'
+
+    next_queued_job.process_state = Messages.PROCESS_RUNNING
+    next_queued_job.save()
+    log('Queue State : {process_state}'.format(process_state=next_queued_job.process_state))
+
+    file_key = tts.tts_to_s3(text=text, return_format='key')
+
+    audio_type = '{publisher}_text_message'.format(publisher=publisher)
+    description = 'Audio Record from {publisher}'.format(publisher=publisher)
+    url = '{region}/{bucket}/{file_key}'.format(region=S3_REGION,
+                                                bucket=S3_PRODUCTION_BUCKET,
+                                                file_key=file_key)
+
+    new_audio = AudioFile(audio_type=audio_type, url=url, name=file_key, description=description)
+    new_audio.save()
+
+    next_queued_job.process_state = Messages.PROCESS_COMPLETE
+    log(next_queued_job.process_state)
+    log(file_key)
+    next_queued_job.save()
+
+    pusher_client.trigger(pusher_channel,
+                          mail_type,
+                          url)
+
+    source = User.objects.get(pk=2)
+    destination = User.objects.get(pk=1)
+    new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
+    new_voice_message_status.save()
+
+    log('Job Finished...')
+
+
 def run():
     while True:
         sleep(2)
@@ -112,50 +148,24 @@ def run():
 
         log('Queue State : {process_state}'.format(process_state=next_queued_job.process_state))
 
-        if message['message_type'] == 'family_ios_audio':
-            audio_worker(publisher='family', next_queued_job=next_queued_job)
+        try:
+            if message['message_type'] == 'family_ios_audio':
+                audio_worker(publisher='family', next_queued_job=next_queued_job)
 
-        elif message['message_type'] == 'family_ios_text':
-            text_worker(publisher='family', next_queued_job=next_queued_job)
+            elif message['message_type'] == 'family_ios_text':
+                text_worker(publisher='family', next_queued_job=next_queued_job)
 
-        elif message['message_type'] == 'facility_ios_audio':
-            audio_worker(publisher='facility', next_queued_job=next_queued_job)
+            elif message['message_type'] == 'facility_ios_audio':
+                audio_worker(publisher='facility', next_queued_job=next_queued_job)
 
-        elif message['message_type'] == 'facility_ios_text':
-            text_worker(publisher='facility', next_queued_job=next_queued_job)
+            elif message['message_type'] == 'facility_ios_text':
+                text_worker(publisher='facility', next_queued_job=next_queued_job)
 
-        elif message['message_type'] == 'genres':
-            text = 'Your music preferences updated by John'    # todo move to `hard-coding`
-            publisher = 'family'
-            mail_type = 'voice_mail'
-
-            next_queued_job.process_state = Messages.PROCESS_RUNNING
+            elif message['message_type'] == 'genres':
+                personalization_worker(publisher='family', next_queued_job=next_queued_job)
+        except Exception:
+            error_message = traceback.format_exc()
+            next_queued_job.message['error'] = error_message
+            next_queued_job.process_state = Messages.PROCESS_FAILED
             next_queued_job.save()
-            log('Queue State : {process_state}'.format(process_state=next_queued_job.process_state))
-
-            file_key = tts.tts_to_s3(text=text, return_format='key')
-
-            audio_type = '{publisher}_text_message'.format(publisher=publisher)
-            description = 'Audio Record from {publisher}'.format(publisher=publisher)
-            url = '{region}/{bucket}/{file_key}'.format(region=S3_REGION,
-                                                        bucket=S3_PRODUCTION_BUCKET,
-                                                        file_key=file_key)
-
-            new_audio = AudioFile(audio_type=audio_type, url=url, name=file_key, description=description)
-            new_audio.save()
-
-            next_queued_job.process_state = Messages.PROCESS_COMPLETE
-            log(next_queued_job.process_state)
-            log(file_key)
-            next_queued_job.save()
-
-            pusher_client.trigger(pusher_channel,
-                                  mail_type,
-                                  url)
-
-            source = User.objects.get(pk=2)
-            destination = User.objects.get(pk=1)
-            new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
-            new_voice_message_status.save()
-
-            log('Job Finished...')
+            continue

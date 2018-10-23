@@ -1,9 +1,7 @@
 console.log('routes.js is running...')
 import Main from '../layouts/Main'
 import Admin from '../pages/Admin'
-import Post from '../pages/Post'
 import Chat from '../pages/Chat'
-import HealthNumbers from '../pages/HealthNumbers'
 import Settings from '../pages/Settings'
 import Index from '../pages/index'
 import PageNotFound from '../pages/404'
@@ -21,22 +19,10 @@ export default [
         name: 'admin'
       },
       {
-        path: 'post',
-        // component: () => import('pages/Post'),
-        component: Post,
-        name: 'post'
-      },
-      {
         path: 'chat',
         // component: () => import('pages/Chat'),
         component: Chat,
         name: 'chat'
-      },
-      {
-        path: 'health-numbers',
-        // component: () => import('pages/HealthNumbers'),
-        component: HealthNumbers,
-        name: 'health-numbers'
       },
       {
         path: 'settings',

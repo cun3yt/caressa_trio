@@ -110,23 +110,9 @@ export default {
       console.log('sending message')
       console.log(this.$refs.newMessage.value)
       let textMessageObj = {}
-      let today = new Date()
-      let dd = today.getDate()
-      let mm = today.getMonth() + 1
-      let yyyy = today.getFullYear()
-
-      if (dd < 10) {
-        dd = '0' + dd
-      }
-      if (mm < 10) {
-        mm = '0' + mm
-      }
-      today = mm + '-' + dd + '-' + yyyy
-      let randomInt = Math.floor(Math.random() * Math.floor(99999999))
-
-      let key = today + '-' + randomInt
+      let key = 'Text Message'
       textMessageObj.key = key
-      textMessageObj.name = 'John'
+      textMessageObj.name = 'John' // todo move to `hard-coding`
       textMessageObj.sent = true
       textMessageObj.id = '2'
       textMessageObj.stamp = 'Today at 13:50'
@@ -241,7 +227,7 @@ export default {
                 }).then(response => {
                   console.log('Response: ', response)
                   vm.showNotif('Audio Submitted')
-                  vm.audioMessageObj.name = 'John'
+                  vm.audioMessageObj.name = 'John' // todo move to `hard-coding`
                   vm.audioMessageObj.sent = true
                   vm.audioMessageObj.id = '2'
                   vm.audioMessageObj.stamp = 'Today at 13:50'
@@ -286,7 +272,7 @@ export default {
       recording: null,
       messages: [
         {
-          label: 'Mon, 22th',
+          label: 'Mon, 22th', // todo move to `hard-coding`
           type: 'text'
         }
       ]

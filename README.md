@@ -153,3 +153,11 @@ In order to do development against an Alexa skill each developer will need one A
 ## Setting Botanalytics for Analytics
 * Create a Botanalytics account and create a bot for you engineering environment, select "Amazon Alexa" as the platform, also set the name to "Caressa Dev", the category to "Entertainment"
 * Create an environment variable for `BOTANALYTICS_API_TOKEN` in `.envrc` file by setting it to the token provided by Botanalytics (let's say `XXX`): `export BOTANALYTICS_API_TOKEN='XXX'`
+
+## How Message Queue Process Script Works
+* Relative location of the script : scripts/message_queue_process_script.py
+* Script has 3 worker function inside, these are:
+    * audio_worker: This one takes audio from s3 (recorded and upload by mobile app) format it to mp3 if needed and pushes its URL with pusher to client.
+    * text_worker: This one takes text message from app uses tts_to_s3 function and pushes its URL with pusher to client.
+    * personalization_worker: When senior preferences changed it will make the changes and will notify in Caressa Hardware with TTS.
+* You can run the script with this command. `./manage.py runscript  message_queue_process_script` It has infinite loop inside with 2 sec sleep time.
