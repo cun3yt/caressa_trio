@@ -130,7 +130,7 @@ export default {
         color: 'secondary',
         message: 'You post is submitted.',
         position: 'top-right',
-        icon: 'check_circle_outline',
+        icon: 'far fa-check-circle',
         detail: this.toString()
       })
     },

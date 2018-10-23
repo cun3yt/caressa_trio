@@ -16,18 +16,18 @@ from django.conf.urls.static import static
 from django.conf import settings
 from alexa.views import main_view, alexa_io
 from streaming.views import stream_io_wrapper, playlist_replication
-from actions.api.views import laugh_at_joke, find_interesting_at_news, new_post
 
 from actions.urls import register_nested_routes as register_nested_action_urls, \
     register_flat_routes as register_flat_action_routes
 from alexa.urls import register_nested_routes as register_nested_alexa_urls, \
     register_flat_routes as register_flat_alexa_routes
 
+from actions.api.views import laugh_at_joke, find_interesting_at_news, new_post, pre_signed_url_for_s3, \
+    new_job_for_message_queue
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from voice_service.views import speech_to_text
 from caressa.admin import get_admin
-
 
 admin = get_admin()
 
@@ -52,4 +52,7 @@ urlpatterns = [
     path('laugh/', laugh_at_joke),
     path('find-interesting/', find_interesting_at_news),
     path('post/', new_post),
+    path('generate_signed_url/', pre_signed_url_for_s3),
+    path('new_message/', new_job_for_message_queue),
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
