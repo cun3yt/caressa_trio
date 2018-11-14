@@ -3,6 +3,10 @@ from model_utils.models import TimeStampedModel
 from alexa.models import User
 from utilities.calendar import create_empty_calendar
 from utilities.logger import log
+from datetime import datetime
+from icalevents.icalevents import events as query_events
+from caressa.settings import TIME_ZONE as DEFAULT_TIMEZONE
+import pytz
 
 
 class SeniorLivingFacility(TimeStampedModel):
@@ -21,6 +25,10 @@ class SeniorLivingFacility(TimeStampedModel):
                                              ' CA.Fremont.Brookdale', )
     residents = models.ManyToManyField(User, related_name='senior_living_facilities', )
     calendar = models.TextField(null=False, blank=True, default="")
+    timezone = models.CharField(max_length=200,
+                                null=False,
+                                blank=False,
+                                default=DEFAULT_TIMEZONE, )
 
     def create_initial_calendar(self, override=False):
         if not self.calendar == '' and not override:
@@ -35,6 +43,43 @@ class SeniorLivingFacility(TimeStampedModel):
     @property
     def number_of_residents(self):
         return self.residents.count()
+
+    def today_event_summary(self) -> str:
+        tz = pytz.timezone(self.timezone)
+        calendar = self.calendar.encode(encoding='UTF-8')
+
+        now = datetime.now(tz)
+
+        events = query_events(string_content=calendar,
+                              start=datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz),
+                              end=datetime(now.year, now.month, now.day, 23, 59, 59, tzinfo=tz),
+                              fix_apple=True)
+
+        all_day_events = [event for event in events if event.all_day]
+        hourly_events = [event for event in events if not event.all_day]
+
+        now_in_tz = now.astimezone(tz)
+        summary = "Today is {}. ".format(now_in_tz.strftime('%B %d %A'))
+
+        if len(events) == 0:
+            summary = "{}We hope you have a great day at {}.".format(summary, self.name)
+            return summary
+
+        summary = "{}Here is today's schedule at {}: ".format(summary, self.name)
+
+        for event in hourly_events:
+            start_in_tz = event.start.astimezone(tz)
+            event_txt = "At {}: {}. ".format(start_in_tz.strftime('%I:%M %p'), event.summary)
+            summary = "{}{}".format(summary, event_txt)
+
+        if len(all_day_events) == 1:
+            summary = "{}There is a special thing for today: {}".format(summary, all_day_events[0].summary)
+        elif len(all_day_events) > 1:
+            summary = "{}There are {} special things for today: ".format(summary, len(all_day_events))
+            for (no, event) in enumerate(all_day_events, start=1):
+                summary = "{} ({}) {}.".format(summary, no, event.summary)
+
+        return summary
 
 
 def set_init_calendar_for_senior_living_facility(sender, instance, created, **kwargs):
