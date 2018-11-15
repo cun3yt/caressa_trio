@@ -1,7 +1,6 @@
 from django.db import models
 from model_utils.models import TimeStampedModel
 from alexa.models import User
-from utilities.calendar import create_empty_calendar
 from utilities.logger import log
 from datetime import datetime
 from icalevents.icalevents import events as query_events
@@ -24,21 +23,11 @@ class SeniorLivingFacility(TimeStampedModel):
                                    help_text='text identifier specifying location, too: e.g.'
                                              ' CA.Fremont.Brookdale', )
     residents = models.ManyToManyField(User, related_name='senior_living_facilities', )
-    calendar = models.TextField(null=False, blank=True, default="")
+    calendar_url = models.URLField(null=True, blank=False, default=None)
     timezone = models.CharField(max_length=200,
                                 null=False,
                                 blank=False,
                                 default=DEFAULT_TIMEZONE, )
-
-    def create_initial_calendar(self, override=False):
-        if not self.calendar == '' and not override:
-            raise ValueError('Calendar already set, you cannot re-initialize it')
-
-        log('calendar is already set' if self.calendar else 'calendar is not set')
-        log('override is ON' if override else 'override is OFF')
-
-        self.calendar = create_empty_calendar(summary='Calendar of Facility:{}'.format(self.facility_id))
-        self.save()
 
     @property
     def number_of_residents(self):
@@ -46,11 +35,17 @@ class SeniorLivingFacility(TimeStampedModel):
 
     def today_event_summary(self) -> str:
         tz = pytz.timezone(self.timezone)
-        calendar = self.calendar.encode(encoding='UTF-8')
-
         now = datetime.now(tz)
 
-        events = query_events(string_content=calendar,
+        summary = "Today is {}. ".format(now.strftime('%B %d %A'))
+        zero_state_summary = "{}Have a nice day at {}.".format(summary, self.name)
+
+        if self.calendar_url is None:
+            log('SeniorLivingFacility::today_event_summary() is called '
+                'for empty calendar_url, SeniorLivingFacility entry id: {}'.format(self.id))
+            return zero_state_summary
+
+        events = query_events(url=self.calendar_url,
                               start=datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz),
                               end=datetime(now.year, now.month, now.day, 23, 59, 59, tzinfo=tz),
                               fix_apple=True)
@@ -58,12 +53,8 @@ class SeniorLivingFacility(TimeStampedModel):
         all_day_events = [event for event in events if event.all_day]
         hourly_events = sorted([event for event in events if not event.all_day], key=lambda event: event.start)
 
-        now_in_tz = now.astimezone(tz)
-        summary = "Today is {}. ".format(now_in_tz.strftime('%B %d %A'))
-
         if len(events) == 0:
-            summary = "{}We hope you have a great day at {}.".format(summary, self.name)
-            return summary
+            return zero_state_summary
 
         summary = "{}Here is today's schedule at {}: ".format(summary, self.name)
 
@@ -80,10 +71,3 @@ class SeniorLivingFacility(TimeStampedModel):
                 summary = "{} ({}) {}.".format(summary, no, event.summary)
 
         return summary
-
-
-def set_init_calendar_for_senior_living_facility(sender, instance, created, **kwargs):
-    if not created:
-        return
-    senior_living_facility = instance    # type: SeniorLivingFacility
-    senior_living_facility.create_initial_calendar()
