@@ -56,7 +56,7 @@ class SeniorLivingFacility(TimeStampedModel):
                               fix_apple=True)
 
         all_day_events = [event for event in events if event.all_day]
-        hourly_events = [event for event in events if not event.all_day]
+        hourly_events = sorted([event for event in events if not event.all_day], key=lambda event: event.start)
 
         now_in_tz = now.astimezone(tz)
         summary = "Today is {}. ".format(now_in_tz.strftime('%B %d %A'))
