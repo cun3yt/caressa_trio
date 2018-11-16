@@ -220,6 +220,13 @@ class AUser(TimeStampedModel):
         user.save()
         return True
 
+    def is_hardware_user(self) -> bool:
+        return self.alexa_device_id.startswith('hw-user')   # todo: This is hardcoded
+
+    def get_senior_living_facility(self):
+        facs = self.user.senior_living_facilities
+        return facs[0] if facs.count() > 0 else None
+
     @staticmethod
     def get_or_create_by(alexa_device_id, alexa_user_id):
         """
@@ -375,8 +382,8 @@ class EngineSession(TimeStampedModel):
                                                                          additional_level=additional_level)
 
 
-Request._meta.get_field('created').db_index = True
-Request._meta.get_field('modified').db_index = True
+EngineSession._meta.get_field('created').db_index = True
+EngineSession._meta.get_field('modified').db_index = True
 
 
 class Joke(TimeStampedModel, FetchRandomMixin):

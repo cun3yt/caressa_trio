@@ -8,6 +8,8 @@ from django.db import transaction
 from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, Playlist, AudioFile
 from scripts import replicate_playlist
 from streaming.exceptions import PlaylistAlreadyExistException
+from senior_living_facility.models import SeniorActOnFacilityContent
+import pytz
 
 
 @csrf_exempt
@@ -44,7 +46,7 @@ def stream_io(req_body):
     if req_type in ['LaunchRequest', 'PlaybackController.PlayCommandIssued', ] \
             or intent_name in ['AMAZON.ResumeIntent', ]:
         TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'resume_session')
-        return resume_session(alexa_user)
+        return resume_session(alexa_user=alexa_user)
     elif req_type in ['PlaybackController.NextCommandIssued', ] or intent_name in ['AMAZON.NextIntent', ]:
         TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'next_intent_response')
         return next_intent_response(alexa_user)
@@ -136,19 +138,38 @@ def pause_session(alexa_user: AUser):
     return stop_session()
 
 
+def check_bag_if_hardware(fn):
+    """
+    Decorator for checking if anything takes precedence over playlist (e.g. Senior Living Facility Daily Calendar)
+    when it is a hardware user (as opposed to Alexa User).
+    """
+    def new_fn(*args, **kwargs):
+        alexa_user = kwargs.get('alexa_user')   # type: AUser
+        if not alexa_user.is_hardware_user():
+            return fn(*args, **kwargs)
+
+        log('checking what is available to execute...')
+        # todo: do what is available in the bag of content. If nothing, go with the flow: current content...
+
+        # from datetime import date
+
+        SeniorActOnFacilityContent.objects.filter(senior=alexa_user.user,
+                                                  act='Heard',
+                                                  content__content_type='Daily-Calendar-Summary').order_by('-created')
+                                                  # created__date=date.today(),
+
+
+        return fn(*args, **kwargs)
+    return new_fn
+
+
 @transaction.atomic()
-def resume_session(alexa_user: AUser):
+@check_bag_if_hardware
+def resume_session(*, alexa_user: AUser):
     log(' >> LOG: RESUME_SESSION')
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
     token = '{hash},{audio_id}'.format(hash=str(status.playlist_has_audio.hash),
                                        audio_id=str(status.current_active_audio_id))
-    # if not status.playlist_has_audio.is_current_content_time_fit():
-    #     next_content = status.playlist_has_audio.next()
-    #     save_state_by_playlist_entry(alexa_user, next_content)
-    #     updated_status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
-    #     token = '{hash},{audio_id}'.format(hash=str(updated_status.playlist_has_audio.hash),
-    #                                        audio_id=str(updated_status.current_active_audio_id))
-    #     return start_session(updated_status.current_active_audio, token, updated_status.offset)
     return start_session(status.current_active_audio, token, status.offset)
 
 
