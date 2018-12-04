@@ -26,19 +26,24 @@ class SongSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ('id', 'comment', 'created', 'commenter', )
+        fields = ('id', 'comment', 'created', 'comment_backer', )
 
-    commenter = serializers.SerializerMethodField()
+    comment_backer = serializers.SerializerMethodField()
 
-    def get_commenter(self, comment: Comment):
-        owner = comment.owner
-        return {
-            'full_name': owner.get_full_name(),
-            'profile_pic': owner.get_profile_pic()
-        }
+    def get_comment_backers(self, comment: Comment):
+        backers = comment.comment_backer.all()
+        backer_list = []
+        for backer in backers:
+            backer_dict = {
+                'full_name': backer.get_full_name(),
+                'profile_pic': backer.get_profile_pic()
+            }
+            backer_list.append(backer_dict)
+
+        return backer_list
 
     def create(self, validated_data):
-        validated_data['owner'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
+        validated_data['backer'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
         return super(CommentSerializer, self).create(validated_data)
