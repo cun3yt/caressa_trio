@@ -3,6 +3,7 @@ from actions.models import UserAction, Comment, UserReaction, UserPost
 from caressa.settings import REST_FRAMEWORK
 from alexa.models import Joke, User, News, Song
 from generic_relations.relations import GenericRelatedField
+from django.db.utils import IntegrityError
 
 
 class JokeSerializer(serializers.ModelSerializer):
@@ -26,9 +27,9 @@ class SongSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ('id', 'comment', 'created', 'comment_backer', )
+        fields = ('id', 'comment', 'created', 'comment_backers', )
 
-    comment_backer = serializers.SerializerMethodField()
+    comment_backers = serializers.SerializerMethodField()
 
     def get_comment_backers(self, comment: Comment):
         backers = comment.comment_backer.all()
@@ -43,10 +44,18 @@ class CommentSerializer(serializers.ModelSerializer):
         return backer_list
 
     def create(self, validated_data):
-        validated_data['backer'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
+        validated_data['comment_backer'] = [User.objects.get(id=2), ]       # todo: Move to `hard_codes`
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
-        return super(CommentSerializer, self).create(validated_data)
+        new_comment = validated_data['comment']
+        if not Comment.objects.filter(comment=new_comment).count() > 0:
+            return super(CommentSerializer, self).create(validated_data)
+        new_comment_instance = Comment.objects.get(comment=new_comment)
+        try:
+            new_comment_instance.comment_backer.add('2')  # todo: Move to `hard_codes`
+        except IntegrityError:
+            pass  # todo returns unique key errors with same comment_id, user_id pair
+        return new_comment_instance
 
 
 class ReactionSerializer(serializers.ModelSerializer):

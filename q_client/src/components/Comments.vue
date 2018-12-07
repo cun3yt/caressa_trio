@@ -4,11 +4,9 @@
       Comments
     </q-card-title>
     <q-list v-if="comments.count > 0" no-border separator class="q-mt-md">
-      <q-item v-for="comment in comments.results" :key="comment.id">
-        <q-item-side v-bind:avatar="comment.commenter.profile_pic" />
-        <q-item-main :label="comment.commenter.full_name" :sublabel="comment.comment" label-lines="1" />
-        <q-item-side right :stamp="timePasted(comment)" />
-      </q-item>
+        <q-btn class="q-pa-xs q-ma-xs q-pl-sm" v-for="comment in comments.results" :key="comment.id" outline rounded color="primary" :label="comment.comment" @click="post(comment.comment)">
+          <q-item-side class="q-ml-md" v-for="(backer, index) in comment.comment_backers" v-bind:avatar="backer.profile_pic" :key="index"/>
+        </q-btn>
     </q-list>
 
     <q-btn v-if="comments.results.length < comments.count"
@@ -64,10 +62,10 @@ export default {
     timePasted (comment) {
       return moment(comment.created).fromNow()
     },
-    post () {
+    post (new_comment = this.new_comment) {
       let vm = this
 
-      this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': this.new_comment})
+      this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': new_comment})
         .then(
           response => {
             console.log('success')
