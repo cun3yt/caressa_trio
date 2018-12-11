@@ -53,17 +53,17 @@ class Comment(TimeStampedModel):
     comment = models.TextField(null=False,
                                blank=False, )
 
-    comment_backer = models.ManyToManyField(to=User)
+    comment_backers = models.ManyToManyField(to=User)
 
     content = models.ForeignKey(to=UserAction,
                                 on_delete=models.DO_NOTHING,
                                 related_name='action_comments', )
 
     def __repr__(self):
-        return "Comment({}) by {}: {}".format(self.id, self.comment_backer, self.comment)
+        return "Comment({}) by {}: {}".format(self.id, self.comment_backers, self.comment)
 
     def __str__(self):
-        return "{} commented on {}: {}".format(self.comment_backer, self.content, self.comment)
+        return "{} commented on {}: {}".format(self.comment_backers, self.content, self.comment)
 
 
 Comment._meta.get_field('created').db_index = True

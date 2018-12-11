@@ -32,30 +32,27 @@ class CommentSerializer(serializers.ModelSerializer):
     comment_backers = serializers.SerializerMethodField()
 
     def get_comment_backers(self, comment: Comment):
-        backers = comment.comment_backer.all()
-        backer_list = []
-        for backer in backers:
-            backer_dict = {
-                'full_name': backer.get_full_name(),
-                'profile_pic': backer.get_profile_pic()
-            }
-            backer_list.append(backer_dict)
-
+        backers = comment.comment_backers.all()
+        backer_list = [{
+            'full_name': backer.get_full_name(),
+            'profile_pic': backer.get_profile_pic()
+        } for backer in backers]
         return backer_list
 
     def create(self, validated_data):
-        validated_data['comment_backer'] = [User.objects.get(id=2), ]       # todo: Move to `hard_codes`
+        backer_instance = User.objects.get(id=2)
+        validated_data['comment_backers'] = [backer_instance, ]       # todo: Move to `hard_codes`
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
         new_comment = validated_data['comment']
-        if not Comment.objects.filter(comment=new_comment).count() > 0:
+        comments_qs = Comment.objects.filter(comment=new_comment)
+        if not comments_qs.exists():
             return super(CommentSerializer, self).create(validated_data)
-        new_comment_instance = Comment.objects.get(comment=new_comment)
         try:
-            new_comment_instance.comment_backer.add('2')  # todo: Move to `hard_codes`
+            comments_qs[0].comment_backers.add(backer_instance)  # todo: Move to `hard_codes`
         except IntegrityError:
             pass  # todo returns unique key errors with same comment_id, user_id pair
-        return new_comment_instance
+        return comments_qs[0]
 
 
 class ReactionSerializer(serializers.ModelSerializer):

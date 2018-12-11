@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='comment',
-            name='comment_backer',
+            name='comment_backers',
             field=models.ManyToManyField(to=settings.AUTH_USER_MODEL),
         ),
     ]
