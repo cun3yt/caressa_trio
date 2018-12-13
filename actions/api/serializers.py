@@ -63,6 +63,15 @@ class ReactionSerializer(serializers.ModelSerializer):
                   'owner',
                   'content', )
 
+    owner = serializers.SerializerMethodField()
+
+    def get_owner(self, user_reaction: UserReaction):
+        owner_profile = {
+            'full_name': user_reaction.owner.get_full_name(),
+            'profile_pic': user_reaction.owner.get_profile_pic()
+        }
+        return owner_profile
+
     def create(self, validated_data):
         validated_data['owner'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
@@ -127,5 +136,11 @@ class ActionSerializer(serializers.ModelSerializer):
     def get_user_reactions(self, user_action: UserAction):
         # todo IMPLEMENT THIS TO FETCH USER ACTIONS
         user_id = 2     # todo move to `hard-coding`
-        reactions = user_action.action_reactions.filter(owner_id__exact=user_id).all()
+        action_id = user_action.id
+        reactions = UserReaction.objects.filter(content_id=action_id)
+        me = False
+        for reaction in reactions:
+            if reaction.owner_id == 2:
+                me = True
+                return me
         return ReactionSerializer(reactions, many=True).data

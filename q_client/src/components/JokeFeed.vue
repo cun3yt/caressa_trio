@@ -18,9 +18,11 @@
 
     <q-card-actions>
       <q-btn class="action-btn"
-             flat
-             v-bind:color="funnyState ? 'tertiary' : 'primary'"
-             @click="markFunny(true)">{{funnyMsg}}</q-btn>
+             outline
+             round
+             icon="far fa-thumbs-up"
+             v-bind:color="funnyState ? 'positive' : 'neutral'"
+             @click="markFunny(true)"></q-btn>
       <q-btn v-if="latestJokeId==joke.id"
              class="action-btn"
              flat
@@ -100,7 +102,7 @@ export default {
       if (apiCall && this.funnyState) {
         this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
           'reaction': 'laughed',
-          'owner': this.$root.$options.userId,
+          'owner': this.$root.$options.user.id,
           'content': this.feed.id
         })
           .then(response => {
@@ -113,7 +115,7 @@ export default {
       if (apiCall && !this.funnyState) {
         this.$http.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.funnyId}/`, {
           'reaction': 'laughed',
-          'owner': this.$root.$options.userId,
+          'owner': this.$root.$options.user.id,
           'content': this.feed.id
         })
       }
