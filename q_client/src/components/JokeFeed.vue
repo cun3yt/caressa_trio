@@ -18,11 +18,15 @@
 
     <q-card-actions>
       <q-btn class="action-btn"
-             outline
-             round
+             flat
+             rounded
+             no-ripple
              icon="far fa-thumbs-up"
              v-bind:color="funnyState ? 'positive' : 'neutral'"
-             @click="markFunny(true)"></q-btn>
+             @click="markFunny(true)">
+        <q-item-side class="q-ml-md" v-for="(liker, index) in feed.user_reactions.all_likes.to_be_shown" v-bind:avatar="liker.owner_profile.profile_pic" :key="index"/>
+        {{totalMessage}}
+      </q-btn>
       <q-btn v-if="latestJokeId==joke.id"
              class="action-btn"
              flat
@@ -74,17 +78,19 @@ export default {
       funnyId: null,
       funnyMsg: 'That\'s funny!',
       latestJokeId: null,
-      additionalJokes: []
+      additionalJokes: [],
+      totalMessage: null
     }
   },
   created () {
-    let laughedReactions = this.feed.user_reactions.filter(obj => obj['reaction'] === 'laughed')
+    let likedReactions = this.feed.user_reactions
     this.latestJokeId = this.joke.id
 
-    if (laughedReactions.length > 0) {
+    if (likedReactions.user_like_state.did_user_like) {
       this.markFunny(false)
-      this.funnyId = laughedReactions[0].id
+      this.funnyId = likedReactions.user_like_state.reaction_id
     }
+    this.totalMessage = 'Total of ' + likedReactions.all_likes.total + ' likes'
   },
   methods: {
     additionaJokeStatement (joke) {
@@ -101,7 +107,7 @@ export default {
 
       if (apiCall && this.funnyState) {
         this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
-          'reaction': 'laughed',
+          'reaction': 'liked',
           'owner': this.$root.$options.user.id,
           'content': this.feed.id
         })
@@ -114,7 +120,7 @@ export default {
 
       if (apiCall && !this.funnyState) {
         this.$http.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.funnyId}/`, {
-          'reaction': 'laughed',
+          'reaction': 'liked',
           'owner': this.$root.$options.user.id,
           'content': this.feed.id
         })
@@ -138,7 +144,7 @@ export default {
     markAdditionalJokeFunny (joke) {
       joke.funny = !joke.funny
 
-      this.$http.post(`${this.$root.$options.hosts.rest}/laugh/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/liked/`, {
         'joke_id': joke.id,
         'set_to': (joke.funny ? 'true' : 'false')
       }).then(response => {

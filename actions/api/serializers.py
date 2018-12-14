@@ -60,12 +60,12 @@ class ReactionSerializer(serializers.ModelSerializer):
         model = UserReaction
         fields = ('id',
                   'reaction',
-                  'owner',
+                  'owner_profile',
                   'content', )
 
-    owner = serializers.SerializerMethodField()
+    owner_profile = serializers.SerializerMethodField()
 
-    def get_owner(self, user_reaction: UserReaction):
+    def get_owner_profile(self, user_reaction: UserReaction, ):
         owner_profile = {
             'full_name': user_reaction.owner.get_full_name(),
             'profile_pic': user_reaction.owner.get_profile_pic()
@@ -133,14 +133,30 @@ class ActionSerializer(serializers.ModelSerializer):
             'results': CommentSerializer(comments, many=True).data,
         }
 
+    def get_if_user_liked_the_action(self, action_id):
+        user_id = 2  # todo move to `hard-coding`
+        user = User.objects.get(id=user_id)
+        return UserReaction.objects.filter(content_id=action_id, owner=user)
+
     def get_user_reactions(self, user_action: UserAction):
         # todo IMPLEMENT THIS TO FETCH USER ACTIONS
-        user_id = 2     # todo move to `hard-coding`
         action_id = user_action.id
-        reactions = UserReaction.objects.filter(content_id=action_id)
-        me = False
-        for reaction in reactions:
-            if reaction.owner_id == 2:
-                me = True
-                return me
-        return ReactionSerializer(reactions, many=True).data
+        reactions = UserReaction.objects.filter(content_id=action_id).order_by('-created')
+        serialized_reactions = ReactionSerializer(reactions, many=True).data
+
+        user_like_qs = self.get_if_user_liked_the_action(action_id)
+        if user_like_qs.exists():
+            did_user_like = True
+            user_reaction_id = user_like_qs[0].id
+        else:
+            did_user_like = False
+            user_reaction_id = None
+
+        return {
+            'user_like_state': {'did_user_like': did_user_like, 'reaction_id': user_reaction_id},
+            'all_likes':
+                {
+                    'total': len(serialized_reactions),
+                    'to_be_shown': serialized_reactions[:3]
+                }
+        }

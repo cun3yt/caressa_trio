@@ -33,7 +33,7 @@ class ReactionViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
 
 
 @api_view(['POST'])
-def laugh_at_joke(request):
+def like_at_joke(request):
     joke_id = request.data['joke_id']
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
