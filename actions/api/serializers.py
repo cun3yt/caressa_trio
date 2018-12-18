@@ -139,18 +139,13 @@ class ActionSerializer(serializers.ModelSerializer):
         return UserReaction.objects.filter(content_id=action_id, owner=user)
 
     def get_user_reactions(self, user_action: UserAction):
-        # todo IMPLEMENT THIS TO FETCH USER ACTIONS
         action_id = user_action.id
         reactions = UserReaction.objects.filter(content_id=action_id).order_by('-created')
         serialized_reactions = ReactionSerializer(reactions, many=True).data
 
         user_like_qs = self.get_if_user_liked_the_action(action_id)
-        if user_like_qs.exists():
-            did_user_like = True
-            user_reaction_id = user_like_qs[0].id
-        else:
-            did_user_like = False
-            user_reaction_id = None
+        did_user_like = user_like_qs.exists()
+        user_reaction_id = user_like_qs[0].id if did_user_like else None
 
         return {
             'user_like_state': {'did_user_like': did_user_like, 'reaction_id': user_reaction_id},

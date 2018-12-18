@@ -15,6 +15,7 @@
       <q-item-main>
         <q-input v-if="comments.count===0" v-model="new_comment" type="textarea" name="new-comment" placeholder="Be first to comment" />
         <q-input v-else v-model="new_comment" type="textarea" name="new-comment" placeholder="Write your comment" />
+        <q-item-side :disabled="isOverLimit" :style="{color: isOverLimit}">{{charactersLeft}}</q-item-side>
       </q-item-main>
     </q-item>
     <q-btn @click="post()" class="action-btn" flat color="primary">Post</q-btn>
@@ -35,6 +36,16 @@ export default {
   },
   created () {
     this.next_url = this.comments.next
+  },
+  computed: {
+    isOverLimit () {
+      return this.charactersLeft < 0
+    },
+    charactersLeft () {
+      let char = this.new_comment.length,
+        limit = 140
+      return (limit - char)
+    }
   },
   methods: {
     refresh () {
