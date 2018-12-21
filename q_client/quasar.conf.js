@@ -76,6 +76,7 @@ module.exports = function (ctx) {
         'QCardActions',
         'QChip',
         'QScrollArea',
+        'QBtnGroup',
         'QBtnDropdown',
         'QVideo',
         'QCollapsible',

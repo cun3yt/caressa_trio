@@ -69,6 +69,19 @@ class Comment(TimeStampedModel):
 Comment._meta.get_field('created').db_index = True
 
 
+class CommentResponse(TimeStampedModel):
+    class Meta:
+        db_table = 'action_comment_conversation'
+
+    response = models.TextField(null=False,
+                                blank=False, )
+
+    comment = models.ForeignKey(to=Comment,
+                                on_delete=models.DO_NOTHING, )
+
+    owner = models.ForeignKey(to=User,
+                              on_delete=models.DO_NOTHING, )
+
 class UserReaction(TimeStampedModel):
     class Meta:
         db_table = 'user_reaction'

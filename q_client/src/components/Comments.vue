@@ -1,32 +1,51 @@
 <template>
   <div class="main">
-    <q-card-title class="row">
+    <q-card-title class="row q-pa-none q-pl-sm q-mb-none">
       Comments
     </q-card-title>
     <q-list v-if="comments.count > 0" no-border separator class="q-mt-md">
-        <q-btn class="q-pa-xs q-ma-xs q-pl-sm" v-for="comment in comments.results" :key="comment.id" outline rounded color="primary" :label="comment.comment" @click="post(comment.comment)">
-          <q-item-side class="q-ml-md" v-for="(backer, index) in comment.comment_backers" v-bind:avatar="backer.profile_pic" :key="index"/>
+      <q-btn-group class="q-pa-xs  " flat rounded v-for="comment in comments.results" :key="comment.id">
+        <q-btn
+               size="sm"
+               outline
+               rounded
+               color="primary"
+               @click="post(comment.comment)">
+          <q-item-tile class="q-mr-md" label>{{comment.comment}}</q-item-tile>
+          <q-item-side
+            style="margin-left: -1.3em"
+            v-for="(backer, index) in comment.comment_backers"
+            v-bind:avatar="backer.profile_pic"
+            :key="index"/>
         </q-btn>
-    </q-list>
 
+        <response></response>
+
+      </q-btn-group>
+    </q-list>
     <q-btn v-if="comments.results.length < comments.count"
            v-on:click="loadMore()" flat color="secondary">Load More</q-btn>
     <q-item>
       <q-item-main>
-        <q-input v-if="comments.count===0" v-model="new_comment" type="textarea" name="new-comment" placeholder="Be first to comment" />
-        <q-input v-else v-model="new_comment" type="textarea" name="new-comment" placeholder="Write your comment" />
-        <q-item-side :disabled="isOverLimit" :style="{color: isOverLimit}">{{charactersLeft}}</q-item-side>
+        <q-input v-if="comments.count===0" :max-height="25" v-model="new_comment" clearable type="textarea" name="new-comment" placeholder="Be first to comment">
+          <q-item-side :color="isOverLimit ? 'negative' : 'neutral'">{{charactersLeft}} / 70</q-item-side>
+        </q-input>
+        <q-input v-else v-model="new_comment" :max-height="25" type="textarea" clearable name="new-comment" placeholder="Write your comment">
+          <q-item-side :color="isOverLimit ? 'negative' : 'neutral'">{{charactersLeft}} / 70</q-item-side>
+        </q-input>
+        <q-btn :disable=isOverLimit @click="post()" class="action-btn" flat color="primary">Post</q-btn>
       </q-item-main>
     </q-item>
-    <q-btn @click="post()" class="action-btn" flat color="primary">Post</q-btn>
   </div>
 </template>
 
 <script>
 import moment from 'moment'
+import Response from './Response'
 
 export default {
   name: 'Comments',
+  components: {Response},
   props: ['comments', 'actionId'],
   data () {
     return {
@@ -43,7 +62,7 @@ export default {
     },
     charactersLeft () {
       let char = this.new_comment.length,
-        limit = 140
+        limit = 70
       return (limit - char)
     }
   },

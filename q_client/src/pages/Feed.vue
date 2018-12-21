@@ -1,6 +1,7 @@
 <template>
   <q-page padding class="row justify-center">
     <div class="main-content">
+
       <q-card class="q-ma-sm" v-for="feed in feeds" v-bind:key="feed.id">
         <template v-if="feed.action_object_type==='Joke'">
           <joke-feed :feed="feed"
@@ -13,7 +14,7 @@
           <news-feed :feed="feed"
                      :news="feed.action_object"
                      >
-            <comments :actionId="feed.id" :comment="feed.paginated_comments" />
+            <comments :actionId="feed.id" :comments="feed.paginated_comments" />
           </news-feed>
         </template>
         <template v-else-if="feed.action_object_type==='UserPost'">
