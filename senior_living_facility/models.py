@@ -49,7 +49,7 @@ class SeniorLivingFacility(TimeStampedModel):
                 'for empty calendar_url, SeniorLivingFacility entry id: {}'.format(self.id))
             return SeniorLivingFacilityContent.find(senior_living_facility=self,
                                                     text_content=zero_state_summary,
-                                                    content_type='Daily-Calendar-Summary', )
+                                                    content_type='Daily-Calendar-Summary', )[0]
 
         events = query_events(url=self.calendar_url,
                               start=datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz),
@@ -62,7 +62,7 @@ class SeniorLivingFacility(TimeStampedModel):
         if len(events) == 0:
             return SeniorLivingFacilityContent.find(senior_living_facility=self,
                                                     text_content=zero_state_summary,
-                                                    content_type='Daily-Calendar-Summary', )
+                                                    content_type='Daily-Calendar-Summary', )[0]
 
         summary = "{}Here is today's schedule at {}: ".format(summary, self.name)
 
@@ -80,7 +80,7 @@ class SeniorLivingFacility(TimeStampedModel):
 
         return SeniorLivingFacilityContent.find(senior_living_facility=self,
                                                 text_content=summary,
-                                                content_type='Daily-Calendar-Summary', )
+                                                content_type='Daily-Calendar-Summary', )[0]
 
 
 class SeniorLivingFacilityContent(TimeStampedModel):

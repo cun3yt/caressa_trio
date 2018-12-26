@@ -5,11 +5,13 @@ from utilities.logger import log
 from alexa.models import AUser, User, Session
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.db import transaction
-from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, Playlist, AudioFile
+from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, AudioFile
 from scripts import replicate_playlist
 from streaming.exceptions import PlaylistAlreadyExistException
 from senior_living_facility.models import SeniorActOnFacilityContent
-import pytz
+from urllib.parse import urlencode
+from streaming.contents import DailyCalendarContent
+from django.urls import reverse
 
 
 @csrf_exempt
@@ -49,10 +51,10 @@ def stream_io(req_body):
         return resume_session(alexa_user=alexa_user)
     elif req_type in ['PlaybackController.NextCommandIssued', ] or intent_name in ['AMAZON.NextIntent', ]:
         TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'next_intent_response')
-        return next_intent_response(alexa_user)
+        return next_intent_response(alexa_user=alexa_user)
     elif req_type in ['AudioPlayer.PlaybackNearlyFinished', ]:
         TrackingAction.save_action(alexa_user, sess, req_type, 'enqueue_next_song')
-        return enqueue_next_song(alexa_user)
+        return enqueue_next_song(alexa_user=alexa_user)
     elif req_type in ['AudioPlayer.PlaybackStarted', ]:
         TrackingAction.save_action(alexa_user, sess, req_type, 'filler')
         save_state(alexa_user, req_body)
@@ -88,6 +90,11 @@ def save_state(alexa_user: AUser, req_body):
     token = deep_get(req_body, 'context.AudioPlayer.token')  # token is combination of pha_hash and audio_id
 
     pha_and_audio_id_list = token.split(',')
+
+    if len(pha_and_audio_id_list) < 2:
+        log('Cannot save in function `save_state` with this token: {}'.format(token))
+        return
+
     pha_hash = pha_and_audio_id_list[0]
     current_audio_file = AudioFile.objects.get(id=pha_and_audio_id_list[1])
 
@@ -149,18 +156,52 @@ def check_bag_if_hardware(fn):
             return fn(*args, **kwargs)
 
         log('checking what is available to execute...')
-        # todo: do what is available in the bag of content. If nothing, go with the flow: current content...
 
-        # from datetime import date
+        user = alexa_user.user
 
-        SeniorActOnFacilityContent.objects.filter(senior=alexa_user.user,
-                                                  act='Heard',
-                                                  content__content_type='Daily-Calendar-Summary').order_by('-created')
-                                                  # created__date=date.today(),
+        daily_calendar = DailyCalendarContent(user=user)
 
+        if (not daily_calendar.does_exist()) or daily_calendar.is_consumed():
+            return fn(*args, **kwargs)
 
-        return fn(*args, **kwargs)
+        # todo: do what is available in the bag of content. If nothing, go with the flow. Currently only calendar check
+
+        content_details = daily_calendar.get_details()
+        url = content_details.audio_url
+        params = urlencode({'audio_url': url,
+                            'user_id': user.id,
+                            'content_type': 'daily-calendar',
+                            'content_id': content_details.id, })
+
+        callback_url = '{}?{}'.format(reverse('mark-senior-listened-content'), params)
+        token = 'skip'  # todo: on the hardware, when 'skip' should it not change the token that is kept in the memory?
+        return start_session(url, token, callback_url=callback_url)
     return new_fn
+
+
+@csrf_exempt
+@transaction.atomic()
+def mark_senior_listened_content(request):
+    log(' >> Mark Senior Listened Content')
+
+    get_params = request.GET
+
+    if get_params.get('content_type') != 'daily-calendar':
+        return JsonResponse({'response': 'unknown content type'})
+
+    content_id = get_params.get('content_id')
+
+    from senior_living_facility.models import SeniorLivingFacilityContent
+
+    content = SeniorLivingFacilityContent.objects.get(id=content_id)
+
+    user_id = get_params.get('user_id')
+    user = User.objects.get(id=user_id)
+
+    act = SeniorActOnFacilityContent(act='Heard', content=content, senior=user)
+    act.save()
+
+    return JsonResponse({'response': 'OK'})
 
 
 @transaction.atomic()
@@ -170,7 +211,7 @@ def resume_session(*, alexa_user: AUser):
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
     token = '{hash},{audio_id}'.format(hash=str(status.playlist_has_audio.hash),
                                        audio_id=str(status.current_active_audio_id))
-    return start_session(status.current_active_audio, token, status.offset)
+    return start_session(status.current_active_audio, token, offset=status.offset)
 
 
 def stop_session():
@@ -191,7 +232,17 @@ def stop_session():
     return data
 
 
-def start_session(audio_to_be_played: AudioFile, token, offset=0):
+def start_session(audio_to_be_played, token, *, callback_url=None, offset=0):  # audio_to_be_played AudioFile or String
+    url = audio_to_be_played.url if isinstance(audio_to_be_played, AudioFile) else audio_to_be_played
+
+    stream_section = {
+        "url": url,
+        "token": token,
+        "offsetInMilliseconds": offset
+    }
+
+    if callback_url:
+        stream_section["callback_url"] = callback_url
 
     data = {
         "version": "1.0",
@@ -202,11 +253,7 @@ def start_session(audio_to_be_played: AudioFile, token, offset=0):
                     "type": "AudioPlayer.Play",
                     "playBehavior": "REPLACE_ALL",
                     "audioItem": {
-                        "stream": {
-                            "url": audio_to_be_played.url,
-                            "token": token,
-                            "offsetInMilliseconds": offset
-                        },
+                        "stream": stream_section,
                     }
                 }
             ]
@@ -219,7 +266,8 @@ def start_session(audio_to_be_played: AudioFile, token, offset=0):
 
 
 @transaction.atomic()
-def next_intent_response(alexa_user: AUser):
+@check_bag_if_hardware
+def next_intent_response(*, alexa_user: AUser):
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
     playlist_has_audio = status.playlist_has_audio.next()
     audio_to_be_played = playlist_has_audio.get_audio()
@@ -230,7 +278,8 @@ def next_intent_response(alexa_user: AUser):
 
 
 @transaction.atomic()
-def enqueue_next_song(alexa_user: AUser):
+@check_bag_if_hardware
+def enqueue_next_song(*, alexa_user: AUser):
     status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
     playlist_has_audio = status.playlist_has_audio.next()   # type: PlaylistHasAudio
 
@@ -276,4 +325,3 @@ def playlist_replication(request):
     except PlaylistAlreadyExistException:
         return HttpResponseBadRequest('User Playlist already exists!')
     return HttpResponseRedirect('/admin/streaming/playlist/')
-

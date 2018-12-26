@@ -15,7 +15,7 @@ from django.urls import include, path
 from django.conf.urls.static import static
 from django.conf import settings
 from alexa.views import main_view, alexa_io
-from streaming.views import stream_io_wrapper, playlist_replication
+from streaming.views import stream_io_wrapper, playlist_replication, mark_senior_listened_content
 from actions.api.views import laugh_at_joke, find_interesting_at_news, new_post
 
 from actions.urls import register_nested_routes as register_nested_action_urls, \
@@ -46,6 +46,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('discussion', alexa_io),
     path('streaming', stream_io_wrapper),
+    path('mark-senior-listened-content', mark_senior_listened_content,
+         name='mark-senior-listened-content'),
     path('speech-to-text', speech_to_text),
     path('replicate/', playlist_replication),
     path('api-auth/', include('rest_framework.urls')),
