@@ -150,10 +150,6 @@ In order to do development against an Alexa skill each developer will need one A
     * PUSHER_CLUSTER set to 'us2': `export PUSHER_CLUSTER='us2'`
     * Don't forget to add these environment variables into pycharm if you are using it.
 
-## Setting Botanalytics for Analytics
-* Create a Botanalytics account and create a bot for you engineering environment, select "Amazon Alexa" as the platform, also set the name to "Caressa Dev", the category to "Entertainment"
-* Create an environment variable for `BOTANALYTICS_API_TOKEN` in `.envrc` file by setting it to the token provided by Botanalytics (let's say `XXX`): `export BOTANALYTICS_API_TOKEN='XXX'`
-
 ## How Message Queue Process Script Works
 * Relative location of the script : scripts/message_queue_process_script.py
 * Script has 3 worker function inside, these are:

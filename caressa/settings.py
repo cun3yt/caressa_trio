@@ -206,8 +206,6 @@ S3_RAW_UPLOAD_BUCKET = 'caressa-upload'
 S3_PRODUCTION_BUCKET = 'caressa-prod'
 S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 
-botanalytics_api_token = os.environ.get('BOTANALYTICS_API_TOKEN')
-
 CONVERSATION_ENGINES = {
     'ttl': 10*60,
 }
