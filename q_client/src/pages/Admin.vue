@@ -4,7 +4,7 @@
       <div style="width: 500px; max-width: 90vw;">
         <div v-for="(msg, index) in messages" :key="`reg-${index}`">
           <q-chat-message
-            v-if="msg.type === 'family_ios_text'"
+            v-if="msg.type === 'text'"
             :key="`reg-${index}`"
             :label="msg.label"
             :sent="msg.sent"
@@ -32,60 +32,72 @@
       </div>
 
       <q-page-sticky position="bottom" :offset="[10, 10]">
-      <div style="width: 500px; max-width: 90vw; padding: 20px;">
-        <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
-        <q-btn :disable="recording!=null" class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
-      </div>
-
-      <div class="doc-container with-bg">
-        <div class="row justify-center">
-          <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
-          <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
-        </div>
-        </div>
-      <div class="row justify-start">
-        <div class="col-2" style="padding-top: 3em; padding-left: 3em">
-          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="deleteRecord"
-                 v-on:touchstart.native="deleteRecord"
-                 side="left"
-                 size="20px"
-                 round
-                 color="negative"
-                 icon="fas fa-trash"></q-btn>
-        </div>
-        <div class="col-2"></div>
-        <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false"
-               class="col-4" v-on:mousedown.native="uploadRecord"
-               v-on:touchstart.native="uploadRecord"
-               side="left"
-               size="40px"
-               style="padding-right: 0.2em"
-               round
-               color="positive"
-               icon="fas fa-paper-plane"
-        ></q-btn>
-        <q-btn v-else class="col-4" v-on:mousedown.native="toggleRecord"
-               v-on:touchstart.native="toggleRecord"
-               side="left"
-               size="40px"
-               round
-               :outline="recordingState"
-               :color="recordingState ? 'negative' : 'primary' "
-               :icon="recordingState ? 'fas fa-stop' : 'fas fa-microphone'"></q-btn>
-        <div class="col-2" style="padding-top: 3em; padding-left: 1em">
-          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="playRecord"
-                 v-on:touchstart.native="playRecord"
-                 side="left"
-                 size="20px"
-                 style="padding-left: 0.3em"
-                 round
-                 color="info"
-                 icon="fas fa-play"></q-btn>
+        <div style="width: 500px; max-width: 90vw; padding: 20px;">
+          <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
+          <q-btn-dropdown style="width: 9.5em;" color="primary" :label="activeOption">
+            <q-list link style="min-width: 220px">
+              <q-item
+                v-for="(option, index) in this.options"
+                :key="index"
+                v-close-overlay
+                @click.native="changeAnouncementChannel(option.name)"
+              >
+                <q-item-main :label="option.name" />
+              </q-item>
+            </q-list>
+          </q-btn-dropdown>
+          <q-btn :disable="recording!=null" style="margin-left: 4.2em" class="action-btn" @click="sendMessage" color="primary">Send Message</q-btn>
         </div>
 
-      </div>
+        <div class="doc-container with-bg">
+          <div class="row justify-center">
+            <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
+            <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
+          </div>
+        </div>
+        <div class="row justify-start">
+          <div class="col-2" style="padding-top: 3em; padding-left: 3em">
+            <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="deleteRecord"
+                   v-on:touchstart.native="deleteRecord"
+                   side="left"
+                   size="20px"
+                   round
+                   color="negative"
+                   icon="fas fa-trash"></q-btn>
+          </div>
+          <div class="col-2"></div>
+          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false"
+                 class="col-4" v-on:mousedown.native="uploadRecord"
+                 v-on:touchstart.native="uploadRecord"
+                 side="left"
+                 size="40px"
+                 style="padding-right: 0.2em"
+                 round
+                 color="positive"
+                 icon="fas fa-paper-plane"
+          ></q-btn>
+          <q-btn v-else class="col-4" v-on:mousedown.native="toggleRecord"
+                 v-on:touchstart.native="toggleRecord"
+                 side="left"
+                 size="40px"
+                 round
+                 :outline="recordingState"
+                 :color="recordingState ? 'negative' : 'primary' "
+                 :icon="recordingState ? 'fas fa-stop' : 'fas fa-microphone'"></q-btn>
+          <div class="col-2" style="padding-top: 3em; padding-left: 1em">
+            <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="playRecord"
+                   v-on:touchstart.native="playRecord"
+                   side="left"
+                   size="20px"
+                   style="padding-left: 0.3em"
+                   round
+                   color="info"
+                   icon="fas fa-play"></q-btn>
+          </div>
+
+        </div>
       </q-page-sticky>
-      </div>
+    </div>
 
   </q-page>
 </template>
@@ -106,17 +118,22 @@ export default {
         return this.avatars[msg.id]
       }
     },
+    changeAnouncementChannel: function (key) {
+      console.log(key)
+      this.activeOption = key
+    },
     sendMessage: function () {
       console.log('sending message')
       console.log(this.$refs.newMessage.value)
       let textMessageObj = {}
-      let key = 'Text Message'
+
+      let key = this.activeOption
       textMessageObj.key = key
       textMessageObj.name = 'John' // todo move to `hard-coding`
       textMessageObj.sent = true
       textMessageObj.id = '2'
       textMessageObj.stamp = 'Today at 13:50'
-      textMessageObj.type = 'family_ios_text'
+      textMessageObj.type = 'text'
       textMessageObj.text = []
 
       this.textMessageObj = textMessageObj
@@ -126,12 +143,15 @@ export default {
       }(this.messages.push(this.textMessageObj))
       this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'userId': textMessageObj.id,
-        'type': 'family_ios_text',
+        'type': 'facility_ios_text',
         'key': key,
         'content': this.textMessageObj
       }).then(response => {
         console.log('Response : ', response)
+        console.log('messageText')
+        console.log(this.messageText)
         this.messageText = ''
+        console.log(this.messageText)
       })
     },
     toggleRecord: function () {
@@ -222,7 +242,7 @@ export default {
                 console.log(response)
                 vm.$http.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
                   'userId': vm.$root.$options.user.id,
-                  'type': 'family_ios_audio',
+                  'type': 'facility_ios_audio',
                   'key': vm.audioMessageObj.key
                 }).then(response => {
                   console.log('Response: ', response)
@@ -237,7 +257,6 @@ export default {
                 })
               },
               function (error) {
-                debugger
                 console.log(error)
               },
               options)
@@ -259,6 +278,18 @@ export default {
   },
   data () {
     return {
+      activeOption: 'Deliver To:',
+      options: [
+        {
+          name: 'Maggy' // todo move to `hard-coding`
+        },
+        {
+          name: 'Duke'
+        },
+        {
+          name: 'Announce'
+        }
+      ],
       formData1: [],
       audio: {},
       avatars: {

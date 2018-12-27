@@ -1,7 +1,6 @@
 <template>
   <q-page class="flex flex-center">
-    Hey what's up?
-    <img alt="Quasar logo" src="~assets/quasar-logo-full.svg">
+    <img alt="Caressa logo" src="~assets/caressa-logo-full.png">
   </q-page>
 </template>
 

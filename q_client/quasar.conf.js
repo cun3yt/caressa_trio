@@ -11,10 +11,7 @@ module.exports = function (ctx) {
     ],
     extras: [
       ctx.theme.mat ? 'roboto-font' : null,
-      'material-icons' // optional, you are not bound to it
-      // 'ionicons',
-      // 'mdi',
-      // 'fontawesome'
+      'fontawesome'
     ],
     supportIE: false,
     build: {
@@ -49,6 +46,7 @@ module.exports = function (ctx) {
         'QLayoutHeader',
         'QLayoutFooter',
         'QLayoutDrawer',
+        'QModal',
         'QPageContainer',
         'QPage',
         'QToolbar',
@@ -69,24 +67,29 @@ module.exports = function (ctx) {
         'QToggle',
         'QRange',
         'QSelect',
+        'QPageSticky',
         'QChatMessage',
         'QInput',
         'QSpinnerDots',
+        'QSpinnerBars',
         'QSlider',
         'QCardActions',
         'QChip',
         'QScrollArea',
         'QBtnDropdown',
+        'QVideo',
         'QCollapsible',
+        'QPopover'
       ],
       directives: [
-        'Ripple'
+        'Ripple',
+        'CloseOverlay'
       ],
       // Quasar plugins
       plugins: [
         'Notify'
-      ]
-      // iconSet: ctx.theme.mat ? 'material-icons' : 'ionicons'
+      ],
+      iconSet: 'fontawesome'
       // i18n: 'de' // Quasar language
     },
     // animations: 'all' --- includes all animations
@@ -101,8 +104,8 @@ module.exports = function (ctx) {
         // description: 'Best PWA App in town!',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#ffffff',
-        theme_color: '#027be3',
+        background_color: '#abb7cb',
+        theme_color: '#21566e',
         icons: [
           {
             'src': 'statics/icons/icon-128x128.png',

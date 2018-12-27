@@ -1,48 +1,51 @@
 console.log('routes.js is running...')
+import Main from '../layouts/Main'
+import Admin from '../pages/Admin'
+import Chat from '../pages/Chat'
+import Settings from '../pages/Settings'
+import Index from '../pages/index'
+import PageNotFound from '../pages/404'
 
 export default [
   {
     path: '/',
-    component: () => import('layouts/Main'),
+    // component: () => import('layouts/Main'),
+    component: Main,
     children: [
       {
-        path: 'feed',
-        component: () => import('pages/Feed'),
-        name: 'feed'
-      },
-      {
-        path: 'post',
-        component: () => import('pages/Post'),
-        name: 'post'
+        path: 'admin',
+        // component: () => import('pages/Feed'),
+        component: Admin,
+        name: 'admin'
       },
       {
         path: 'chat',
-        component: () => import('pages/Chat'),
+        // component: () => import('pages/Chat'),
+        component: Chat,
         name: 'chat'
       },
       {
-        path: 'health-numbers',
-        component: () => import('pages/HealthNumbers'),
-        name: 'health-numbers'
-      },
-      {
         path: 'settings',
-        component: () => import('pages/Settings'),
+        // component: () => import('pages/Settings'),
+        component: Settings,
         name: 'settings'
       },
       {
         path: '/',
-        component: () => import('pages/index')
+        // component: () => import('pages/index')
+        component: Index
       },
       {
         path: '*',
-        component: () => import('pages/404')
+        // component: () => import('pages/404')
+        component: PageNotFound
       }
     ]
   },
 
   {
     path: '*',
-    component: () => import('pages/404')
+    // component: () => import('pages/404')
+    component: PageNotFound
   }
 ]
