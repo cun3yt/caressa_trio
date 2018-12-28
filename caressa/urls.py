@@ -22,7 +22,7 @@ from actions.urls import register_nested_routes as register_nested_action_urls, 
 from alexa.urls import register_nested_routes as register_nested_alexa_urls, \
     register_flat_routes as register_flat_alexa_routes
 
-from actions.api.views import like_at_joke, like_at_news, new_post, pre_signed_url_for_s3, \
+from actions.api.views import like_at_joke, like_at_news, comment_response, new_post, pre_signed_url_for_s3, \
     new_job_for_message_queue
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
@@ -51,6 +51,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('like_joke/', like_at_joke),
     path('like_news/', like_at_news),
+    path('comment_response/', comment_response),
     path('post/', new_post),
     path('generate_signed_url/', pre_signed_url_for_s3),
     path('new_message/', new_job_for_message_queue),

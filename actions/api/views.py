@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.decorators import api_view
 from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer
-from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song
+from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song, CommentResponse
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 from streaming.models import Messages
@@ -66,6 +66,17 @@ def like_at_news(request):
         act.save()
     elif not set_to and action.count() > 0:
         action.delete()
+
+    return Response({"message": "Something went wrong.."})
+
+
+@api_view(['POST'])
+def comment_response(request):
+    comment_id = request.data['comment_id']
+    response = request.data['response']
+    user_id = 2                            # todo move to `hard-coding`
+
+    CommentResponse(response=response, owner_id=user_id, comment_id=comment_id).save()
 
     return Response({"message": "Something went wrong.."})
 

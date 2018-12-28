@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from actions.models import UserAction, Comment, UserReaction, UserPost
+from actions.models import UserAction, Comment, UserReaction, UserPost, CommentResponse
 from caressa.settings import REST_FRAMEWORK
 from alexa.models import Joke, User, News, Song
 from generic_relations.relations import GenericRelatedField
@@ -27,9 +27,21 @@ class SongSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ('id', 'comment', 'created', 'comment_backers', )
+        fields = ('id', 'comment', 'created', 'comment_backers', 'responses')
 
     comment_backers = serializers.SerializerMethodField()
+
+    responses = serializers.SerializerMethodField()
+
+    def get_responses(self, comment: Comment):
+        comment_responses = CommentResponse.objects.filter(comment_id=comment.id)
+        response_list = [{
+                'response': response.response,
+                'created': response.created,
+                'full_name': response.owner.get_full_name(),
+                'profile_pic': response.owner.get_profile_pic(),
+            } for response in comment_responses]
+        return response_list
 
     def get_comment_backers(self, comment: Comment):
         backers = comment.comment_backers.all()
