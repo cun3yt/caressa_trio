@@ -82,6 +82,15 @@ def comment_response(request):
 
 
 @api_view(['POST'])
+def comment_response_delete(request):
+    response_id = request.data['response']
+
+    CommentResponse.objects.filter(id=response_id).delete()
+
+    return Response({"message": "Something went wrong.."})
+
+
+@api_view(['POST'])
 def like_the_song(request):
     song_id = request.data.get('song_id')
     set_to = request.data.get('set_to', 'true').lower() != 'false'

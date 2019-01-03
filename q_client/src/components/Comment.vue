@@ -17,7 +17,7 @@
       </q-btn>
       <q-btn outline rounded @click="toggle()" icon="far fa-comment-dots"></q-btn>
     </q-btn-group>
-    <q-collapsible header-class="hidden" flat collapse-icon='far fa-comment-dots' v-model="isOpen">
+    <q-collapsible group="response-accordion" header-class="hidden" flat collapse-icon='far fa-comment-dots' v-model="isOpen">
       <responses :responses="comment.responses" :comment_id="comment.id"></responses>
     </q-collapsible>
   </div>

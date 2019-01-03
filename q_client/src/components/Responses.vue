@@ -2,7 +2,8 @@
       <q-list flat>
         <q-item v-for="(response, key) in responses" :key="key">
           <q-item-side><img class="fit" style="max-width: 2em" :src="response.profile_pic" alt="image"> </q-item-side>
-          <q-item-side>{{response.response}}</q-item-side>
+          <q-item-side class="q-caption">{{response.response}}</q-item-side>
+          <q-item-side class=""><q-btn  flat @click="deleteResponse(response.id)" icon="fas fa-times"></q-btn></q-item-side>
         </q-item>
         <q-item>
           <q-input :max-height="25" v-model="new_response" clearable type="textarea" name="new-response" placeholder="New Response">
@@ -41,6 +42,18 @@ export default {
         'response': new_response
       }).then(response => {
         vm.new_response = ''
+        vm.$options.parent.$parent.$parent.$options.parent.$parent.$parent.refresh()
+        console.log('success!')
+      })
+    },
+    deleteResponse (responseId) {
+      let vm = this
+      this.$http.post(`${this.$root.$options.hosts.rest}/comment_response_delete/`, {
+        'comment_id': this.comment_id,
+        'response': responseId
+      }).then(response => {
+        vm.new_response = ''
+        vm.$options.parent.$parent.$parent.$options.parent.$parent.$parent.refresh()
         console.log('success!')
       })
     }

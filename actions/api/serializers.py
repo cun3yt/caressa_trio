@@ -36,6 +36,7 @@ class CommentSerializer(serializers.ModelSerializer):
     def get_responses(self, comment: Comment):
         comment_responses = CommentResponse.objects.filter(comment_id=comment.id)
         response_list = [{
+                'id': response.id,
                 'response': response.response,
                 'created': response.created,
                 'full_name': response.owner.get_full_name(),

@@ -54,7 +54,7 @@ export default {
       let vm = this
       this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {}).then(
         response => {
-          vm.comments = response.data
+          vm.comments = response.data // todo this line gives error because of prop mutation inside component.
           vm.next_url = response.data['next']
         }
       )
