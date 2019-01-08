@@ -48,10 +48,10 @@ export default {
     },
     deleteResponse (responseId) {
       let vm = this
-      this.$http.post(`${this.$root.$options.hosts.rest}/comment_response_delete/`, {
+      this.$http.delete(`${this.$root.$options.hosts.rest}/comment_response_delete/`, {body: {
         'comment_id': this.comment_id,
         'response': responseId
-      }).then(response => {
+      }}).then(response => {
         vm.new_response = ''
         vm.$options.parent.$parent.$parent.$options.parent.$parent.$parent.refresh()
         console.log('success!')

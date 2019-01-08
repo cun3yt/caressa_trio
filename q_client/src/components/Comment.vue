@@ -72,7 +72,7 @@ export default {
             })
       }
       if (comment && this.didUserBacked) {
-        this.$http.post(`${this.$root.$options.hosts.rest}/comment_response_delete/`, {'comment_id': this.comment.id})
+        this.$http.delete(`${this.$root.$options.hosts.rest}/comment_backing_delete/`, {body: {'comment_id': this.comment.id}})
           .then(
             response => {
               console.log('success')
