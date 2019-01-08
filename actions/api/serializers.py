@@ -44,13 +44,23 @@ class CommentSerializer(serializers.ModelSerializer):
             } for response in comment_responses]
         return response_list
 
+    def get_if_user_backed_the_comment(self, comment_id):
+        user_id = 2  # todo move to `hard-coding`
+        comment = Comment.objects.get(pk=comment_id)
+        return comment.comment_backers.filter(id=user_id)
+
     def get_comment_backers(self, comment: Comment):
+        user_backed_qs = self.get_if_user_backed_the_comment(comment.id)
+        did_user_backed = user_backed_qs.exists()
         backers = comment.comment_backers.all()
         backer_list = [{
             'full_name': backer.get_full_name(),
             'profile_pic': backer.get_profile_pic()
         } for backer in backers]
-        return backer_list
+        return {
+            'did_user_backed': did_user_backed,
+            'all_backers': backer_list
+        }
 
     def create(self, validated_data):
         backer_instance = User.objects.get(id=2)

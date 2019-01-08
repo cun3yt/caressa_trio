@@ -6,11 +6,11 @@
         outline
         rounded
         color="primary"
-        @click="post(comment.comment)">
+        @click="toggleCommentBacking(comment.comment)">
         <q-item-side
           left
           style="margin-left: -1.3em"
-          v-for="(backer, index) in comment.comment_backers"
+          v-for="(backer, index) in comment.comment_backers.all_backers"
           v-bind:avatar="backer.profile_pic"
           :key="index"/>
         <q-item-tile class="q-ml-md" label>{{comment.comment}}</q-item-tile>
@@ -35,6 +35,7 @@ export default {
     return {
       next_url: '',
       new_comment: '',
+      didUserBacked: this.comment.comment_backers.did_user_backed,
       isOpen: false
     }
   },
@@ -53,6 +54,34 @@ export default {
           }, response => {
             console.log('error')
           })
+    },
+    toggleCommentBacking (comment) {
+      console.log(this.comment.comment_backers.did_user_backed)
+      let vm = this
+      if (comment && !this.didUserBacked) {
+        this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': comment})
+          .then(
+            response => {
+              console.log('success')
+              vm.$parent.$parent.refresh()
+              vm.didUserBacked = true
+              // todo This is a cheap solution to me for a problem occurs after mutation of a prop directly.
+              // Refer: CommentSection.vue line: 57/67
+            }, response => {
+              console.log('error')
+            })
+      }
+      if (comment && this.didUserBacked) {
+        this.$http.post(`${this.$root.$options.hosts.rest}/comment_response_delete/`, {'comment_id': this.comment.id})
+          .then(
+            response => {
+              console.log('success')
+              vm.$parent.$parent.refresh()
+              vm.didUserBacked = false
+            }, response => {
+              console.log('error')
+            })
+      }
     }
   }
 }

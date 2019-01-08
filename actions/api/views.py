@@ -1,7 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer
 from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song, CommentResponse
 from alexa.models import User, UserActOnContent
@@ -83,9 +83,11 @@ def comment_response(request):
 
 @api_view(['POST'])
 def comment_response_delete(request):
-    response_id = request.data['response']
-
-    CommentResponse.objects.filter(id=response_id).delete()
+    user_id = 2  # todo move to `hard-coding`
+    comment_id = request.data['comment_id']
+    user = User.objects.get(pk=user_id)
+    comment = Comment.objects.get(pk=comment_id)
+    comment.comment_backers.remove(user)
 
     return Response({"message": "Something went wrong.."})
 
