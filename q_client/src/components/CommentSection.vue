@@ -1,33 +1,34 @@
 <template>
   <div class="main">
-    <q-card-title class="row">
+    <q-card-title class="row q-pa-none q-pl-sm q-mb-none">
       Comments
     </q-card-title>
-    <q-list v-if="comments.count > 0" no-border separator class="q-mt-md">
-      <q-item v-for="comment in comments.results" :key="comment.id">
-        <q-item-side v-bind:avatar="comment.commenter.profile_pic" />
-        <q-item-main :label="comment.commenter.full_name" :sublabel="comment.comment" label-lines="1" />
-        <q-item-side right :stamp="timePasted(comment)" />
-      </q-item>
+    <q-list v-if="comments.count > 0" no-border class="row q-mt-md">
+      <comment v-for="comment in comments.results" :key="comment.id" :comment="comment" :actionId="actionId"></comment>
     </q-list>
-
     <q-btn v-if="comments.results.length < comments.count"
            v-on:click="loadMore()" flat color="secondary">Load More</q-btn>
     <q-item>
       <q-item-main>
-        <q-input v-if="comments.count===0" v-model="new_comment" type="textarea" name="new-comment" placeholder="Be first to comment" />
-        <q-input v-else v-model="new_comment" type="textarea" name="new-comment" placeholder="Write your comment" />
+        <q-input v-if="comments.count===0" :max-height="25" v-model="new_comment" clearable type="textarea" name="new-comment" placeholder="Be first to comment">
+          <q-item-side :color="isOverLimit ? 'negative' : 'neutral'">{{charactersLeft}} / 70</q-item-side>
+        </q-input>
+        <q-input v-else v-model="new_comment" :max-height="25" type="textarea" clearable name="new-comment" placeholder="Write your comment">
+          <q-item-side :color="isOverLimit ? 'negative' : 'neutral'">{{charactersLeft}} / 70</q-item-side>
+        </q-input>
+        <q-btn :disable=isOverLimit @click="post()" class="action-btn" flat color="primary">Post</q-btn>
       </q-item-main>
     </q-item>
-    <q-btn @click="post()" class="action-btn" flat color="primary">Post</q-btn>
   </div>
 </template>
 
 <script>
 import moment from 'moment'
+import Comment from './Comment'
 
 export default {
-  name: 'Comments',
+  name: 'CommentSection',
+  components: {Comment},
   props: ['comments', 'actionId'],
   data () {
     return {
@@ -38,12 +39,22 @@ export default {
   created () {
     this.next_url = this.comments.next
   },
+  computed: {
+    isOverLimit () {
+      return this.charactersLeft < 0
+    },
+    charactersLeft () {
+      let char = this.new_comment.length,
+        limit = 70
+      return (limit - char)
+    }
+  },
   methods: {
     refresh () {
       let vm = this
       this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {}).then(
         response => {
-          vm.comments = response.data
+          vm.comments = response.data // todo this line gives error because of prop mutation inside component.
           vm.next_url = response.data['next']
         }
       )
@@ -64,10 +75,10 @@ export default {
     timePasted (comment) {
       return moment(comment.created).fromNow()
     },
-    post () {
+    post (new_comment = this.new_comment) {
       let vm = this
 
-      this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': this.new_comment})
+      this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': new_comment})
         .then(
           response => {
             console.log('success')

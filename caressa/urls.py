@@ -22,8 +22,8 @@ from actions.urls import register_nested_routes as register_nested_action_urls, 
 from alexa.urls import register_nested_routes as register_nested_alexa_urls, \
     register_flat_routes as register_flat_alexa_routes
 
-from actions.api.views import laugh_at_joke, find_interesting_at_news, new_post, pre_signed_url_for_s3, \
-    new_job_for_message_queue
+from actions.api.views import like_at_joke, like_at_news, comment_response, new_post, pre_signed_url_for_s3, \
+    new_job_for_message_queue, comment_response_delete, comment_backing_delete
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from voice_service.views import speech_to_text
@@ -49,8 +49,11 @@ urlpatterns = [
     path('speech-to-text', speech_to_text),
     path('replicate/', playlist_replication),
     path('api-auth/', include('rest_framework.urls')),
-    path('laugh/', laugh_at_joke),
-    path('find-interesting/', find_interesting_at_news),
+    path('like_joke/', like_at_joke),
+    path('like_news/', like_at_news),
+    path('comment_response/', comment_response),
+    path('comment_response_delete/', comment_response_delete),
+    path('comment_backing_delete/', comment_backing_delete),
     path('post/', new_post),
     path('generate_signed_url/', pre_signed_url_for_s3),
     path('new_message/', new_job_for_message_queue),

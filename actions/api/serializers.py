@@ -1,8 +1,9 @@
 from rest_framework import serializers
-from actions.models import UserAction, Comment, UserReaction, UserPost
+from actions.models import UserAction, Comment, UserReaction, UserPost, CommentResponse
 from caressa.settings import REST_FRAMEWORK
 from alexa.models import Joke, User, News, Song
 from generic_relations.relations import GenericRelatedField
+from django.db.utils import IntegrityError
 
 
 class JokeSerializer(serializers.ModelSerializer):
@@ -26,22 +27,55 @@ class SongSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ('id', 'comment', 'created', 'commenter', )
+        fields = ('id', 'comment', 'created', 'comment_backers', 'responses')
 
-    commenter = serializers.SerializerMethodField()
+    comment_backers = serializers.SerializerMethodField()
 
-    def get_commenter(self, comment: Comment):
-        owner = comment.owner
+    responses = serializers.SerializerMethodField()
+
+    def get_responses(self, comment: Comment):
+        comment_responses = CommentResponse.objects.filter(comment_id=comment.id)
+        response_list = [{
+                'id': response.id,
+                'response': response.response,
+                'created': response.created,
+                'full_name': response.owner.get_full_name(),
+                'profile_pic': response.owner.get_profile_pic(),
+            } for response in comment_responses]
+        return response_list
+
+    def get_if_user_backed_the_comment(self, comment_id):
+        user_id = 2  # todo move to `hard-coding`
+        comment = Comment.objects.get(pk=comment_id)
+        return comment.comment_backers.filter(id=user_id)
+
+    def get_comment_backers(self, comment: Comment):
+        user_backed_qs = self.get_if_user_backed_the_comment(comment.id)
+        did_user_backed = user_backed_qs.exists()
+        backers = comment.comment_backers.all()
+        backer_list = [{
+            'full_name': backer.get_full_name(),
+            'profile_pic': backer.get_profile_pic()
+        } for backer in backers]
         return {
-            'full_name': owner.get_full_name(),
-            'profile_pic': owner.get_profile_pic()
+            'did_user_backed': did_user_backed,
+            'all_backers': backer_list
         }
 
     def create(self, validated_data):
-        validated_data['owner'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
+        backer_instance = User.objects.get(id=2)
+        validated_data['comment_backers'] = [backer_instance, ]       # todo: Move to `hard_codes`
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
-        return super(CommentSerializer, self).create(validated_data)
+        new_comment = validated_data['comment']
+        comments_qs = Comment.objects.filter(comment=new_comment)
+        if not comments_qs.exists():
+            return super(CommentSerializer, self).create(validated_data)
+        try:
+            comments_qs[0].comment_backers.add(backer_instance)  # todo: Move to `hard_codes`
+        except IntegrityError:
+            pass  # todo returns unique key errors with same comment_id, user_id pair
+        return comments_qs[0]
 
 
 class ReactionSerializer(serializers.ModelSerializer):
@@ -49,8 +83,17 @@ class ReactionSerializer(serializers.ModelSerializer):
         model = UserReaction
         fields = ('id',
                   'reaction',
-                  'owner',
+                  'owner_profile',
                   'content', )
+
+    owner_profile = serializers.SerializerMethodField()
+
+    def get_owner_profile(self, user_reaction: UserReaction, ):
+        owner_profile = {
+            'full_name': user_reaction.owner.get_full_name(),
+            'profile_pic': user_reaction.owner.get_profile_pic()
+        }
+        return owner_profile
 
     def create(self, validated_data):
         validated_data['owner'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
@@ -113,8 +156,25 @@ class ActionSerializer(serializers.ModelSerializer):
             'results': CommentSerializer(comments, many=True).data,
         }
 
+    def get_if_user_liked_the_action(self, action_id):
+        user_id = 2  # todo move to `hard-coding`
+        user = User.objects.get(id=user_id)
+        return UserReaction.objects.filter(content_id=action_id, owner=user)
+
     def get_user_reactions(self, user_action: UserAction):
-        # todo IMPLEMENT THIS TO FETCH USER ACTIONS
-        user_id = 2     # todo move to `hard-coding`
-        reactions = user_action.action_reactions.filter(owner_id__exact=user_id).all()
-        return ReactionSerializer(reactions, many=True).data
+        action_id = user_action.id
+        reactions = UserReaction.objects.filter(content_id=action_id).order_by('-created')
+        serialized_reactions = ReactionSerializer(reactions, many=True).data
+
+        user_like_qs = self.get_if_user_liked_the_action(action_id)
+        did_user_like = user_like_qs.exists()
+        user_reaction_id = user_like_qs[0].id if did_user_like else None
+
+        return {
+            'user_like_state': {'did_user_like': did_user_like, 'reaction_id': user_reaction_id},
+            'all_likes':
+                {
+                    'total': len(serialized_reactions),
+                    'to_be_shown': serialized_reactions[:3]
+                }
+        }

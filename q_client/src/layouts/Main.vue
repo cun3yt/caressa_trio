@@ -210,6 +210,11 @@ export default {
           icon: 'fas fa-users'
         },
         {
+          name: 'feed',
+          label: 'Feed',
+          icon: 'far fa-newspaper'
+        },
+        {
           name: 'chat',
           label: 'Messages',
           icon: 'fas fa-comments'

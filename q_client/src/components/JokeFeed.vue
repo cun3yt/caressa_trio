@@ -17,15 +17,24 @@
     </q-card-main>
 
     <q-card-actions>
-      <q-btn class="action-btn"
+      <q-btn class="action-btn q-mr-lg"
+             style="margin-top: -0.5em"
+             size="xl"
              flat
-             v-bind:color="funnyState ? 'tertiary' : 'primary'"
-             @click="markFunny(true)">{{funnyMsg}}</q-btn>
+             no-ripple
+             icon="far fa-thumbs-up"
+             v-bind:color="funnyState ? 'positive' : 'neutral'"
+             @click="markFunny(true)">
+      </q-btn>
+      <q-item-side style="margin-left: -1.2em" v-for="(liker, index) in feed.user_reactions.all_likes.to_be_shown" v-bind:avatar="liker.owner_profile.profile_pic" :key="index"/>
+      <q-item-tile v-if="totalMessage > 1" color="secondary" class="q-pl-sm q-pt-md" label>{{totalMessage}} likes</q-item-tile>
+    </q-card-actions>
+    <q-card-actions>
       <q-btn v-if="latestJokeId==joke.id"
-             class="action-btn"
-             flat
+             class="block"
              color="secondary"
-             @click="getAnotherJoke()">Tell me another joke</q-btn>
+             @click="getAnotherJoke()">Tell me another joke
+      </q-btn>
     </q-card-actions>
 
     <slot></slot>
@@ -72,17 +81,19 @@ export default {
       funnyId: null,
       funnyMsg: 'That\'s funny!',
       latestJokeId: null,
-      additionalJokes: []
+      additionalJokes: [],
+      totalMessage: null
     }
   },
   created () {
-    let laughedReactions = this.feed.user_reactions.filter(obj => obj['reaction'] === 'laughed')
+    let likedReactions = this.feed.user_reactions
     this.latestJokeId = this.joke.id
 
-    if (laughedReactions.length > 0) {
+    if (likedReactions.user_like_state.did_user_like) {
       this.markFunny(false)
-      this.funnyId = laughedReactions[0].id
+      this.funnyId = likedReactions.user_like_state.reaction_id
     }
+    this.totalMessage = likedReactions.all_likes.total
   },
   methods: {
     additionaJokeStatement (joke) {
@@ -99,8 +110,8 @@ export default {
 
       if (apiCall && this.funnyState) {
         this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
-          'reaction': 'laughed',
-          'owner': this.$root.$options.userId,
+          'reaction': 'liked',
+          'owner': this.$root.$options.user.id,
           'content': this.feed.id
         })
           .then(response => {
@@ -112,8 +123,8 @@ export default {
 
       if (apiCall && !this.funnyState) {
         this.$http.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.funnyId}/`, {
-          'reaction': 'laughed',
-          'owner': this.$root.$options.userId,
+          'reaction': 'liked',
+          'owner': this.$root.$options.user.id,
           'content': this.feed.id
         })
       }
@@ -136,7 +147,7 @@ export default {
     markAdditionalJokeFunny (joke) {
       joke.funny = !joke.funny
 
-      this.$http.post(`${this.$root.$options.hosts.rest}/laugh/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/like_joke/`, {
         'joke_id': joke.id,
         'set_to': (joke.funny ? 'true' : 'false')
       }).then(response => {

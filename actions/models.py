@@ -52,22 +52,35 @@ class Comment(TimeStampedModel):
 
     comment = models.TextField(null=False,
                                blank=False, )
-    owner = models.ForeignKey(to=User,
-                              on_delete=models.DO_NOTHING,
-                              related_name='comments', )
+
+    comment_backers = models.ManyToManyField(to=User)
+
     content = models.ForeignKey(to=UserAction,
                                 on_delete=models.DO_NOTHING,
                                 related_name='action_comments', )
 
     def __repr__(self):
-        return "Comment({}) by {}: {}".format(self.id, self.owner, self.comment)
+        return "Comment({}) by {}: {}".format(self.id, self.comment_backers, self.comment)
 
     def __str__(self):
-        return "{} commented on {}: {}".format(self.owner, self.content, self.comment)
+        return "{} commented on {}: {}".format(self.comment_backers, self.content, self.comment)
 
 
 Comment._meta.get_field('created').db_index = True
 
+
+class CommentResponse(TimeStampedModel):
+    class Meta:
+        db_table = 'action_comment_conversation'
+
+    response = models.TextField(null=False,
+                                blank=False, )
+
+    comment = models.ForeignKey(to=Comment,
+                                on_delete=models.DO_NOTHING, )
+
+    owner = models.ForeignKey(to=User,
+                              on_delete=models.DO_NOTHING, )
 
 class UserReaction(TimeStampedModel):
     class Meta:

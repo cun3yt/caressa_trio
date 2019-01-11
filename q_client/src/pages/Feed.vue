@@ -1,29 +1,30 @@
 <template>
   <q-page padding class="row justify-center">
     <div class="main-content">
+
       <q-card class="q-ma-sm" v-for="feed in feeds" v-bind:key="feed.id">
         <template v-if="feed.action_object_type==='Joke'">
           <joke-feed :feed="feed"
                      :joke="feed.action_object"
                      >
-            <comments :actionId="feed.id" :comments="feed.paginated_comments" />
+            <comment-section :actionId="feed.id" :comments="feed.paginated_comments" />
           </joke-feed>
         </template>
         <template v-else-if="feed.action_object_type==='News'">
           <news-feed :feed="feed"
                      :news="feed.action_object"
                      >
-            <comments :actionId="feed.id" :comment="feed.paginated_comments" />
+            <comment-section :actionId="feed.id" :comments="feed.paginated_comments" />
           </news-feed>
         </template>
         <template v-else-if="feed.action_object_type==='UserPost'">
           <user-post-feed :feed="feed">
-            <comments :actionId="feed.id" :comments="feed.paginated_comments" />
+            <comment-section :actionId="feed.id" :comments="feed.paginated_comments" />
           </user-post-feed>
         </template>
         <template v-else>
           <regular-feed :feed="feed">
-            <comments :actionId="feed.id" :comments="feed.paginated_comments" />
+            <comment-section :actionId="feed.id" :comments="feed.paginated_comments" />
           </regular-feed>
         </template>
         <q-card-separator />
@@ -37,7 +38,7 @@ import JokeFeed from 'components/JokeFeed'
 import NewsFeed from 'components/NewsFeed'
 import UserPostFeed from 'components/UserPostFeed'
 import RegularFeed from 'components/RegularFeed'
-import Comments from 'components/Comments'
+import CommentSection from 'components/CommentSection'
 import Pusher from 'pusher-js'
 
 // Pusher.logToConsole = true // for logging purpose
@@ -50,7 +51,7 @@ export default {
     JokeFeed,
     NewsFeed,
     RegularFeed,
-    Comments
+    CommentSection
   },
   data () {
     return {

@@ -17,10 +17,17 @@
     </q-card-main>
 
     <q-card-actions>
-      <q-btn class="action-btn"
+      <q-btn class="action-btn q-mr-lg"
+             style="margin-top: -0.5em"
+             size="xl"
              flat
-             v-bind:color="interestingState ? 'tertiary' : 'primary'"
-             @click="markInteresting(true)">{{interestingMsg}}</q-btn>
+             no-ripple
+             icon="far fa-thumbs-up"
+             v-bind:color="interestingState ? 'positive' : 'neutral'"
+             @click="markInteresting(true)">
+      </q-btn>
+      <q-item-side style="margin-left: -1.2em" v-for="(liker, index) in feed.user_reactions.all_likes.to_be_shown" v-bind:avatar="liker.owner_profile.profile_pic" :key="index"/>
+      <q-item-tile v-if="totalMessage > 1" color="secondary" class="q-pl-sm q-pt-md" label>{{totalMessage}} likes</q-item-tile>
       <q-btn v-if="latestNewsId==news.id"
              class="action-btn"
              flat
@@ -72,17 +79,19 @@ export default {
       interestingId: null,
       interestingMsg: 'Really Interesting!',
       latestNewsId: null,
-      additionalNewsList: []
+      additionalNewsList: [],
+      totalMessage: null
     }
   },
   created () {
-    let foundInterestingReactions = this.feed.user_reactions.filter(obj => obj['reaction'] === 'found-interesting')
+    let likedReactions = this.feed.user_reactions
     this.latestNewsId = this.news.id
 
-    if (foundInterestingReactions.length > 0) {
+    if (likedReactions.user_like_state.did_user_like) {
       this.markInteresting(false)
-      this.interestingId = foundInterestingReactions[0].id
+      this.interestingId = likedReactions.user_like_state.reaction_id
     }
+    this.totalMessage = likedReactions.all_likes.total
   },
   methods: {
     additionalNewsStatement (news) {
@@ -99,8 +108,8 @@ export default {
 
       if (apiCall && this.interestingState) {
         this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
-          'reaction': 'found-interesting',
-          'owner': this.$root.$options.userId,
+          'reaction': 'liked',
+          'owner': this.$root.$options.user.id,
           'content': this.feed.id
         })
           .then(response => {
@@ -112,8 +121,8 @@ export default {
 
       if (apiCall && !this.interestingState) {
         this.$http.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.interestingId}/`, {
-          'reaction': 'found-interesting',
-          'owner': this.$root.$options.userId,
+          'reaction': 'liked',
+          'owner': this.$root.$options.user.id,
           'content': this.feed.id
         })
       }
@@ -136,7 +145,7 @@ export default {
     markAdditionalNewsInteresting (news) {
       news.interesting = !news.interesting
 
-      this.$http.post(`${this.$root.$options.hosts.rest}/find-interesting/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/like_news/`, {
         'news_id': news.id,
         'set_to': (news.interesting ? 'true' : 'false')
       }).then(response => {

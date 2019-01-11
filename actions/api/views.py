@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.decorators import api_view
 from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer
-from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song
+from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song, CommentResponse
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 from streaming.models import Messages
@@ -33,7 +33,7 @@ class ReactionViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
 
 
 @api_view(['POST'])
-def laugh_at_joke(request):
+def like_at_joke(request):
     joke_id = request.data['joke_id']
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
@@ -52,7 +52,7 @@ def laugh_at_joke(request):
 
 
 @api_view(['POST'])
-def find_interesting_at_news(request):
+def like_at_news(request):
     news_id = request.data['news_id']
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
@@ -66,6 +66,37 @@ def find_interesting_at_news(request):
         act.save()
     elif not set_to and action.count() > 0:
         action.delete()
+
+    return Response({"message": "Something went wrong.."})
+
+
+@api_view(['POST'])
+def comment_response(request):
+    comment_id = request.data['comment_id']
+    response = request.data['response']
+    user_id = 2                            # todo move to `hard-coding`
+
+    CommentResponse(response=response, owner_id=user_id, comment_id=comment_id).save()
+
+    return Response({"message": "Something went wrong.."})
+
+
+@api_view(['DELETE'])
+def comment_backing_delete(request):
+    user_id = 2  # todo move to `hard-coding`
+    comment_id = request.data['comment_id']
+    user = User.objects.get(pk=user_id)
+    comment = Comment.objects.get(pk=comment_id)
+    comment.comment_backers.remove(user)
+
+    return Response({"message": "Something went wrong.."})
+
+
+@api_view(['DELETE'])
+def comment_response_delete(request):
+    response_id = request.data['response']
+
+    CommentResponse.objects.filter(id=response_id).delete()
 
     return Response({"message": "Something went wrong.."})
 
