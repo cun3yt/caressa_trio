@@ -1,5 +1,4 @@
 # todo OSS this
-# todo study `collections` package
 import collections
 
 

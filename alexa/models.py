@@ -23,6 +23,7 @@ from django.utils import timezone
 from random import sample
 from icalendar import Calendar
 from django.utils.crypto import get_random_string
+from caressa.hardcodings import HC_HARDWARE_USER_DEVICE_ID_PREFIX
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -223,6 +224,10 @@ class AUser(TimeStampedModel):
         user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
         user.save()
         return True
+
+    def is_hardware_user(self) -> bool:
+        prefix = HC_HARDWARE_USER_DEVICE_ID_PREFIX
+        return self.alexa_device_id.startswith(prefix)
 
     @staticmethod
     def get_or_create_by(alexa_device_id, alexa_user_id):
