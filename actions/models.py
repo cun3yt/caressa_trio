@@ -12,6 +12,7 @@ from jsonfield import JSONField
 from utilities.logger import log
 import timeago
 from django.utils import timezone
+from caressa.hardcodings import HC_CIRCLE_ID
 
 
 class UserAction(Action):
@@ -217,11 +218,12 @@ class UserPost(TimeStampedModel):
 
 
 def user_post_activity_save(sender, instance, created, **kwargs):
+    circle_id = HC_CIRCLE_ID
     action.send(instance.user,
                 verb='created a post',
                 description=kwargs.get('description', ''),
                 action_object=instance,
-                target=Circle.objects.get(id=1),     # todo: Move to `hard-coding`
+                target=Circle.objects.get(id=circle_id),
                 )
 
 

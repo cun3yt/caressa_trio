@@ -4,6 +4,7 @@ from caressa.settings import REST_FRAMEWORK
 from alexa.models import Joke, User, News, Song
 from generic_relations.relations import GenericRelatedField
 from django.db.utils import IntegrityError
+from caressa.hardcodings import HC_USER_ID
 
 
 class JokeSerializer(serializers.ModelSerializer):
@@ -45,7 +46,7 @@ class CommentSerializer(serializers.ModelSerializer):
         return response_list
 
     def get_if_user_backed_the_comment(self, comment_id):
-        user_id = 2  # todo move to `hard-coding`
+        user_id = HC_USER_ID
         comment = Comment.objects.get(pk=comment_id)
         return comment.comment_backers.filter(id=user_id)
 
@@ -63,8 +64,9 @@ class CommentSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        backer_instance = User.objects.get(id=2)
-        validated_data['comment_backers'] = [backer_instance, ]       # todo: Move to `hard_codes`
+        user_id = HC_USER_ID
+        backer_instance = User.objects.get(id=user_id)
+        validated_data['comment_backers'] = [backer_instance, ]
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
         new_comment = validated_data['comment']
@@ -96,7 +98,8 @@ class ReactionSerializer(serializers.ModelSerializer):
         return owner_profile
 
     def create(self, validated_data):
-        validated_data['owner'] = User.objects.get(id=2)    # todo: Move to `hard_codes`
+        user_id = HC_USER_ID
+        validated_data['owner'] = User.objects.get(id=user_id)
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
         return super(ReactionSerializer, self).create(validated_data)
@@ -157,7 +160,7 @@ class ActionSerializer(serializers.ModelSerializer):
         }
 
     def get_if_user_liked_the_action(self, action_id):
-        user_id = 2  # todo move to `hard-coding`
+        user_id = HC_USER_ID  # todo move to `hard-coding`
         user = User.objects.get(id=user_id)
         return UserReaction.objects.filter(content_id=action_id, owner=user)
 

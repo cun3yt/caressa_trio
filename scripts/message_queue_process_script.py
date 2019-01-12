@@ -8,8 +8,9 @@ from caressa.settings import pusher_client
 from voice_service.google import tts
 from time import sleep
 import traceback
+from caressa.hardcodings import HC_MSG_SOURCE_USER_ID, HC_MSG_DESTINATION_USER_ID, HC_FAMILY_MEMBER_FIRST_NAME, HC_PUSHER_CHANNEL
 
-pusher_channel = 'family.senior.1'    # todo move to `hard-coding`
+pusher_channel = HC_PUSHER_CHANNEL
 
 
 def audio_worker(publisher, next_queued_job):
@@ -53,8 +54,10 @@ def audio_worker(publisher, next_queued_job):
                           mail_type,
                           url)
 
-    source = User.objects.get(pk=2)    # todo move to `hard-coding`
-    destination = User.objects.get(pk=1)    # todo move to `hard-coding`
+    user_id = HC_MSG_SOURCE_USER_ID
+    source = User.objects.get(pk=user_id)
+    user_destination_id = HC_MSG_DESTINATION_USER_ID
+    destination = User.objects.get(pk=user_destination_id)
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
 
@@ -91,8 +94,10 @@ def text_worker(publisher, next_queued_job):
                           mail_type,
                           url)
 
-    source = User.objects.get(pk=2)    # todo move to `hard-coding`
-    destination = User.objects.get(pk=1)    # todo move to `hard-coding`
+    user_id = HC_MSG_SOURCE_USER_ID
+    source = User.objects.get(pk=user_id)
+    destination_user_id = HC_MSG_DESTINATION_USER_ID
+    destination = User.objects.get(pk=destination_user_id)
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
 
@@ -100,7 +105,7 @@ def text_worker(publisher, next_queued_job):
 
 
 def personalization_worker(publisher, next_queued_job):
-    text = 'Your music preferences updated by John'  # todo move to `hard-coding`
+    text = 'Your music preferences updated by {first_name}'.format(first_name=HC_FAMILY_MEMBER_FIRST_NAME)
     mail_type = 'voice_mail'
 
     next_queued_job.process_state = Messages.PROCESS_RUNNING

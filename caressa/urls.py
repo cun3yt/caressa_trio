@@ -42,6 +42,7 @@ flat_router = register_flat_alexa_routes(flat_router)
 urlpatterns = [
     path('', main_view),
     path('act/', include(router.urls)),
+    path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     path('flat-api/', include(flat_router.urls)),
     path('admin/', admin.site.urls),
     path('discussion', alexa_io),
@@ -57,5 +58,6 @@ urlpatterns = [
     path('post/', new_post),
     path('generate_signed_url/', pre_signed_url_for_s3),
     path('new_message/', new_job_for_message_queue),
+]
 
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

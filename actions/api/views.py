@@ -9,13 +9,14 @@ from actstream.models import action_object_stream
 from streaming.models import Messages
 import boto3
 from caressa import settings
+from caressa.hardcodings import HC_USER_ID
 
 
 class ActionViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = ActionSerializer
 
     def get_queryset(self):
-        user_id = 2     # todo move to `hard-coding`
+        user_id = HC_USER_ID
         user = User.objects.get(id=user_id)
         circle = user.circle_set.all()[0]
         queryset = UserAction.objects.mystream(user, circle).all().order_by('-timestamp')
@@ -37,7 +38,7 @@ def like_at_joke(request):
     joke_id = request.data['joke_id']
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
-    user_id = 2                             # todo move to `hard-coding`
+    user_id = HC_USER_ID
     user = User.objects.get(id=user_id)
     joke = Joke.objects.get(id=joke_id)
     action = action_object_stream(joke).filter(actor_object_id=user.id)
@@ -56,7 +57,7 @@ def like_at_news(request):
     news_id = request.data['news_id']
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
-    user_id = 2                             # todo move to `hard-coding`
+    user_id = HC_USER_ID
     user = User.objects.get(id=user_id)
     news = News.objects.get(id=news_id)
     action = action_object_stream(news).filter(actor_object_id=user.id)
@@ -74,7 +75,7 @@ def like_at_news(request):
 def comment_response(request):
     comment_id = request.data['comment_id']
     response = request.data['response']
-    user_id = 2                            # todo move to `hard-coding`
+    user_id = HC_USER_ID
 
     CommentResponse(response=response, owner_id=user_id, comment_id=comment_id).save()
 
@@ -83,7 +84,7 @@ def comment_response(request):
 
 @api_view(['DELETE'])
 def comment_backing_delete(request):
-    user_id = 2  # todo move to `hard-coding`
+    user_id = HC_USER_ID
     comment_id = request.data['comment_id']
     user = User.objects.get(pk=user_id)
     comment = Comment.objects.get(pk=comment_id)
@@ -106,7 +107,7 @@ def like_the_song(request):
     song_id = request.data.get('song_id')
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
-    user_id = 2                             # todo move to `hard-coding`
+    user_id = HC_USER_ID
     user = User.objects.get(id=user_id)
     song = Song.objects.get(id=song_id)
     action = action_object_stream(song).filter(actor_object_id=user.id)
@@ -122,7 +123,7 @@ def like_the_song(request):
 
 @api_view(['POST'])
 def new_post(request):
-    user_id = 2  # todo move to `hard-coding`
+    user_id = HC_USER_ID
     user = User.objects.get(id=user_id)
 
     post = UserPost(user=user, data=request.data['selections'])
@@ -153,7 +154,7 @@ def pre_signed_url_for_s3(request):
 
 @api_view(['POST'])
 def new_job_for_message_queue(request):
-    user_id = 2  # todo move to `hard-coding`
+    user_id = HC_USER_ID
     message_type = request.data.get('type')
     message_key = request.data.get('key')
     content_str = 'content'
