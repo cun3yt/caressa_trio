@@ -28,6 +28,7 @@ from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from voice_service.views import speech_to_text
 from caressa.admin import get_admin
+from senior_living_facility.urls import urls as senior_living_facility_urls
 
 admin = get_admin()
 
@@ -58,6 +59,7 @@ urlpatterns = [
     path('post/', new_post),
     path('generate_signed_url/', pre_signed_url_for_s3),
     path('new_message/', new_job_for_message_queue),
+    path('facility/', include(senior_living_facility_urls)),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
