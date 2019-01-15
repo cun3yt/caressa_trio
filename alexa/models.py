@@ -1,5 +1,5 @@
 from caressa.settings import ENV as SETTINGS_ENV
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -24,6 +24,30 @@ from random import sample
 from icalendar import Calendar
 from django.utils.crypto import get_random_string
 from caressa.hardcodings import HC_HARDWARE_USER_DEVICE_ID_PREFIX
+from senior_living_facility.models import SeniorLivingFacility
+
+
+class CaressaUserManager(BaseUserManager):
+    def create_user(self, email, password=None):
+        if not email:
+            raise ValueError('Users must have an email address')
+
+        user = self.model(
+            email=self.normalize_email(email),
+        )
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password):
+        user = self.create_user(
+            email,
+            password=password,
+        )
+        user.is_admin = True
+        user.save(using=self._db)
+        return user
 
 
 class User(AbstractUser, TimeStampedModel):
@@ -47,15 +71,21 @@ class User(AbstractUser, TimeStampedModel):
         default=CARETAKER,
     )
 
+    email = models.EmailField(blank=False, null=False, unique=True)
     phone_number = PhoneNumberField(db_index=True, blank=True)
     profile_pic = models.TextField(blank=True, default='')
     state = models.TextField(blank=False, default='unknown')
     city = models.TextField(blank=False, default='unknown')
+    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility, on_delete=models.DO_NOTHING, null=True, )
     is_anonymous_user = models.BooleanField(default=True,
                                             help_text='Having this field anonymous means that the content will '
                                                       'not be optimized on the personal level, e.g. calling by '
                                                       'name. Once you set the user\'s first name properly you can '
                                                       'set this field to `False`', )
+
+    objects = CaressaUserManager()
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
 
     def get_profile_pic(self):
         return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None

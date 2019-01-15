@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'actions',
     'streaming',
     'voice_service',
+    'senior_living_facility',
 ]
 
 MIDDLEWARE = [
