@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.contrib.auth.models import Group
+from django.utils.translation import gettext, gettext_lazy as _
 from alexa.models import Fact, FactType, User, Circle
 from django.db import models
 from utilities.widgets.split_json_widget import SplitJSONWidget
@@ -15,7 +16,7 @@ class UserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', )
+        fields = ('email', 'first_name', 'last_name')
 
     def clean_password2(self):
         # Check that the two password entries match
@@ -44,11 +45,11 @@ class UserChangeForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ('id',
-                  'username',
                   'password',
                   'first_name',
                   'last_name',
                   'email',
+                  'user_type',
                   'is_anonymous_user',
                   'date_joined',
                   'is_staff',
@@ -68,11 +69,25 @@ class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
 
+    fieldsets = (
+        (None, {'fields': ('email', 'password', 'user_type', )}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name')}),
+        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser',
+                                       'groups', 'user_permissions')}),
+        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'password1', 'password2'),
+        }),
+    )
+
     list_display = ('id',
-                    'username',
                     'first_name',
                     'last_name',
                     'email',
+                    'user_type',
                     'date_joined',
                     'is_anonymous_user',
                     'is_staff',

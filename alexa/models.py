@@ -1,5 +1,5 @@
 from caressa.settings import ENV as SETTINGS_ENV
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import BaseUserManager
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -25,6 +25,10 @@ from icalendar import Calendar
 from django.utils.crypto import get_random_string
 from caressa.hardcodings import HC_HARDWARE_USER_DEVICE_ID_PREFIX
 from senior_living_facility.models import SeniorLivingFacility
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin
+from django.utils.translation import gettext_lazy as _
+from django.core.mail import send_mail
 
 
 class CaressaUserManager(BaseUserManager):
@@ -50,10 +54,58 @@ class CaressaUserManager(BaseUserManager):
         return user
 
 
-class User(AbstractUser, TimeStampedModel):
+class AbstractCaressaUser(AbstractBaseUser, PermissionsMixin):
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=150, blank=True)
+    email = models.EmailField(_('email address'), blank=False, null=False, unique=True)
+    is_staff = models.BooleanField(
+        _('staff status'),
+        default=False,
+        help_text=_('Designates whether the user can log into this admin site.'),
+    )
+    is_active = models.BooleanField(
+        _('active'),
+        default=True,
+        help_text=_(
+            'Designates whether this user should be treated as active. '
+            'Unselect this instead of deleting accounts.'
+        ),
+    )
+    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    objects = CaressaUserManager()
+
+    EMAIL_FIELD = 'email'
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
     class Meta:
+        verbose_name = _('user')
+        verbose_name_plural = _('users')
+        abstract = True
         db_table = 'user'
 
+    def clean(self):
+        super().clean()
+        self.email = self.__class__.objects.normalize_email(self.email)
+
+    def get_full_name(self):
+        """
+        Return the first_name plus the last_name, with a space in between.
+        """
+        full_name = '%s %s' % (self.first_name, self.last_name)
+        return full_name.strip()
+
+    def get_short_name(self):
+        """Return the short name for the user."""
+        return self.first_name
+
+    def email_user(self, subject, message, from_email=None, **kwargs):
+        """Send an email to this user."""
+        send_mail(subject, message, from_email, [self.email], **kwargs)
+
+
+class User(AbstractCaressaUser, TimeStampedModel):
     CARETAKER = 'SENIOR'
     FAMILY = 'FAMILY'
     CAREGIVER = 'CAREGIVER'
@@ -71,7 +123,6 @@ class User(AbstractUser, TimeStampedModel):
         default=CARETAKER,
     )
 
-    email = models.EmailField(blank=False, null=False, unique=True)
     phone_number = PhoneNumberField(db_index=True, blank=True)
     profile_pic = models.TextField(blank=True, default='')
     state = models.TextField(blank=False, default='unknown')
@@ -84,8 +135,6 @@ class User(AbstractUser, TimeStampedModel):
                                                       'set this field to `False`', )
 
     objects = CaressaUserManager()
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
 
     def get_profile_pic(self):
         return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None
@@ -111,14 +160,12 @@ class User(AbstractUser, TimeStampedModel):
 
     @staticmethod
     def create_test_user():
-        username = 'Test{date}'.format(date=datetime.now().strftime('%Y%m%d%H%M'))
-        test_user = User(username=username,
-                         password=get_random_string(),
+        test_user = User(password=get_random_string(),
                          first_name='AnonymousFirstName',
                          last_name='AnonymousLastName',
                          is_staff=False,
                          is_superuser=False,
-                         email='test@caressa.ai',
+                         email='test{}@caressa.ai'.format(get_random_string(15)),
                          phone_number='+14153477898',
                          profile_pic='default_profile_pic',
                          state='test_state',
@@ -268,8 +315,6 @@ class AUser(TimeStampedModel):
         :param alexa_device_id: string
         :param alexa_user_id: int
         :return: (AUser, bool)
-
-        @todo write test
         """
 
         alexa_user, is_created = AUser.objects.get_or_create(alexa_device_id=alexa_device_id,

@@ -210,10 +210,10 @@ class UserPost(TimeStampedModel):
     '''
 
     def __str__(self):
-        username = self.user.first_name
+        name = self.user.first_name
         lst = ["{} {}".format(obj.get('verb', ''), obj.get('target', '')) for obj in self.data]
         if len(lst) <= 1:
-            return "{} is {}".format(username, lst[0])
+            return "{} is {}".format(name, lst[0])
         return "I am {} and {}".format(', '.join(lst[:-1]), lst[-1])
 
 
