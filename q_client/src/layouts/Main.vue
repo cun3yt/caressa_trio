@@ -275,13 +275,13 @@ export default {
     },
     submitLogin: function () {
       let data = `grant_type=password&username=${this.loginEmail}&password=${this.loginPassword}&client_id=${vars.CLIENT_ID}&client_secret=${vars.CLIENT_SECRET}`
-      this.$http.post('http://e9bac65b.ngrok.io/o/token/', data, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/o/token/`, data, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
         }
       }).then(
         response => {
-          console.log(response.data)
+          console.log('success')
           this.loginEmail = ''
           this.loginPassword = ''
           this.$auth.access_token = response.data.access_token
@@ -290,7 +290,7 @@ export default {
           this.loginModal = !this.loginModal
           this.$children[0].$children[4].$children[0].addFeeds()
         }, response => {
-          console.log(response)
+          console.log('error')
         })
     },
     loginRedirect: function (currentModal) {

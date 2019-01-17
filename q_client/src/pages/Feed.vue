@@ -72,12 +72,7 @@ export default {
     addFeeds () {
       let vm = this
       ++this.pageNumber
-      this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'Authorization': `Bearer ${this.$auth.access_token}`
-        }
-      })
+      this.$auth.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`)
         .then(response => {
           vm.feeds = vm.feeds.concat(response.data['results'])
 
