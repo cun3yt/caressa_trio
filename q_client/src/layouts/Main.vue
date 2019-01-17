@@ -219,8 +219,6 @@ export default {
       deviceCode: '',
       appPhoneNumber: '',
       lastPosition: '',
-      access_token: '',
-      refresh_token: '',
       types: [
         {
           label: 'Always Maximized',
