@@ -1,11 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Facility Home</title>
-</head>
-<body>
-    <p>Hello {{ user.first_name }} from {{ facility_name }}!</p>
-    <p>These are the users</p>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block content %}
+<div id="app">
+    <div>Welcome</div>
+    <img v-show="loading" src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
+
+    <div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script type="application/javascript">
+    let app = new Vue({
+        delimiters: ['-{-', '-}-'],
+        el: '#app',
+        mounted: function() {
+            this.access_token = this.$cookies.get('access_token')
+            if(!this.access_token) {
+                window.location.href = 'http://localhost:8000/accounts/login/';
+            }
+            // todo: Check User's type etc...
+            this.loading = false
+        },
+        data: {
+            loading: true
+        },
+        methods: {
+
+        }
+    })
+</script>
+{% endblock %}

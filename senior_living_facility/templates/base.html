@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Caressa{% endblock %}</title>
+</head>
+<body>
+    {% block content %}
+        Nothing to see here
+    {% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.22/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1/dist/vue-resource.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-cookies@1.5.12/vue-cookies.min.js"></script>
+
+    {% block js %}
+    {% endblock %}
+</body>
+</html>

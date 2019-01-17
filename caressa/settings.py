@@ -67,6 +67,12 @@ INSTALLED_APPS = [
     'senior_living_facility',
 ]
 
+AUTHENTICATION_BACKENDS = (
+    'oauth2_provider.backends.OAuth2Backend',
+    # Uncomment following if you want to access the admin
+    'django.contrib.auth.backends.ModelBackend',
+)
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -75,6 +81,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -129,17 +136,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CORS_ORIGIN_WHITELIST = (
-    '127.0.0.1:8080',
-    'localhost:8080',
-    '192.168.1.76:8080',
-    '192.168.1.76:8081',
-    '172.31.99.233:8080',
-    '172.20.10.3:8080',
-    '172.20.10.3:8081',
-    '10.0.1.169:8080',  # todo this line needed to be configured for each developer who is trying to debug the app in
-    # his/her phone according to their local requirements
-)
+CORS_ORIGIN_ALLOW_ALL = True
+
+# CORS_ORIGIN_WHITELIST = (
+#     '127.0.0.1:8080',
+#     'localhost:8080',
+#     '192.168.1.76:8080',
+#     '192.168.1.76:8081',
+#     '172.31.99.233:8080',
+#     '172.20.10.3:8080',
+#     '172.20.10.3:8081',
+#     '10.0.1.169:8080',  # todo this line needed to be configured for each developer who is trying to debug the app in
+#     # his/her phone according to their local requirements
+# )
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.0/topics/i18n/
@@ -235,3 +244,8 @@ CONVERSATION_ENGINES = {
 }
 
 admin.site.empty_value_display = '-empty-'
+
+WEB_CLIENT = {
+    'id': os.getenv('WEB_CLIENT_ID'),
+    'secret': os.getenv('WEB_CLIENT_SECRET'),
+}
