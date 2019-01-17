@@ -72,8 +72,12 @@ export default {
     addFeeds () {
       let vm = this
       ++this.pageNumber
-
-      this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`, {})
+      this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Authorization': `Bearer ${this.$auth.access_token}`
+        }
+      })
         .then(response => {
           vm.feeds = vm.feeds.concat(response.data['results'])
 
@@ -124,7 +128,6 @@ export default {
     window.addEventListener('scroll', () => {
       this.moreFeedsNeeded = this.bottomVisible()
     })
-    this.addFeeds()
     this.pushFeeds()
   }
 }
