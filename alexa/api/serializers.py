@@ -1,15 +1,34 @@
 from rest_framework import serializers
 from alexa.models import AUserMedicalState, Joke, News, User, UserActOnContent
 from actions.models import UserAction
-from rest_framework.pagination import PageNumberPagination
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
 from caressa.hardcodings import HC_USER_ID
 
 
-class ExtendedPageNumberPagination(PageNumberPagination):   # todo Move to a proper place
-    max_page_size = 100
-    page_size_query_param = 'page_size'
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
+
+
+class FamilyMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
+
+
+class SeniorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'first_name', 'last_name', 'circle')
+
+    circle = serializers.SerializerMethodField()
+
+    def get_circle(self, senior: User):
+        circle = senior.circle_set.all()[0]
+        members = circle.members.filter(user_type=User.FAMILY).all()
+        return FamilyMemberSerializer(members, many=True).data
 
 
 class MedicalStateSerializer(serializers.ModelSerializer):

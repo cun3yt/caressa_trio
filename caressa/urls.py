@@ -21,6 +21,7 @@ from actions.urls import register_nested_routes as register_nested_action_urls, 
     register_flat_routes as register_flat_action_routes
 from alexa.urls import register_nested_routes as register_nested_alexa_urls, \
     register_flat_routes as register_flat_alexa_routes
+from alexa.urls import individual_paths as individual_paths_alexa
 
 from actions.api.views import like_at_joke, like_at_news, comment_response, new_post, pre_signed_url_for_s3, \
     new_job_for_message_queue, comment_response_delete, comment_backing_delete
@@ -61,5 +62,7 @@ urlpatterns = [
     path('new_message/', new_job_for_message_queue),
     path('accounts/', include(senior_living_facility_urls)),
 ]
+
+urlpatterns += individual_paths_alexa()
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

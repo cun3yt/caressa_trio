@@ -1,7 +1,34 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.response import Response
-from alexa.api.serializers import MedicalStateSerializer, JokeSerializer, NewsSerializer, UserActOnContentSerializer
-from alexa.models import AUserMedicalState, Joke, News, UserActOnContent
+from rest_framework.permissions import IsAuthenticated
+from alexa.api.serializers import UserSerializer, SeniorSerializer, MedicalStateSerializer, JokeSerializer, NewsSerializer, UserActOnContentSerializer
+from alexa.models import AUserMedicalState, Joke, News, UserActOnContent, User
+from alexa.api.permissions import IsSameUser
+from oauth2_provider.contrib.rest_framework import OAuth2Authentication
+
+
+class UserMeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsSameUser, )
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class SeniorListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
+    serializer_class = SeniorSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_provider():
+            return []
+        queryset = User.objects.filter(user_type__exact=User.CARETAKER,
+                                       senior_living_facility=user.senior_living_facility).all()
+        return queryset
 
 
 class MedicalViewSet(viewsets.ModelViewSet):

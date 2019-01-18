@@ -2,33 +2,169 @@
 
 {% block content %}
 <div id="app">
-    <div>Welcome</div>
+    <div>Welcome -{-user.first_name-}- -{-user.last_name-}-</div>
+
+    <a v-on:click="logout()" href="#">Logout</a>
+
+    -{- loading -}-
+
     <img v-show="loading" src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
 
-    <div>
-
+    <div id="seniors">
+        <form id="search">
+            Search <input name="query" v-model="searchQuery">
+        </form>
+        <tabular-data :data="gridData" :columns="gridColumns" :filter-key="searchQuery"></tabular-data>
     </div>
 </div>
+
 {% endblock %}
 
 {% block js %}
+<!-- component template -->
+<script type="text/x-template" id="grid-template">
+    <table>
+        <thead>
+            <tr>
+                <th v-for="key in columns"
+                @click="sortBy(key)"
+                :class="{ active: sortKey == key }">
+                    -{- key -}-
+                    <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'"></span>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="entry in filteredData">
+                <td v-for="(value, key) in columns">-{- entry[value] -}-</td>
+            </tr>
+        </tbody>
+    </table>
+</script>
+
 <script type="application/javascript">
+    // register the grid component
+    Vue.component('tabular-data', {
+        delimiters: ['-{-', '-}-'],
+      template: '#grid-template',
+      props: {
+        data: Array,
+        columns: Array,
+        filterKey: String
+      },
+      data: function () {
+        var sortOrders = {}
+        this.columns.forEach(function (key) {
+          sortOrders[key] = 1
+        })
+        return {
+          sortKey: '',
+          sortOrders: sortOrders
+        }
+      },
+      computed: {
+        filteredData: function () {
+          var sortKey = this.sortKey
+          var filterKey = this.filterKey && this.filterKey.toLowerCase()
+          var order = this.sortOrders[sortKey] || 1
+          var data = this.data
+          if (filterKey) {
+            data = data.filter(function (row) {
+              return Object.keys(row).some(function (key) {
+                return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+              })
+            })
+          }
+          if (sortKey) {
+            data = data.slice().sort(function (a, b) {
+              a = a[sortKey]
+              b = b[sortKey]
+              return (a === b ? 0 : a > b ? 1 : -1) * order
+            })
+          }
+          return data
+        }
+      },
+      filters: {
+        capitalize: function (str) {
+          return str.charAt(0).toUpperCase() + str.slice(1)
+        }
+      },
+      methods: {
+        sortBy: function (key) {
+          this.sortKey = key
+          this.sortOrders[key] = this.sortOrders[key] * -1
+        }
+      }
+    })
+
     let app = new Vue({
         delimiters: ['-{-', '-}-'],
         el: '#app',
         mounted: function() {
             this.access_token = this.$cookies.get('access_token')
+
+            // todo: make this one as a function as `requireLogin()`
             if(!this.access_token) {
                 window.location.href = 'http://localhost:8000/accounts/login/';
             }
-            // todo: Check User's type etc...
-            this.loading = false
+
+            // Get User Detail
+            this.$http.get('http://localhost:8000/api/users/me', {
+                headers: {
+                    Authorization: 'Bearer ' + this.access_token
+                }
+            }).then(function(response) {
+                this.user = response.data
+                this.list()
+                this.loading = false
+            }, function(error) {
+                console.error(error)
+            })
         },
         data: {
-            loading: true
+            loading: true,
+            user: {},
+            access_token: '',
+            client_id: '{{ client_id }}',
+            client_secret: '{{ client_secret }}',
+            searchQuery: '',
+            gridColumns: ['pk', 'first_name', 'last_name'],
+            gridData: [
+                {#{ name: 'Chuck Norris', power: Infinity },#}
+                {#{ name: 'Bruce Lee', power: 9000 },#}
+                {#{ name: 'Jackie Chan', power: 7000 },#}
+                {#{ name: 'Jet Li', power: 8000 }#}
+            ]
         },
         methods: {
-
+            list: function () {
+                this.$http.get('http://localhost:8000/api/seniors', {
+                    headers: {
+                        Authorization: 'Bearer ' + this.access_token
+                    }
+                }).then(function(response) {
+                    this.gridData = response.data.results
+                    console.log(response.data)
+                }, function(error) {
+                    console.error(error)
+                })
+            },
+            logout: function () {
+                this.$http({
+                    method: 'POST',
+                    url: 'http://localhost:8000/o/revoke_token/',
+                    emulateJSON: true,
+                    body: {
+                        token: this.access_token,
+                        client_id: this.client_id,
+                        client_secret: this.client_secret
+                    }
+                })
+                this.$cookies.remove('access_token')
+                this.$cookies.remove('refresh_token')
+                window.location.href = 'http://localhost:8000/accounts/login/';
+            }
         }
     })
 </script>

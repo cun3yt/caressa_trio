@@ -1,7 +1,8 @@
-from alexa.api.views import JokeViewSet, NewsViewSet, MedicalViewSet, UserActOnContentViewSet
+from alexa.api.views import JokeViewSet, NewsViewSet, MedicalViewSet, UserActOnContentViewSet, UserMeViewSet, SeniorListViewSet
 from actions.api.views import ActionViewSet
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from rest_framework import routers
+from django.urls import path
 
 
 def register_nested_routes(router: ExtendedSimpleRouter):
@@ -29,3 +30,10 @@ def register_flat_routes(flat_router: routers):
     flat_router.register(r'news', NewsViewSet, 'news')
     flat_router.register(r'user-act-on-content', UserActOnContentViewSet, 'user-act-on-content')
     return flat_router
+
+
+def individual_paths():
+    return [
+        path('api/users/me', UserMeViewSet.as_view({'get': 'retrieve'})),
+        path('api/seniors', SeniorListViewSet.as_view({'get': 'list'})),
+    ]
