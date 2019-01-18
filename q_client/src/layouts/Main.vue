@@ -208,7 +208,7 @@ export default {
       signUpPassword: '',
       loginEmail: '',
       loginPassword: '',
-      loginModal: this.$auth.check_state(),
+      loginModal: this.$auth.checkState(),
       signUpModal: false,
       noSeniorModal: false,
       videoModal: false,
@@ -279,10 +279,11 @@ export default {
           console.log('success')
           this.loginEmail = ''
           this.loginPassword = ''
-          this.loginModal = !this.loginModal
+          this.loginModal = this.$auth.checkState()
           this.$children[0].$children[4].$children[0].addFeeds()
         }, response => {
           console.log('error')
+          this.loginModal(true)
         })
     },
     loginRedirect: function (currentModal) {

@@ -117,6 +117,7 @@ export default {
     }
   },
   created () {
+    this.addFeeds()
     this.setupContent({
       title: 'Maggy'
     })
