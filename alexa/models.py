@@ -128,6 +128,17 @@ class User(AbstractCaressaUser, TimeStampedModel):
     state = models.TextField(blank=False, default='unknown')
     city = models.TextField(blank=False, default='unknown')
     senior_living_facility = models.ForeignKey(to=SeniorLivingFacility, on_delete=models.DO_NOTHING, null=True, )
+    room_no = models.CharField(verbose_name="Room Number",
+                               max_length=8,
+                               null=False,
+                               default='',
+                               blank=True,
+                               help_text="The room number of the senior. It is only meaningful for the senior", )
+    hardware = models.ForeignKey(to='streaming.HardwareRegistry',
+                                 null=True,
+                                 default=None,
+                                 help_text="The hardware in senior's room",
+                                 on_delete=models.DO_NOTHING, )
     is_anonymous_user = models.BooleanField(default=True,
                                             help_text='Having this field anonymous means that the content will '
                                                       'not be optimized on the personal level, e.g. calling by '
@@ -197,6 +208,10 @@ class Circle(TimeStampedModel):
 
     def is_member(self, member: User):
         return CircleMembership.is_member(self, member)
+
+    @property
+    def admins(self):
+        return self.members.filter(circle_memberships__is_admin=True).all()
 
 
 class CircleMembership(TimeStampedModel):

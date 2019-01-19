@@ -2,100 +2,104 @@
 
 {% block content %}
 <div id="app">
-    <div>Welcome -{-user.first_name-}- -{-user.last_name-}-</div>
+    <div v-if="loading">
+        <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
+    </div>
+    <div v-else>
+        <div>Welcome -{-user.first_name-}- -{-user.last_name-}-</div>
 
-    <a v-on:click="logout()" href="#">Logout</a>
+        <a v-on:click="logout()" href="#">Logout</a>
 
-    -{- loading -}-
-
-    <img v-show="loading" src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
-
-    <div id="seniors">
-        <form id="search">
-            Search <input name="query" v-model="searchQuery">
-        </form>
-        <tabular-data :data="gridData" :columns="gridColumns" :filter-key="searchQuery"></tabular-data>
+        <div id="seniors">
+            <form id="search">Search <input name="query" v-model="searchQuery"></form>
+            <tabular-data :data="gridData" :columns="gridColumns" :filter-key="searchQuery" :edit-entry="editEntry"
+                          :delete-entry="deleteEntry"></tabular-data>
+        </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block js %}
-<!-- component template -->
 <script type="text/x-template" id="grid-template">
     <table>
         <thead>
             <tr>
-                <th v-for="key in columns"
-                @click="sortBy(key)"
-                :class="{ active: sortKey == key }">
+                <th v-for="key in columns" @click="sortBy(key)" :class="{ active: sortKey == key }">
                     -{- key -}-
                     <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'"></span>
                 </th>
+                <th>Edit</th>
             </tr>
         </thead>
         <tbody>
             <tr v-for="entry in filteredData">
                 <td v-for="(value, key) in columns">-{- entry[value] -}-</td>
+                <td>
+                    <i class="far fa-edit" v-on:click="editEntry(entry.pk)"
+                       style="font-size:26px; color:darkgreen; cursor: pointer;"></i>
+                    <i class="fas fa-trash-alt" v-on:click="deleteEntry(entry.pk)"
+                       style="font-size:26px; color:red; cursor: pointer;"></i>
+                </td>
             </tr>
         </tbody>
     </table>
 </script>
 
 <script type="application/javascript">
-    // register the grid component
     Vue.component('tabular-data', {
         delimiters: ['-{-', '-}-'],
-      template: '#grid-template',
-      props: {
-        data: Array,
-        columns: Array,
-        filterKey: String
-      },
-      data: function () {
-        var sortOrders = {}
-        this.columns.forEach(function (key) {
-          sortOrders[key] = 1
-        })
-        return {
-          sortKey: '',
-          sortOrders: sortOrders
-        }
-      },
-      computed: {
-        filteredData: function () {
-          var sortKey = this.sortKey
-          var filterKey = this.filterKey && this.filterKey.toLowerCase()
-          var order = this.sortOrders[sortKey] || 1
-          var data = this.data
-          if (filterKey) {
-            data = data.filter(function (row) {
-              return Object.keys(row).some(function (key) {
-                return String(row[key]).toLowerCase().indexOf(filterKey) > -1
-              })
+        template: '#grid-template',
+        props: {
+            data: Array,
+            columns: Array,
+            filterKey: String,
+            editEntry: Function,
+            deleteEntry: Function
+        },
+        data: function () {
+            var sortOrders = {}
+            this.columns.forEach(function (key) {
+                sortOrders[key] = 1
             })
-          }
-          if (sortKey) {
-            data = data.slice().sort(function (a, b) {
-              a = a[sortKey]
-              b = b[sortKey]
-              return (a === b ? 0 : a > b ? 1 : -1) * order
-            })
-          }
-          return data
+            return {
+                sortKey: '',
+                sortOrders: sortOrders
+            }
+        },
+        computed: {
+            filteredData: function () {
+                var sortKey = this.sortKey
+                var filterKey = this.filterKey && this.filterKey.toLowerCase()
+                var order = this.sortOrders[sortKey] || 1
+                var data = this.data
+                if (filterKey) {
+                    data = data.filter(function (row) {
+                        return Object.keys(row).some(function (key) {
+                            return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+                        })
+                    })
+                }
+                if (sortKey) {
+                    data = data.slice().sort(function (a, b) {
+                        a = a[sortKey]
+                        b = b[sortKey]
+                        return (a === b ? 0 : a > b ? 1 : -1) * order
+                    })
+                }
+                return data
+            }
+        },
+        filters: {
+            capitalize: function (str) {
+                return str.charAt(0).toUpperCase() + str.slice(1)
+            }
+        },
+        methods: {
+            sortBy: function (key) {
+                this.sortKey = key
+                this.sortOrders[key] = this.sortOrders[key] * -1
+            }
         }
-      },
-      filters: {
-        capitalize: function (str) {
-          return str.charAt(0).toUpperCase() + str.slice(1)
-        }
-      },
-      methods: {
-        sortBy: function (key) {
-          this.sortKey = key
-          this.sortOrders[key] = this.sortOrders[key] * -1
-        }
-      }
     })
 
     let app = new Vue({
@@ -129,13 +133,8 @@
             client_id: '{{ client_id }}',
             client_secret: '{{ client_secret }}',
             searchQuery: '',
-            gridColumns: ['pk', 'first_name', 'last_name'],
-            gridData: [
-                {#{ name: 'Chuck Norris', power: Infinity },#}
-                {#{ name: 'Bruce Lee', power: 9000 },#}
-                {#{ name: 'Jackie Chan', power: 7000 },#}
-                {#{ name: 'Jet Li', power: 8000 }#}
-            ]
+            gridColumns: ['first_name', 'last_name', 'room_no', 'hardware_id', 'primary_contact'],
+            gridData: []
         },
         methods: {
             list: function () {
@@ -145,10 +144,25 @@
                     }
                 }).then(function(response) {
                     this.gridData = response.data.results
-                    console.log(response.data)
+                    let hede = this.gridData.map(function(row){
+                        if(!row.primary_contact) {
+                            return row
+                        }
+                        let contact = row.primary_contact
+                        row.primary_contact = "email: " + contact.email
+                            + ", name: " + contact.first_name + " " + contact.last_name
+                            + ", phone number: " + contact.phone_number
+                        return row
+                    })
                 }, function(error) {
                     console.error(error)
                 })
+            },
+            deleteEntry: function(pk) {
+                console.log('delete ' + pk)
+            },
+            editEntry: function(pk) {
+                console.log('edit ' + pk)
             },
             logout: function () {
                 this.$http({
@@ -168,4 +182,68 @@
         }
     })
 </script>
+{% endblock %}
+
+{% block css %}
+<style type="text/css">
+    body {
+      font-family: Helvetica Neue, Arial, sans-serif;
+      font-size: 14px;
+      color: #444;
+    }
+
+    table {
+      border: 2px solid #42b983;
+      border-radius: 3px;
+      background-color: #fff;
+    }
+
+    th {
+      background-color: #42b983;
+      color: rgba(255,255,255,0.66);
+      cursor: pointer;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    td {
+      background-color: #f9f9f9;
+    }
+
+    th, td {
+      min-width: 120px;
+      padding: 10px 20px;
+    }
+
+    th.active {
+      color: #fff;
+    }
+
+    th.active .arrow {
+      opacity: 1;
+    }
+
+    .arrow {
+      display: inline-block;
+      vertical-align: middle;
+      width: 0;
+      height: 0;
+      margin-left: 5px;
+      opacity: 0.66;
+    }
+
+    .arrow.asc {
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 4px solid #fff;
+    }
+
+    .arrow.dsc {
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid #fff;
+    }
+</style>
 {% endblock %}
