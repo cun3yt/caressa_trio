@@ -21,7 +21,7 @@
     </q-layout-header>
 
     <q-page-container>
-      <router-view :setup-content="setupContent"></router-view>
+      <router-view :setup-content="setupContent" :log-out="logOut"></router-view>
 
       <q-modal v-model="signUpModal" maximized>
       <div style="padding: 2.5em; margin-top: 1.5em">
@@ -127,7 +127,7 @@
         />
       <q-btn
       align="between"
-      class="btn-fixed-widt"
+      class="btn-fixed-width"
       style="color:#2FCD8C; padding: 1em; margin-top: 2em"
       @click="goBacktoPreviousModal"
       icon="fas fa-arrow-left"
@@ -201,6 +201,8 @@
 
 <script>
 import vars from '../.env'
+import {bus} from '../plugins/auth.js'
+
 export default {
   data () {
     return {
@@ -208,7 +210,7 @@ export default {
       signUpPassword: '',
       loginEmail: '',
       loginPassword: '',
-      loginModal: this.$auth.checkState(),
+      loginModal: this.$auth.isLoggedOut(),
       signUpModal: false,
       noSeniorModal: false,
       videoModal: false,
@@ -272,6 +274,10 @@ export default {
       this.signUpModal = true
       this[currentModal] = false
     },
+    logOut: function () {
+      this.$auth.tokenRevoke()
+      this.loginModal = true
+    },
     submitLogin: function () {
       let data = `grant_type=password&username=${this.loginEmail}&password=${this.loginPassword}&client_id=${vars.CLIENT_ID}&client_secret=${vars.CLIENT_SECRET}`
       this.$auth.post(`${this.$root.$options.hosts.rest}/o/token/`, data, 'login').then(
@@ -279,12 +285,11 @@ export default {
           console.log('success')
           this.loginEmail = ''
           this.loginPassword = ''
-          this.loginModal = this.$auth.checkState()
-          this.$children[0].$children[4].$children[0].addFeeds()
+          bus.$emit('addFeeds')
         }, response => {
           console.log('error')
-          this.loginModal(true)
         })
+      this.loginModal = this.$auth.isLoggedOut()
     },
     loginRedirect: function (currentModal) {
       this.loginModal = true
