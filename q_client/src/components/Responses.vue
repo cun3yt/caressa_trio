@@ -37,7 +37,7 @@ export default {
   methods: {
     post (new_response = this.new_response) {
       let vm = this
-      this.$http.post(`${this.$root.$options.hosts.rest}/comment_response/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/comment_response/`, {
         'comment_id': this.comment_id,
         'response': new_response
       }).then(response => {
@@ -48,7 +48,7 @@ export default {
     },
     deleteResponse (responseId) {
       let vm = this
-      this.$http.delete(`${this.$root.$options.hosts.rest}/comment_response_delete/`, {body: {
+      this.$auth.delete(`${this.$root.$options.hosts.rest}/comment_response_delete/`, {body: {
         'comment_id': this.comment_id,
         'response': responseId
       }}).then(response => {
