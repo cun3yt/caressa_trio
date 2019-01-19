@@ -21,7 +21,7 @@
     </q-layout-header>
 
     <q-page-container>
-      <router-view :setup-content="setupContent"></router-view>
+      <router-view :setup-content="setupContent" :log-out="logOut"></router-view>
 
       <q-modal v-model="signUpModal" maximized>
       <div style="padding: 2.5em; margin-top: 1.5em">
@@ -53,7 +53,43 @@
       />
      </div>
       <div style="padding: 2.5em; margin-top: 1.5em">
-        <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+        <p @click="loginRedirect('signUpModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+        <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+          What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+        </div>
+      </div>
+    </q-modal>
+    <q-modal v-model="loginModal" maximized>
+      <div style="padding: 2.5em; margin-top: 1.5em">
+        <div class="q-display-3 text-weight-light">
+          <span style="color:#2FCD8C">Care</span>
+          <span style="color:#83ddba">ssa</span>
+        </div>
+        <div style="padding-top: 3em">
+          <p class="q-display-1 text-weight-thin">Welcome,</p>
+          <p class="q-display-1 text-weight-thin">Enter Credentials</p>
+          <div>
+            <q-input
+              v-model="loginEmail"
+              type="email"
+              float-label="e-mail"
+              color="#2FCD8C"
+            />
+            <q-input
+              v-model="loginPassword"
+              type="password"
+              float-label="password"
+              color="#2FCD8C"
+            />
+          </div>
+        </div>
+        <q-btn style="color:#2FCD8C; margin-top: 2em"
+               @click=submitLogin()
+               label="LOGIN"
+        />
+      </div>
+      <div style="padding: 2.5em; margin-top: 1.5em">
+        <p @click="signUpRedirect('loginModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Sign Up</span></p>
         <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
           What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
         </div>
@@ -75,7 +111,7 @@
       </div>
       <div style="padding: 1.5em; margin-top: 1.5em">
         <div @click="videoDirection('noSeniorModal')" class="q-title text-weight-light">
-          <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Login</span></p>
+          <p @click="loginRedirect('noSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Login</span></p>
           What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
         </div>
       </div>
@@ -91,7 +127,7 @@
         />
       <q-btn
       align="between"
-      class="btn-fixed-widt"
+      class="btn-fixed-width"
       style="color:#2FCD8C; padding: 1em; margin-top: 2em"
       @click="goBacktoPreviousModal"
       icon="fas fa-arrow-left"
@@ -114,7 +150,7 @@
     <q-btn style="color:#2FCD8C; margin-top: 2em" @click="addSeniorModal = false; foundSeniorModal = true" icon="fas fa-user-plus" label="Add" />
     </div>
     <div style="padding: 2.5em; margin-top: 1.5em">
-      <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+      <p @click="loginRedirect('addSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
       <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
         What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
       </div>
@@ -140,7 +176,7 @@
       </div>
   </div>
   <div style="padding: 2.5em; margin-top: 1.5em">
-    <p @click="loginRedirect" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+    <p @click="loginRedirect('foundSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
     <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
       What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
     </div>
@@ -164,11 +200,17 @@
 </template>
 
 <script>
+import vars from '../.env'
+import {bus} from '../plugins/auth.js'
+
 export default {
   data () {
     return {
       signUpEmail: '',
       signUpPassword: '',
+      loginEmail: '',
+      loginPassword: '',
+      loginModal: this.$auth.isLoggedOut(),
       signUpModal: false,
       noSeniorModal: false,
       videoModal: false,
@@ -205,11 +247,6 @@ export default {
       },
       pages: [
         {
-          name: 'admin',
-          label: 'Admin',
-          icon: 'fas fa-users'
-        },
-        {
           name: 'feed',
           label: 'Feed',
           icon: 'far fa-newspaper'
@@ -233,8 +270,30 @@ export default {
       this.header.title = title
       this.header.subtitle = subtitle
     },
-    loginRedirect: function () {
-      alert('OMG I have an account!')
+    signUpRedirect: function (currentModal) {
+      this.signUpModal = true
+      this[currentModal] = false
+    },
+    logOut: function () {
+      this.$auth.tokenRevoke()
+      this.loginModal = true
+    },
+    submitLogin: function () {
+      let data = `grant_type=password&username=${this.loginEmail}&password=${this.loginPassword}&client_id=${vars.CLIENT_ID}&client_secret=${vars.CLIENT_SECRET}`
+      this.$auth.post(`${this.$root.$options.hosts.rest}/o/token/`, data, 'login').then(
+        response => {
+          console.log('success')
+          this.loginEmail = ''
+          this.loginPassword = ''
+          bus.$emit('addFeeds')
+        }, response => {
+          console.log('error')
+        })
+      this.loginModal = this.$auth.isLoggedOut()
+    },
+    loginRedirect: function (currentModal) {
+      this.loginModal = true
+      this[currentModal] = false
     },
     videoDirection: function (calledFrom) {
       this.lastPosition = calledFrom
