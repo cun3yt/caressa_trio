@@ -24,16 +24,16 @@
     <table>
         <thead>
             <tr>
-                <th v-for="key in columns" @click="sortBy(key)" :class="{ active: sortKey == key }">
-                    -{- key -}-
-                    <span class="arrow" :class="sortOrders[key] > 0 ? 'asc' : 'dsc'"></span>
+                <th v-for="col_obj in columns" @click="sortBy(col_obj.field)" :class="{ active: sortKey == col_obj.field }">
+                    -{- col_obj.label -}-
+                    <span class="arrow" :class="sortOrders[col_obj.field] > 0 ? 'asc' : 'dsc'"></span>
                 </th>
                 <th>Edit</th>
             </tr>
         </thead>
         <tbody>
             <tr v-for="entry in filteredData">
-                <td v-for="(value, key) in columns">-{- entry[value] -}-</td>
+                <td v-for="(col_obj, key) in columns">-{- entry[col_obj.field] -}-</td>
                 <td>
                     <i class="far fa-edit" v-on:click="editEntry(entry.pk)"
                        style="font-size:26px; color:darkgreen; cursor: pointer;"></i>
@@ -59,7 +59,7 @@
         data: function () {
             var sortOrders = {}
             this.columns.forEach(function (key) {
-                sortOrders[key] = 1
+                sortOrders[key.field] = 1
             })
             return {
                 sortKey: '',
@@ -133,7 +133,13 @@
             client_id: '{{ client_id }}',
             client_secret: '{{ client_secret }}',
             searchQuery: '',
-            gridColumns: ['first_name', 'last_name', 'room_no', 'hardware_id', 'primary_contact'],
+            gridColumns: [
+                {field: 'first_name', label: 'First Name'},
+                {field: 'last_name', label: 'Last Name'},
+                {field: 'room_no', label: 'Room Number'},
+                {field: 'hardware_id', label: 'Hardware'},
+                {field: 'primary_contact', label: 'Primary Contact'}
+            ],
             gridData: []
         },
         methods: {
