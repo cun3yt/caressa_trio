@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import moment from 'moment'
 import vars from '../.env'
-import { Cookies } from 'quasar'
+import {Cookies} from 'quasar'
 export const bus = new Vue()
 
 let authModule = {
@@ -45,22 +45,17 @@ let authModule = {
       }
     })
   },
-  post: function (url, data, type) {
+  post: function (url, data, type = 'update') {
     if (type === 'update') {
-      return Vue.http.post(url, data, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'Authorization': `Bearer ${this.access_token}`
-        }
+      return Vue.http({
+        method: 'POST',
+        url: url,
+        emulateJSON: true,
+        body: data,
+        headers: {'Authorization': `Bearer ${this.access_token}`}
       }).then(
         response => {
-          console.log(response)
-          Cookies.set('access_token', response.data.access_token, {expires: 10})
-          Cookies.set('refresh_token', response.data.refresh_token, {expires: 100})
-          Cookies.set('expiry_date', moment().add(response.data.expires_in, 'seconds'), {expires: 10})
-          this.access_token = Cookies.get('access_token')
-          this.refresh_token = Cookies.get('refresh_token')
-          this.expiry_date = Cookies.get('expiry_date')
+          console.log('Auth Success')
         }, response => {
           console.log('Auth Error')
         })
@@ -69,8 +64,20 @@ let authModule = {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
         }
-      })
-    } else {
+      }).then(
+        response => {
+          console.log('Refresh Token Auth Success')
+          console.log(response)
+          Cookies.set('access_token', response.data.access_token, {expires: 10})
+          Cookies.set('refresh_token', response.data.refresh_token, {expires: 100})
+          Cookies.set('expiry_date', moment().add(response.data.expires_in, 'seconds'), {expires: 10})
+          this.access_token = Cookies.get('access_token')
+          this.refresh_token = Cookies.get('refresh_token')
+          this.expiry_date = Cookies.get('expiry_date')
+        }, response => {
+          console.log('Refresh Token Auth Error')
+        })
+    } else if (type === 'login') {
       return Vue.http.post(url, data, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
@@ -88,6 +95,15 @@ let authModule = {
           console.log('Auth Error')
         })
     }
+  },
+  delete: function (url, data) {
+    return Vue.http({
+      method: 'DELETE',
+      url: url,
+      emulateJSON: true,
+      body: data,
+      headers: {'Authorization': `Bearer ${this.access_token}`}
+    })
   }
 }
 export default ({Vue}) => {

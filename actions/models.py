@@ -12,7 +12,6 @@ from jsonfield import JSONField
 from utilities.logger import log
 import timeago
 from django.utils import timezone
-from caressa.hardcodings import HC_CIRCLE_ID
 
 
 class UserAction(Action):
@@ -217,14 +216,17 @@ class UserPost(TimeStampedModel):
         return "I am {} and {}".format(', '.join(lst[:-1]), lst[-1])
 
 
-def user_post_activity_save(sender, instance, created, **kwargs):
-    circle_id = HC_CIRCLE_ID
-    action.send(instance.user,
-                verb='created a post',
-                description=kwargs.get('description', ''),
-                action_object=instance,
-                target=Circle.objects.get(id=circle_id),
-                )
+def user_post_activity_save(sender: UserPost, instance, created, **kwargs):
+    user = sender.user
+    circle = user.circle_set[0] if user.circle_set.count() > 0 else None
+
+    if circle:
+        action.send(instance.user,
+                    verb='created a post',
+                    description=kwargs.get('description', ''),
+                    action_object=instance,
+                    target=circle,
+                    )
 
 
 signals.post_save.connect(receiver=user_post_activity_save, sender=UserPost)

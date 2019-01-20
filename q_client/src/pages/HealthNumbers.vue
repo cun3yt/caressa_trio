@@ -115,7 +115,7 @@ export default {
 
     let bloodPressureURL = this.$root.$options.hosts.rest + '/flat-api/medical-state/?m-type=blood_pressure&page_size=100'
 
-    this.$http.get(bloodPressureURL, {}).then(response => {
+    this.$auth.get(bloodPressureURL, {}).then(response => {
       let fetchLabels = d => moment(d.created).format('MM/DD')
       let fetchSystolic = d => d.data['systolic']
       let fetchDiastolic = d => d.data['diastolic']
@@ -130,7 +130,7 @@ export default {
 
     let weightURL = this.$root.$options.hosts.rest + '/flat-api/medical-state/?m-type=weight&page_size=100'
 
-    this.$http.get(weightURL, {}).then(response => {
+    this.$auth.get(weightURL, {}).then(response => {
       let fetchLabels = d => moment(d.created).format('MM/DD')
       let fetchWeight = d => d.data['amount']
 

@@ -10,6 +10,9 @@ from scripts import replicate_playlist
 from streaming.exceptions import PlaylistAlreadyExistException
 
 
+# todo: Move them to DRF
+
+
 @csrf_exempt
 def stream_io_wrapper(request):
     request_body = json.loads(request.body)
