@@ -78,6 +78,7 @@ export default {
     post (new_comment = this.new_comment) {
       let vm = this
 
+      // todo: Check if this is still in use (there is a similar one in Comment.vue)
       this.$auth.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': new_comment})
         .then(
           response => {

@@ -112,9 +112,7 @@ export default {
       let textMessageObj = {}
       let key = 'Text Message'
       textMessageObj.key = key
-      textMessageObj.name = 'John' // todo move to `hard-coding`
       textMessageObj.sent = true
-      textMessageObj.id = '2'
       textMessageObj.stamp = 'Today at 13:50'
       textMessageObj.type = 'family_ios_text'
       textMessageObj.text = []
@@ -125,7 +123,6 @@ export default {
         this.textMessageObj.text.push(this.messageText)
       }(this.messages.push(this.textMessageObj))
       this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
-        'userId': textMessageObj.id,
         'type': 'family_ios_text',
         'key': key,
         'content': this.textMessageObj

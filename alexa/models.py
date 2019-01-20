@@ -158,6 +158,15 @@ class User(AbstractCaressaUser, TimeStampedModel):
         circle.add_member(circle_member, False)
         return True
 
+    @property
+    def pusher_channel(self):
+        assert self.user_type == self.CARETAKER, (
+            "pusher_channel is only available for user_type: senior. "
+            "It is {user_type} for user.id: {user_id}".format(user_type=self.user_user_type,
+                                                              user_id=self.id)
+        )
+        return 'family.senior.{id}'.format(id=self.id)
+
     @staticmethod
     def create_test_user():
         test_user = User(password=get_random_string(),
@@ -517,7 +526,6 @@ class Fact(TimeStampedModel, FetchRandomMixin):
     entry_text = models.TextField(null=False, blank=False)
     fact_list = JSONField(default=[])
     ending_yes_no_question = models.TextField(null=False, blank=False)
-    # todo consider column on action, e.g. "found interesting" for the question of "Did you find this fact interesting?"
 
     def get_random_content(self):
         return sample(self.fact_list, 1)[0]

@@ -47,11 +47,12 @@ let authModule = {
   },
   post: function (url, data, type = 'update') {
     if (type === 'update') {
-      return Vue.http.post(url, data, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-          'Authorization': `Bearer ${this.access_token}`
-        }
+      return Vue.http({
+        method: 'POST',
+        url: url,
+        emulateJSON: true,
+        body: data,
+        headers: {'Authorization': `Bearer ${this.access_token}`}
       }).then(
         response => {
           console.log('Auth Success')
@@ -103,7 +104,6 @@ let authModule = {
       body: data,
       headers: {'Authorization': `Bearer ${this.access_token}`}
     })
-    // return Vue.http.delete(url, data)
   }
 }
 export default ({Vue}) => {

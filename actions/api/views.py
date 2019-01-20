@@ -1,7 +1,9 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from rest_framework_extensions.mixins import NestedViewSetMixin
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import IsAuthenticated
 from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer
 from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song, CommentResponse
 from alexa.models import User, UserActOnContent
@@ -9,38 +11,47 @@ from actstream.models import action_object_stream
 from streaming.models import Messages
 import boto3
 from caressa import settings
-from caressa.hardcodings import HC_USER_ID
+from utilities.views.mixins import SerializerRequestViewSetMixin
+from oauth2_provider.contrib.rest_framework import OAuth2Authentication
+from alexa.api.permissions import IsSameUser, IsInCircle, CommentAccessible
 
 
-class ActionViewSet(NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
+class ActionViewSet(SerializerRequestViewSetMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = ActionSerializer
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
 
     def get_queryset(self):
-        user_id = HC_USER_ID
-        user = User.objects.get(id=user_id)
+        user = self.request.user
         circle = user.circle_set.all()[0]
         queryset = UserAction.objects.mystream(user, circle).all().order_by('-timestamp')
         return queryset
 
 
-class CommentViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
+class CommentViewSet(SerializerRequestViewSetMixin, NestedViewSetMixin, viewsets.ModelViewSet):
+    authentication_classes = (OAuth2Authentication,)
+    permission_classes = (IsAuthenticated, CommentAccessible)
     serializer_class = CommentSerializer
     queryset = Comment.objects.all().order_by('-created', '-id')
 
 
-class ReactionViewSet(NestedViewSetMixin, viewsets.ModelViewSet):
+class ReactionViewSet(SerializerRequestViewSetMixin, NestedViewSetMixin, viewsets.ModelViewSet):
+    authentication_classes = (OAuth2Authentication,)
+    permission_classes = (IsAuthenticated, )    # todo: add permission to check if it is mine for deletion??
     serializer_class = ReactionSerializer
     queryset = UserReaction.objects.all().order_by('-id')
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
 def like_at_joke(request):
     joke_id = request.data['joke_id']
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
-    user_id = HC_USER_ID
-    user = User.objects.get(id=user_id)
+    user = request.user
     joke = Joke.objects.get(id=joke_id)
+
     action = action_object_stream(joke).filter(actor_object_id=user.id)
 
     if set_to and action.count() < 1:
@@ -52,13 +63,14 @@ def like_at_joke(request):
     return Response({"message": "Something went wrong.."})
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
 def like_at_news(request):
     news_id = request.data['news_id']
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
-    user_id = HC_USER_ID
-    user = User.objects.get(id=user_id)
+    user = request.user
     news = News.objects.get(id=news_id)
     action = action_object_stream(news).filter(actor_object_id=user.id)
 
@@ -71,44 +83,80 @@ def like_at_news(request):
     return Response({"message": "Something went wrong.."})
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
 def comment_response(request):
     comment_id = request.data['comment_id']
     response = request.data['response']
-    user_id = HC_USER_ID
+    user = request.user
 
-    CommentResponse(response=response, owner_id=user_id, comment_id=comment_id).save()
+    comment = Comment.objects.get(id=comment_id)
+    content_owner = comment.content.actor   # type: User
+    circle = content_owner.circle_set.all()[0]
+
+    permission_is_in_circle = IsInCircle()
+    if not permission_is_in_circle.has_object_permission(request, None, circle):
+        raise PermissionDenied()
+
+    CommentResponse(response=response, owner=user, comment_id=comment_id).save()
 
     return Response({"message": "Something went wrong.."})
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['DELETE'])
 def comment_backing_delete(request):
-    user_id = HC_USER_ID
     comment_id = request.data['comment_id']
-    user = User.objects.get(pk=user_id)
+    user = request.user
     comment = Comment.objects.get(pk=comment_id)
+
+    content_owner = comment.content.actor  # type: User
+    circle = content_owner.circle_set.all()[0]
+
+    permission_is_in_circle = IsInCircle()
+    if not permission_is_in_circle.has_object_permission(request, None, circle):
+        raise PermissionDenied()
+
     comment.comment_backers.remove(user)
 
     return Response({"message": "Something went wrong.."})
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['DELETE'])
 def comment_response_delete(request):
     response_id = request.data['response']
+
+    comment_responses = CommentResponse.objects.filter(id=response_id).all()
+    if comment_responses.count() == 0:
+        return Response({"success": 'OK'})
+
+    assert comment_responses.count() == 1, (
+        "There must be only one comment response"
+    )
+
+    response = comment_responses[0]
+
+    permission_is_same_user = IsSameUser()
+    if not permission_is_same_user.has_object_permission(request, None, response.owner):
+        raise PermissionDenied()
 
     CommentResponse.objects.filter(id=response_id).delete()
 
     return Response({"message": "Something went wrong.."})
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
 def like_the_song(request):
     song_id = request.data.get('song_id')
     set_to = request.data.get('set_to', 'true').lower() != 'false'
 
-    user_id = HC_USER_ID
-    user = User.objects.get(id=user_id)
+    user = request.user
     song = Song.objects.get(id=song_id)
     action = action_object_stream(song).filter(actor_object_id=user.id)
 
@@ -121,10 +169,11 @@ def like_the_song(request):
     return Response({"message": "Something went wrong.."})
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
 def new_post(request):
-    user_id = HC_USER_ID
-    user = User.objects.get(id=user_id)
+    user = request.user
 
     post = UserPost(user=user, data=request.data['selections'])
     post.save()
@@ -132,6 +181,8 @@ def new_post(request):
     return Response({'message': 'Saved...'})
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
 def pre_signed_url_for_s3(request):
     key = request.data['key']
@@ -152,9 +203,11 @@ def pre_signed_url_for_s3(request):
     return Response(url)
 
 
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
 def new_job_for_message_queue(request):
-    user_id = HC_USER_ID
+    user = request.user
     message_type = request.data.get('type')
     message_key = request.data.get('key')
     content_str = 'content'
@@ -165,7 +218,7 @@ def new_job_for_message_queue(request):
         content = ''
 
     message = {
-        'user': user_id,
+        'user': user.id,
         'message_type': message_type,
         'key': message_key,
         'content': content
