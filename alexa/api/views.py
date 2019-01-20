@@ -17,7 +17,7 @@ class UserMeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         return self.request.user
 
 
-class SeniorListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class SeniorListViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, )
     serializer_class = SeniorSerializer

@@ -21,28 +21,41 @@
 
 {% block js %}
 <script type="text/x-template" id="grid-template">
-    <table>
-        <thead>
-            <tr>
-                <th v-for="col_obj in columns" @click="sortBy(col_obj.field)" :class="{ active: sortKey == col_obj.field }">
-                    -{- col_obj.label -}-
-                    <span class="arrow" :class="sortOrders[col_obj.field] > 0 ? 'asc' : 'dsc'"></span>
-                </th>
-                <th>Edit</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="entry in filteredData">
-                <td v-for="(col_obj, key) in columns">-{- entry[col_obj.field] -}-</td>
-                <td>
-                    <i class="far fa-edit" v-on:click="editEntry(entry.pk)"
-                       style="font-size:26px; color:darkgreen; cursor: pointer;"></i>
-                    <i class="fas fa-trash-alt" v-on:click="deleteEntry(entry.pk)"
-                       style="font-size:26px; color:red; cursor: pointer;"></i>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div>
+    <form action="javascript:void(0)">
+        <table>
+            <thead>
+                <tr>
+                    <th v-for="col_obj in columns" @click="sortBy(col_obj.field)" :class="{ active: sortKey == col_obj.field }">
+                        -{- col_obj.label -}-
+                        <span class="arrow" :class="sortOrders[col_obj.field] > 0 ? 'asc' : 'dsc'"></span>
+                    </th>
+                    <th>Edit</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="entry in filteredData">
+                    <td v-for="(col_obj, key) in columns">-{- entry[col_obj.field] -}-</td>
+                    <td>
+                        <i class="far fa-edit" v-on:click="editEntry(entry.pk)"
+                           style="font-size:26px; color:darkgreen; cursor: pointer;"></i>
+                        <i class="fas fa-ban" v-on:click="deleteEntry(entry.pk)"
+                           style="font-size:26px; color:red; cursor: pointer;"></i>
+                    </td>
+                </tr>
+                <tr>
+                    <td v-for="(col_obj, key) in columns">
+                        <input type="text" v-bind:name="col_obj.field">
+                    </td>
+                    <td>
+                        <button type="submit"><i class="fas fa-plus" style="font-size:26px"></i> Add</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+    -{- filteredData.length -}-
+    </div>
 </script>
 
 <script type="application/javascript">
