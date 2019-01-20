@@ -8,9 +8,6 @@ from caressa.settings import pusher_client
 from voice_service.google import tts
 from time import sleep
 import traceback
-from caressa.hardcodings import HC_MSG_SOURCE_USER_ID, HC_MSG_DESTINATION_USER_ID, HC_FAMILY_MEMBER_FIRST_NAME, HC_PUSHER_CHANNEL
-
-pusher_channel = HC_PUSHER_CHANNEL
 
 
 def audio_worker(publisher, next_queued_job):
@@ -50,14 +47,16 @@ def audio_worker(publisher, next_queued_job):
     log(next_queued_job.process_state)
     next_queued_job.save()
 
-    pusher_client.trigger(pusher_channel,
+    user_id = next_queued_job.message.get('user')
+    assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
+    source = User.objects.get(pk=user_id)
+
+    destination = source.circle_set[0].person_of_interest
+
+    pusher_client.trigger(destination.pusher_channel,
                           mail_type,
                           url)
 
-    user_id = HC_MSG_SOURCE_USER_ID
-    source = User.objects.get(pk=user_id)
-    user_destination_id = HC_MSG_DESTINATION_USER_ID
-    destination = User.objects.get(pk=user_destination_id)
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
 
@@ -90,22 +89,29 @@ def text_worker(publisher, next_queued_job):
     log(file_key)
     next_queued_job.save()
 
-    pusher_client.trigger(pusher_channel,
+    user_id = next_queued_job.message.get('user')
+    assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
+    source = User.objects.get(pk=user_id)
+
+    destination = source.circle_set[0].person_of_interest
+    pusher_client.trigger(destination.pusher_channel,
                           mail_type,
                           url)
 
-    user_id = HC_MSG_SOURCE_USER_ID
-    source = User.objects.get(pk=user_id)
-    destination_user_id = HC_MSG_DESTINATION_USER_ID
-    destination = User.objects.get(pk=destination_user_id)
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
 
     return 'Job Finished...'
 
 
-def personalization_worker(publisher, next_queued_job):
-    text = 'Your music preferences updated by {first_name}'.format(first_name=HC_FAMILY_MEMBER_FIRST_NAME)
+def personalization_worker(publisher, next_queued_job: Messages):
+    user_id = next_queued_job.message.get('user')
+    if user_id:
+        user = User.objects.get(id=user_id)
+        text = 'Your music preferences updated by {first_name}'.format(first_name=user.first_name)
+    else:
+        text = 'Your family updated your music preferences'
+
     mail_type = 'voice_mail'
 
     next_queued_job.process_state = Messages.PROCESS_RUNNING
@@ -128,12 +134,16 @@ def personalization_worker(publisher, next_queued_job):
     log(file_key)
     next_queued_job.save()
 
-    pusher_client.trigger(pusher_channel,
+    user_id = next_queued_job.message.get('user')
+    assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
+    source = User.objects.get(pk=user_id)
+
+    destination = source.circle_set[0].person_of_interest
+
+    pusher_client.trigger(destination.pusher_channel,
                           mail_type,
                           url)
 
-    source = User.objects.get(pk=2)
-    destination = User.objects.get(pk=1)
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
 

@@ -252,7 +252,12 @@
         </q-collapsible>
       </q-list>
         <q-item>
-          <q-btn style="background:white; color:#de5866" class="full-width" label="Sign Out Caressa" />
+          <q-btn
+            style="background:white; color:#de5866"
+            class="full-width"
+            label="Sign Out Caressa"
+            @click="signOut"
+          />
         </q-item>
     </div>
   </q-page>
@@ -261,7 +266,7 @@
 <script>
 export default {
   name: 'settings',
-  props: ['setupContent'],
+  props: ['setupContent', 'logOut'],
   created () {
     this.setupContent({
       title: this.user
@@ -339,11 +344,14 @@ export default {
           checkedItems.push(this[`${type}`][i]['genre'])
         }
       }
-      this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'userId': 2,
         'type': type,
         'key': checkedItems
       })
+    },
+    signOut: function () {
+      this.logOut()
     }
   }
 }

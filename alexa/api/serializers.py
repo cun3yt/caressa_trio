@@ -1,9 +1,8 @@
 from rest_framework import serializers
-from alexa.models import AUserMedicalState, Joke, News, User, UserActOnContent
+from alexa.models import AUserMedicalState, Joke, News, User
 from actions.models import UserAction
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
-from caressa.hardcodings import HC_USER_ID
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -67,10 +66,10 @@ class JokeSerializer(serializers.ModelSerializer):
         :return:
         """
 
-        user_id = HC_USER_ID
-        actions = action_object_stream(joke).filter(actor_object_id=user_id)
+        user = self.context['request'].user
+        actions = action_object_stream(joke).filter(actor_object_id=user.id)
         user_actions = UserAction.objects.all().filter(id__in=[action.id for action in actions])
-        return ActionSerializer(user_actions, many=True).data
+        return ActionSerializer(user_actions, many=True, context={'request': self.context['request']}).data
 
 
 class NewsSerializer(serializers.ModelSerializer):
@@ -91,26 +90,7 @@ class NewsSerializer(serializers.ModelSerializer):
         :return:
         """
 
-        user_id = HC_USER_ID
-        actions = action_object_stream(news).filter(actor_object_id=user_id)
+        user = self.context['request'].user
+        actions = action_object_stream(news).filter(actor_object_id=user.id)
         user_actions = UserAction.objects.all().filter(id__in=[action.id for action in actions])
-        return ActionSerializer(user_actions, many=True).data
-
-
-class UserActOnContentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserActOnContent
-        fields = (
-            'user',
-            'verb',
-            'object',
-        )
-
-    user = serializers.SerializerMethodField()
-
-    def get_user(self, user_act_on_content: UserActOnContent):
-        user = user_act_on_content.user
-        return {
-            'id': user.id,
-            'profile_pic': user.get_profile_pic(),
-        }
+        return ActionSerializer(user_actions, many=True, context={'request': self.context['request']}).data

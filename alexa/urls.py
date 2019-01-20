@@ -1,4 +1,4 @@
-from alexa.api.views import JokeViewSet, NewsViewSet, MedicalViewSet, UserActOnContentViewSet, UserMeViewSet, SeniorListViewSet
+from alexa.api.views import JokeViewSet, NewsViewSet, MedicalViewSet, UserMeViewSet, SeniorListViewSet
 from actions.api.views import ActionViewSet
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from rest_framework import routers
@@ -28,7 +28,6 @@ def register_flat_routes(flat_router: routers):
     flat_router.register(r'medical-state', MedicalViewSet, 'medical-state')
     flat_router.register(r'jokes', JokeViewSet, 'joke')
     flat_router.register(r'news', NewsViewSet, 'news')
-    flat_router.register(r'user-act-on-content', UserActOnContentViewSet, 'user-act-on-content')
     return flat_router
 
 

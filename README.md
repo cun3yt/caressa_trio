@@ -114,7 +114,7 @@ app.hosts = {
 }
 ```
 where you are serving your REST globally. Check it out [Serveo](serveo.net). Your phone need to be able to reach that url so it is better to have something global.
-1. You need to config CORS: Caressa > settings.py > CORS_ORIGIN_WHITELIST add your IP that is trying to reach resources you can see in debugger configured at Debugging your IOS Build section.
+1. You need to config CORS_ORIGIN_WHITELIST on your .envrc. Add your IP that is trying to reach resources. You can see the IP in debugger which is configured at Debugging your IOS Build section.
 1. Start dev server: `quasar dev -m cordova -T ios`. If build is successful application will automatically open in your phone. Well in most cases..
 1. If any problem occurs you can check debugging feature.  
 1. We need to use legacy build option for Cordova built. To do that in XCode open your project. File > Workspace Settings > Build System choose Legacy Build System

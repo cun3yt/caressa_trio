@@ -19,6 +19,6 @@ def register_nested_routes(router: ExtendedSimpleRouter):
 
 
 def register_flat_routes(flat_router: routers):
-    flat_router.register(r'streams', ActionViewSet, 'stream')
-    flat_router.register(r'comments', CommentViewSet, 'comment')
+    flat_router.register(r'streams', ActionViewSet, 'stream')       # todo: Check if dead!
+    flat_router.register(r'comments', CommentViewSet, 'comment')    # todo: Check if dead!
     return flat_router
