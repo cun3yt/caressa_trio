@@ -13,7 +13,7 @@
         <div id="seniors">
             <form id="search">Search <input name="query" v-model="searchQuery"></form>
             <tabular-data :data="gridData" :columns="gridColumns" :filter-key="searchQuery" :edit-entry="editEntry"
-                          :delete-entry="deleteEntry"></tabular-data>
+                          :delete-entry="deleteEntry" :on-submit="onSubmit"></tabular-data>
         </div>
     </div>
 </div>
@@ -22,7 +22,7 @@
 {% block js %}
 <script type="text/x-template" id="grid-template">
     <div>
-    <form action="javascript:void(0)">
+    <form v-on:submit.prevent.stop="onSubmit(1)">
         <table>
             <thead>
                 <tr>
@@ -44,10 +44,11 @@
                     </td>
                 </tr>
                 <tr>
-                    <td v-for="(col_obj, key) in columns">
-                        <input type="text" v-bind:name="col_obj.field">
+                    <td v-for="(col_obj, key) in columns" style="border-top: darkblue solid 1px;">
+                        <label v-bind:for="col_obj.field" style="font-weight: bold;">-{-col_obj.label-}-</label><br>
+                        <input type="text" v-bind:name="col_obj.field" v-bind:id="col_obj.field">
                     </td>
-                    <td>
+                    <td style="border-top: darkblue solid 1px;">
                         <button type="submit"><i class="fas fa-plus" style="font-size:26px"></i> Add</button>
                     </td>
                 </tr>
@@ -67,7 +68,8 @@
             columns: Array,
             filterKey: String,
             editEntry: Function,
-            deleteEntry: Function
+            deleteEntry: Function,
+            onSubmit: Function
         },
         data: function () {
             var sortOrders = {}
@@ -100,11 +102,6 @@
                     })
                 }
                 return data
-            }
-        },
-        filters: {
-            capitalize: function (str) {
-                return str.charAt(0).toUpperCase() + str.slice(1)
             }
         },
         methods: {
@@ -162,8 +159,8 @@
                         Authorization: 'Bearer ' + this.access_token
                     }
                 }).then(function(response) {
-                    this.gridData = response.data.results
-                    let hede = this.gridData.map(function(row){
+                    let rawData = response.data.results
+                    this.gridData = rawData.map(function(row){
                         if(!row.primary_contact) {
                             return row
                         }
@@ -197,6 +194,9 @@
                 this.$cookies.remove('access_token')
                 this.$cookies.remove('refresh_token')
                 window.location.href = 'http://localhost:8000/accounts/login/';
+            },
+            onSubmit: function(num) {
+                console.log('onSubmit', num)
             }
         }
     })
