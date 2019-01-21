@@ -241,3 +241,6 @@ WEB_CLIENT = {
     'id': os.getenv('WEB_CLIENT_ID'),
     'secret': os.getenv('WEB_CLIENT_SECRET'),
 }
+
+PHONENUMBER_DB_FORMAT = 'NATIONAL'
+PHONENUMBER_DEFAULT_REGION = 'US'

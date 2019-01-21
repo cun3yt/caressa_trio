@@ -16,6 +16,11 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
         model = User
         fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'phone_number', )
 
+    phone_number = serializers.SerializerMethodField()
+
+    def get_phone_number(self, user: User):
+        return user.phone_number.as_national
+
 
 class SeniorSerializer(serializers.ModelSerializer):
     class Meta:

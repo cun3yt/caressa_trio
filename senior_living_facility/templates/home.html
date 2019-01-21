@@ -20,9 +20,21 @@
 {% endblock %}
 
 {% block js %}
+<script type="text/x-template" id="grid-unit-template">
+    <div>
+        <span v-if="content.length==1">
+            -{- content[0] -}-
+        </span>
+        <div v-else v-for="entry in content">
+            <label style="font-weight: bold">-{- entry.key -}-: </label><span>-{- entry.value -}-</span>
+        </div>
+    </div>
+</script>
+
+
 <script type="text/x-template" id="grid-template">
     <div>
-    <form v-on:submit.prevent.stop="onSubmit(1)">
+    <form v-on:submit.prevent.stop="onSubmit()">
         <table>
             <thead>
                 <tr>
@@ -35,7 +47,9 @@
             </thead>
             <tbody>
                 <tr v-for="entry in filteredData">
-                    <td v-for="(col_obj, key) in columns">-{- entry[col_obj.field] -}-</td>
+                    <td v-for="(col_obj, key) in columns">
+                        <grid-unit :content="entry[col_obj.field]"></grid-unit>
+                    </td>
                     <td>
                         <i class="far fa-edit" v-on:click="editEntry(entry.pk)"
                            style="font-size:26px; color:darkgreen; cursor: pointer;"></i>
@@ -60,6 +74,18 @@
 </script>
 
 <script type="application/javascript">
+    Vue.component('grid-unit', {
+        delimiters: ['-{-', '-}-'],
+        template: '#grid-unit-template',
+        props: {
+            content: Array,
+        },
+        data: function() {
+            return {}
+        },
+        methods: {}
+    })
+
     Vue.component('tabular-data', {
         delimiters: ['-{-', '-}-'],
         template: '#grid-template',
@@ -160,14 +186,38 @@
                     }
                 }).then(function(response) {
                     let rawData = response.data.results
+                    let that = this
+
                     this.gridData = rawData.map(function(row){
-                        if(!row.primary_contact) {
-                            return row
+                        for (var col of that.gridColumns) {
+                            if (col.field == 'primary_contact') {
+                                if (!row[col.field]) {
+                                    row[col.field] = ['']
+                                    continue
+                                }
+                                let contact = row[col.field]
+                                row[col.field] = [
+                                    {
+                                        key: 'email',
+                                        value: contact.email
+                                    },
+                                    {
+                                        key: 'name',
+                                        value: contact.first_name + ' ' + contact.last_name
+                                    },
+                                    {
+                                        key: 'phone number',
+                                        value: contact.phone_number
+                                    }
+                                ]
+                                continue
+                            }
+
+                            row[col.field] = [ row[col.field] ]
                         }
-                        let contact = row.primary_contact
-                        row.primary_contact = "email: " + contact.email
-                            + ", name: " + contact.first_name + " " + contact.last_name
-                            + ", phone number: " + contact.phone_number
+
+                        console.log('row', row)
+
                         return row
                     })
                 }, function(error) {
@@ -195,8 +245,19 @@
                 this.$cookies.remove('refresh_token')
                 window.location.href = 'http://localhost:8000/accounts/login/';
             },
-            onSubmit: function(num) {
-                console.log('onSubmit', num)
+            onSubmit: function() {
+
+                console.error('onSubmit method is supposed to be implemented!!')
+
+                this.$http({
+                    method: 'POST',
+                    url: 'http://localhost:8000/api/seniors',
+                    emulateJSON: true,
+                    body:{
+                        token:this.access_token,
+                        data:{}
+                    }
+                })
             }
         }
     })
