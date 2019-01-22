@@ -260,14 +260,14 @@ class FamilyProspect(TimeStampedModel):
     class Meta:
         db_table = 'family_prospect'
 
-    name = models.TextField(blank=False, null=False)
-    email = models.TextField(null=True, default=None)
-    phone_number = PhoneNumberField(null=True, default=None)
+    name = models.TextField(blank=False)
+    email = models.EmailField(blank=True, default='')
+    phone_number = PhoneNumberField(blank=True, default='')
     senior = models.ForeignKey(to=User, on_delete=models.DO_NOTHING)
 
     def clean(self):
-        if self.email is None and self.phone_number is None:
-            raise ValidationError('Either email or phone_number must be provided for FamilyProspect entry')
+        if (not self.email) and (not self.phone_number):
+            raise ValidationError('Either email or phone_number must be provided for family member entry')
 
 
 class AUser(TimeStampedModel):
