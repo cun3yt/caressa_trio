@@ -69,7 +69,7 @@ class CommentSerializer(serializers.ModelSerializer):
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
         new_comment = validated_data['comment']
-        comments_qs = Comment.objects.filter(comment=new_comment)
+        comments_qs = Comment.objects.filter(comment=new_comment)   # todo What happens if the same comment exists in another circle?
         if not comments_qs.exists():
             return super(CommentSerializer, self).create(validated_data)
         try:

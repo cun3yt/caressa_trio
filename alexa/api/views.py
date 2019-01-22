@@ -20,8 +20,9 @@ class UserMeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 
 class SeniorListViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated, )    # todo facility admin only check is needed
     serializer_class = SeniorSerializer
+
 
     def get_queryset(self):
         user = self.request.user
@@ -29,7 +30,7 @@ class SeniorListViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewsets
             return []
         queryset = User.objects.filter(user_type__exact=User.CARETAKER,
                                        senior_living_facility=user.senior_living_facility).all()
-        return queryset
+        return queryset     # todo page size needs to be adjusted...
 
 
 class MedicalViewSet(viewsets.ModelViewSet):

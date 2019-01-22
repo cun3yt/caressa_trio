@@ -29,6 +29,7 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 
 
 class CaressaUserManager(BaseUserManager):
@@ -253,6 +254,20 @@ class CircleMembership(TimeStampedModel):
         return 'CircleMembership ({id}): {member} in {circle} with admin: {admin} and POI: {poi}'\
             .format(id=self.id, member=self.member, circle=self.circle, admin=self.is_admin,
                     poi=(self.circle.person_of_interest == self.member))
+
+
+class FamilyProspect(TimeStampedModel):
+    class Meta:
+        db_table = 'family_prospect'
+
+    name = models.TextField(blank=False, null=False)
+    email = models.TextField(null=True, default=None)
+    phone_number = PhoneNumberField(null=True, default=None)
+    senior = models.ForeignKey(to=User, on_delete=models.DO_NOTHING)
+
+    def clean(self):
+        if self.email is None and self.phone_number is None:
+            raise ValidationError('Either email or phone_number must be provided for FamilyProspect entry')
 
 
 class AUser(TimeStampedModel):

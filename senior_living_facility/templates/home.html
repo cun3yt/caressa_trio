@@ -23,18 +23,22 @@
 <script type="text/x-template" id="grid-unit-template">
     <div>
         <span v-if="content.length==1">
-            -{- content[0] -}-
+            <input v-model='fieldValue' v-if="isEdit" v-on:keyup.stop="updateFormInput()"  type="text" :name="name">
+            <span v-else>-{- content[0] -}-</span>
         </span>
         <div v-else v-for="entry in content">
-            <label style="font-weight: bold">-{- entry.key -}-: </label><span>-{- entry.value -}-</span>
+            <label style="font-weight: bold">-{- entry.label -}-: </label>
+            <grid-unit :content="[entry.value]" :is-edit="isEdit" :name="entry.key"></grid-unit>
         </div>
     </div>
 </script>
 
 
-<script type="text/x-template" id="grid-template">
+<script type="text/x-template" id="tabular-template">
     <div>
-    <form v-on:submit.prevent.stop="onSubmit()">
+        -{-formData-}-
+
+    <form v-on:submit.prevent="onSubmit()" action="http://localhost:8000/acounts/seniorsss">
         <table>
             <thead>
                 <tr>
@@ -45,10 +49,11 @@
                     <th>Edit</th>
                 </tr>
             </thead>
+
             <tbody>
                 <tr v-for="entry in filteredData">
                     <td v-for="(col_obj, key) in columns">
-                        <grid-unit :content="entry[col_obj.field]"></grid-unit>
+                        <grid-unit :content="entry[col_obj.field]" :is-edit="false" :name="col_obj.field"></grid-unit>
                     </td>
                     <td>
                         <i class="far fa-edit" v-on:click="editEntry(entry.pk)"
@@ -57,10 +62,19 @@
                            style="font-size:26px; color:red; cursor: pointer;"></i>
                     </td>
                 </tr>
+
                 <tr>
                     <td v-for="(col_obj, key) in columns" style="border-top: darkblue solid 1px;">
                         <label v-bind:for="col_obj.field" style="font-weight: bold;">-{-col_obj.label-}-</label><br>
-                        <input type="text" v-bind:name="col_obj.field" v-bind:id="col_obj.field">
+                        <grid-unit
+                                   v-if="col_obj.field=='primary_contact'"
+                                   :content="[{'key': 'contact.email', 'label': 'Email', 'value': ''},
+                                              {'key': 'contact.name', 'label': 'Name', 'value': ''},
+                                              {'key': 'contact.phone_number', 'label': 'Phone Number', 'value': ''}]"
+                                   :is-edit="true"
+                                   :name="col_obj.field"
+                                   :id="col_obj.field"></grid-unit>
+                        <grid-unit v-else :content="['']" :is-edit="true" :name="col_obj.field" :id="col_obj.field"></grid-unit>
                     </td>
                     <td style="border-top: darkblue solid 1px;">
                         <button type="submit"><i class="fas fa-plus" style="font-size:26px"></i> Add</button>
@@ -74,21 +88,44 @@
 </script>
 
 <script type="application/javascript">
+
     Vue.component('grid-unit', {
         delimiters: ['-{-', '-}-'],
         template: '#grid-unit-template',
         props: {
             content: Array,
+            name: String,
+            isEdit: Boolean
+        },
+        mounted: function() {
+            if(this.isEdit == false) {
+                return
+            }
+
+            if(this.content.length > 1) {
+                return
+            }
+            console.log('mounted', this.name, this.content.length)
+
+            this.updateFormInput()
         },
         data: function() {
-            return {}
+            return {
+                fieldValue: ''
+            }
         },
-        methods: {}
+        methods: {
+            updateFormInput: function() {
+                this.$root.$data.formData[this.name] = this.fieldValue
+
+                console.log('   updateFormInput', this.$root.$data.formData)
+            }
+        }
     })
 
     Vue.component('tabular-data', {
         delimiters: ['-{-', '-}-'],
-        template: '#grid-template',
+        template: '#tabular-template',
         props: {
             data: Array,
             columns: Array,
@@ -104,7 +141,8 @@
             })
             return {
                 sortKey: '',
-                sortOrders: sortOrders
+                sortOrders: sortOrders,
+                formData: {}
             }
         },
         computed: {
@@ -164,6 +202,7 @@
         },
         data: {
             loading: true,
+            formData: {},
             user: {},
             access_token: '',
             client_id: '{{ client_id }}',
@@ -173,7 +212,7 @@
                 {field: 'first_name', label: 'First Name'},
                 {field: 'last_name', label: 'Last Name'},
                 {field: 'room_no', label: 'Room Number'},
-                {field: 'hardware_id', label: 'Hardware'},
+                // {field: 'hardware_id', label: 'Hardware'},
                 {field: 'primary_contact', label: 'Primary Contact'}
             ],
             gridData: []
@@ -199,14 +238,17 @@
                                 row[col.field] = [
                                     {
                                         key: 'email',
+                                        label: 'Email',
                                         value: contact.email
                                     },
                                     {
                                         key: 'name',
+                                        label: 'Name',
                                         value: contact.first_name + ' ' + contact.last_name
                                     },
                                     {
                                         key: 'phone number',
+                                        label: 'Phone Number',
                                         value: contact.phone_number
                                     }
                                 ]
@@ -215,8 +257,6 @@
 
                             row[col.field] = [ row[col.field] ]
                         }
-
-                        console.log('row', row)
 
                         return row
                     })
@@ -246,17 +286,14 @@
                 window.location.href = 'http://localhost:8000/accounts/login/';
             },
             onSubmit: function() {
-
-                console.error('onSubmit method is supposed to be implemented!!')
-
                 this.$http({
                     method: 'POST',
                     url: 'http://localhost:8000/api/seniors',
-                    emulateJSON: true,
-                    body:{
-                        token:this.access_token,
-                        data:{}
-                    }
+                    emulateHTTP: true,
+                    headers: {
+                        Authorization: 'Bearer ' + this.access_token
+                    },
+                    body: this.formData
                 })
             }
         }
