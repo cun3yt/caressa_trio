@@ -36,8 +36,6 @@
 
 <script type="text/x-template" id="tabular-template">
     <div>
-        -{-formData-}-
-
     <form v-on:submit.prevent="onSubmit()" action="http://localhost:8000/acounts/seniorsss">
         <table>
             <thead>
@@ -105,7 +103,6 @@
             if(this.content.length > 1) {
                 return
             }
-            console.log('mounted', this.name, this.content.length)
 
             this.updateFormInput()
         },
@@ -117,8 +114,6 @@
         methods: {
             updateFormInput: function() {
                 this.$root.$data.formData[this.name] = this.fieldValue
-
-                console.log('   updateFormInput', this.$root.$data.formData)
             }
         }
     })
@@ -265,7 +260,32 @@
                 })
             },
             deleteEntry: function(pk) {
-                console.log('delete ' + pk)
+                let deletedEntryList = this.gridData.filter(function(data) {
+                    return data.pk == pk
+                })
+
+                let confirmation = confirm("Are you sure deleting '" + deletedEntryList[0].first_name + "'?")
+                if (!confirmation) {
+                    return
+                }
+
+                this.gridData = this.gridData.filter(function(data) {
+                    return data.pk != pk
+                })
+
+                this.$http({
+                    method: 'DELETE',
+                    url: 'http://localhost:8000/api/seniors/' + pk,
+                    emulateJSON: true,
+                    headers: {
+                        Authorization: 'Bearer ' + this.access_token
+                    }
+                }).then(function(){
+                    console.log('successful deletion')
+                }, function(error){
+                    alert('Something went wrong! Could not delete entry ' + deletedEntryList[0].first_name);
+                    this.gridData = deletedEntryList.concat(this.gridData)
+                })
             },
             editEntry: function(pk) {
                 console.log('edit ' + pk)

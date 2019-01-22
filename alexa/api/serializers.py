@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from alexa.models import AUserMedicalState, Joke, News, User, FamilyProspect
 from actions.models import UserAction
-from streaming.models import HardwareRegistry
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
 from random import randint
@@ -27,19 +26,15 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
 class SeniorSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'circle', 'room_no', 'hardware_id', 'primary_contact', )
+        fields = ('pk', 'first_name', 'last_name', 'circle', 'room_no', 'primary_contact', )
 
     circle = serializers.SerializerMethodField()
-    hardware_id = serializers.SerializerMethodField()
     primary_contact = serializers.SerializerMethodField()
 
     def get_circle(self, senior: User):
         circle = senior.circle_set.all()[0]
         members = circle.members.filter(user_type=User.FAMILY).all()
         return FamilyMemberSerializer(members, many=True).data
-
-    def get_hardware_id(self, senior: User):
-        return senior.hardware.caressa_device_id if senior.hardware is not None else ''
 
     def get_primary_contact(self, senior: User):
         circle = senior.circle_set.all()[0]
