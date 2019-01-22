@@ -55,10 +55,13 @@
                     </td>
                     <td>
                         <i class="far fa-edit" v-on:click="editEntry(entry.pk)"
-                           style="font-size:26px; color:darkgreen; cursor: pointer;"></i>
+                           style="font-size:26px; color:seagreen; cursor: pointer;"></i>
                         <i class="fas fa-ban" v-on:click="deleteEntry(entry.pk)"
-                           style="font-size:26px; color:red; cursor: pointer;"></i>
+                           style="font-size:26px; color:indianred; cursor: pointer;"></i>
                     </td>
+                </tr>
+                <tr v-if="filterKey && filteredData.length==0">
+                    <td colspan="5" style="color:indianred;">No entry found for search "-{-filterKey-}-"</td>
                 </tr>
 
                 <tr>
@@ -207,7 +210,6 @@
                 {field: 'first_name', label: 'First Name'},
                 {field: 'last_name', label: 'Last Name'},
                 {field: 'room_no', label: 'Room Number'},
-                // {field: 'hardware_id', label: 'Hardware'},
                 {field: 'primary_contact', label: 'Primary Contact'}
             ],
             gridData: []
