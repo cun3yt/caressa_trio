@@ -104,7 +104,7 @@
 
     <script type="text/x-template" id="tabular-template">
         <div>
-            <form v-on:submit.prevent="onSubmit()" action="http://localhost:8000/acounts/seniorsss">
+            <form v-on:submit.prevent="onSubmit()">
                 <table>
                     <thead>
                     <tr>
@@ -162,6 +162,12 @@
 
     <script type="application/javascript">
         const bus = new Vue()
+        const api = {
+            base: '{{ api_base }}',
+            url: function(path) {
+                return this.base + path;
+            }
+        }
 
         Vue.component('modal', {
             delimiters: ['-{-', '-}-'],
@@ -269,10 +275,9 @@
 
                 // todo: make this one as a function as `requireLogin()`
                 if (!this.access_token) {
-                    window.location.href = 'http://localhost:8000/accounts/login/';
+                    window.location.href = api.url('accounts/login/');
                 }
 
-                // todo: Extract API base
                 // Get User Detail
                 let promise = this.getAdminData()
                 promise.then(
@@ -298,12 +303,10 @@
                         }, function(error) {
                             this.$cookies.remove('access_token')
                             this.$cookies.remove('refresh_token')
-                            window.location.href = 'http://localhost:8000/accounts/login/';
+                            window.location.href = api.url('accounts/login/');
 
                         })
-
                     })
-
             },
             data: {
                 loading: true,
@@ -334,7 +337,7 @@
                 refreshToken: function() {
                     return this.$http({
                         method: 'POST',
-                        url: 'http://localhost:8000/o/token/',
+                        url: api.url('o/token/'),
                         emulateJSON: true,
                         body: {
                             grant_type:'refresh_token',
@@ -345,14 +348,14 @@
                     })
                 },
                 getAdminData: function() {
-                    return this.$http.get('http://localhost:8000/api/users/me', {
+                    return this.$http.get(api.url('api/users/me/'), {
                         headers: {
                             Authorization: 'Bearer ' + this.access_token
                         }
                     })
                 },
                 list: function () {
-                    this.$http.get('http://localhost:8000/api/seniors', {
+                    this.$http.get(api.url('api/seniors/'), {
                         headers: {
                             Authorization: 'Bearer ' + this.access_token
                         }
@@ -415,7 +418,7 @@
 
                     this.$http({
                         method: 'DELETE',
-                        url: 'http://localhost:8000/api/seniors/' + pk,
+                        url: api.url('api/seniors/' + pk + '/'),
                         emulateJSON: true,
                         headers: {
                             Authorization: 'Bearer ' + this.access_token
@@ -450,7 +453,7 @@
                 logout: function () {
                     this.$http({
                         method: 'POST',
-                        url: 'http://localhost:8000/o/revoke_token/',
+                        url: api.url('o/revoke_token/'),
                         emulateJSON: true,
                         body: {
                             token: this.access_token,
@@ -460,12 +463,12 @@
                     })
                     this.$cookies.remove('access_token')
                     this.$cookies.remove('refresh_token')
-                    window.location.href = 'http://localhost:8000/accounts/login/';
+                    window.location.href = api.url('accounts/login/');
                 },
                 onSubmit: function () {
                     this.$http({
                         method: 'POST',
-                        url: 'http://localhost:8000/api/seniors',
+                        url: api.url('api/seniors/'),
                         emulateHTTP: true,
                         headers: {
                             Authorization: 'Bearer ' + this.access_token
@@ -484,7 +487,7 @@
 
                     this.$http({
                         method: 'PUT',
-                        url: 'http://localhost:8000/api/seniors/'+ this.modalOperationData.pk + '/',
+                        url: api.url('api/seniors/'+ this.modalOperationData.pk + '/'),
                         headers: {
                             Authorization: 'Bearer ' + this.access_token
                         },

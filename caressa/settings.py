@@ -185,6 +185,8 @@ OAUTH2_PROVIDER = {
     }
 }
 
+API_URL = os.environ.get('API_URL')
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'oauth2_provider.contrib.rest_framework.OAuth2Authentication',

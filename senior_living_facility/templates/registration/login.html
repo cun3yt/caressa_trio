@@ -32,6 +32,13 @@
 
 {% block js %}
 <script type="application/javascript">
+    const api = {
+        base: '{{ api_base }}',
+        url: function(path) {
+            return this.base + path;
+        }
+    }
+
     let app = new Vue({
         delimiters: ['-{-', '-}-'],
         el: '#app',
@@ -46,7 +53,7 @@
                 let that = this
                 this.$http(
                     {   method: 'POST',
-                        url: 'http://localhost:8000/o/token/',
+                        url: api.url('o/token/'),
                         emulateJSON: true,
                         body: {
                             grant_type: 'password',
@@ -60,7 +67,7 @@
                 ).then(function(response){
                     that.$cookies.set('access_token', response.body.access_token)
                     that.$cookies.set('refresh_token', response.body.refresh_token)
-                    window.location.href = 'http://localhost:8000/accounts/facility/';
+                    window.location.href = api.url('accounts/facility/');
                 }).catch(function(err){
                     console.error(err)
                 })

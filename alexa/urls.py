@@ -33,8 +33,8 @@ def register_flat_routes(flat_router: routers):
 
 def individual_paths():
     lst =  [
-        path('api/users/me', UserMeViewSet.as_view({'get': 'retrieve'})),
-        path('api/seniors', SeniorListViewSet.as_view({'get': 'list',
+        path('api/users/me/', UserMeViewSet.as_view({'get': 'retrieve'})),
+        path('api/seniors/', SeniorListViewSet.as_view({'get': 'list',
                                                        'post': 'create', })),
         path('api/seniors/<int:pk>/', SeniorListViewSet.as_view({'delete': 'destroy',
                                                                  'put': 'update'})),
