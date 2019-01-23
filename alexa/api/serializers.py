@@ -5,6 +5,7 @@ from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
 from random import randint
 from django.core.exceptions import ValidationError
+from rest_framework.serializers import ValidationError as RestFrameworkValidationError
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -16,19 +17,24 @@ class UserSerializer(serializers.ModelSerializer):
 class FamilyMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'phone_number', )
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'phone_number', 'is_temporary', )
 
+    is_temporary = serializers.SerializerMethodField()  # Being temporary means that it is editable on form.
     phone_number = serializers.SerializerMethodField()
 
     def get_phone_number(self, user: User):
         return user.phone_number.as_national
 
+    def get_is_temporary(self, prospect: FamilyProspect):
+        return False
+
 
 class FamilyProspectSerializer(serializers.ModelSerializer):
     class Meta:
         model = FamilyProspect
-        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'phone_number', )
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'phone_number', 'is_temporary', )
 
+    is_temporary = serializers.SerializerMethodField() # Being temporary means that it is editable on form.
     first_name = serializers.SerializerMethodField()
     last_name = serializers.SerializerMethodField()
     user_type = serializers.SerializerMethodField()
@@ -47,6 +53,9 @@ class FamilyProspectSerializer(serializers.ModelSerializer):
         if not prospect.phone_number:
             return ''
         return prospect.phone_number.as_national
+
+    def get_is_temporary(self, prospect: FamilyProspect):
+        return True
 
 
 class SeniorSerializer(serializers.ModelSerializer):
@@ -71,7 +80,10 @@ class SeniorSerializer(serializers.ModelSerializer):
         validated_data['user_type'] = User.CARETAKER
         validated_data['email'] = 'admin_created_{}_{}@proxy.caressa.ai'.format(facility_admin.senior_living_facility.facility_id,
                                                                                 randint(0,1000000))
+        first_name = validated_data['first_name']
 
+        if not first_name:
+            raise RestFrameworkValidationError(detail={'errors': ["Senior's first name is required."]})
         senior = super(SeniorSerializer, self).create(validated_data)
 
         contact_name = self.context['request'].data.get('contact.name')
@@ -83,14 +95,54 @@ class SeniorSerializer(serializers.ModelSerializer):
                                 phone_number=contact_phone_number,
                                 senior=senior)
 
-
             try:
                 fp.full_clean()
             except ValidationError as e:
-                from rest_framework.serializers import ValidationError as RestFrameworkValidationError
                 raise RestFrameworkValidationError(detail={'errors': e.messages})
 
             fp.save()
+
+        return senior
+
+    def update(self, instance, validate_data):
+        senior = super(SeniorSerializer, self).update(instance, validate_data)
+
+        circle = senior.circle_set.all()[0]
+        admins = circle.admins
+        if admins.count() > 0:
+            return senior
+
+        contact = self.context['request'].data
+        contact_name = contact.get('contact.name')
+        contact_email = contact.get('contact.email')
+        contact_phone_number = contact.get('contact.phone_number')
+
+        if FamilyProspect.objects.filter(senior=senior).count() > 0:    # already there is family prospect
+            if not any([contact_name, contact_email, contact_phone_number]):    # all empty
+                raise RestFrameworkValidationError(detail={'errors': ['You cannot delete existing contact']})
+
+            if not contact_name:    # deleting name field
+                raise RestFrameworkValidationError(detail={'errors': ['You cannot remove existing contact name']})
+
+        if not any([contact_name, contact_email, contact_phone_number]):    # no family propect earlier, all contact fields are empty
+            return senior
+
+        # This is only created for validation
+        fp = FamilyProspect(name=contact_name,
+                            email=contact_email,
+                            phone_number=contact_phone_number,
+                            senior=senior)
+
+        try:
+            fp.full_clean()
+        except ValidationError as e:
+            raise RestFrameworkValidationError(detail={'errors': e.messages})
+
+        FamilyProspect.objects.update_or_create(senior=senior, defaults={
+            'name': contact_name,
+            'email': contact_email,
+            'phone_number': contact_phone_number
+        })
 
         return senior
 

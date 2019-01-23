@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from utilities.views.mixins import SerializerRequestViewSetMixin
 from alexa.api.serializers import UserSerializer, SeniorSerializer, MedicalStateSerializer, JokeSerializer, NewsSerializer
 from alexa.models import AUserMedicalState, Joke, News, User
-from alexa.api.permissions import IsSameUser
+from alexa.api.permissions import IsSameUser, IsFacilityMember
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from rest_framework.pagination import PageNumberPagination
 
@@ -19,10 +19,10 @@ class UserMeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         return self.request.user
 
 
-class SeniorListViewSet(mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.ListModelMixin,
+class SeniorListViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.ListModelMixin,
                         viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
-    permission_classes = (IsAuthenticated, )    # todo facility admin only check is needed
+    permission_classes = (IsAuthenticated, IsFacilityMember, )    # todo facility admin only check is needed
     serializer_class = SeniorSerializer
 
     class _Pagination(PageNumberPagination):

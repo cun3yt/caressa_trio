@@ -36,7 +36,8 @@ def individual_paths():
         path('api/users/me', UserMeViewSet.as_view({'get': 'retrieve'})),
         path('api/seniors', SeniorListViewSet.as_view({'get': 'list',
                                                        'post': 'create', })),
-        path('api/seniors/<int:pk>/', SeniorListViewSet.as_view({'delete': 'destroy'})),
+        path('api/seniors/<int:pk>/', SeniorListViewSet.as_view({'delete': 'destroy',
+                                                                 'put': 'update'})),
     ]
 
     return lst

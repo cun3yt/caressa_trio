@@ -2,27 +2,30 @@
 
 {% block content %}
     <div id="app">
-        <modal v-if="showModal" @close="showModal = false">
+        <modal v-if="modalOperationData.show" :errors="editErrors" :edit-submit="editSubmit" @close="modalOperationData.show = false">
             <form slot="header">
+                <h3>Senior Personal Information</h3>
                 <div>
-                    <label>First Name:</label> <input name="first_name" :value="editForm.first_name">
+                    <label>First Name:</label> <input name="first_name" v-model="editForm.first_name">
                 </div>
                 <div>
-                    <label>Last Name:</label> <input name="last_name" :value="editForm.last_name">
+                    <label>Last Name:</label> <input name="last_name" v-model="editForm.last_name">
                 </div>
                 <div>
-                    <label>Room Number:</label> <input name="room_no" :value="editForm.room_no">
+                    <label>Room Number:</label> <input name="room_no" v-model="editForm.room_no">
                 </div>
                 <hr>
-                <h3>Primary Contact</h3>
-                <div>
-                    <label>Email:</label> <input name="contact.email" :value="editForm.contact.email">
-                </div>
-                <div>
-                    <label>Name:</label> <input name="contact.name" :value="editForm.contact.name">
-                </div>
-                <div>
-                    <label>Phone Number:</label> <input name="phone_number" :value="editForm.contact.phone_number">
+                <div :class="{disabled : !modalOperationData.isContactEditable}">
+                    <h3>Primary Contact <span v-if="!modalOperationData.isContactEditable">(Verified)</span></h3>
+                    <div>
+                        <label>Name:</label> <input :disabled="!modalOperationData.isContactEditable" v-model="editForm['contact.name']">
+                    </div>
+                    <div>
+                        <label>Email:</label> <input :disabled="!modalOperationData.isContactEditable" v-model="editForm['contact.email']">
+                    </div>
+                    <div>
+                        <label>Phone Number:</label> <input :disabled="!modalOperationData.isContactEditable" v-model="editForm['contact.phone_number']">
+                    </div>
                 </div>
             </form>
         </modal>
@@ -63,12 +66,18 @@
                             </slot>
                         </div>
 
+                        <div v-if="errors.length > 0" style="border: dashed red 4px">
+                            <ul>
+                                <li v-for="error in errors">-{-error-}-</li>
+                            </ul>
+                        </div>
+
                         <div class="modal-footer">
                             <slot name="footer">
                                 <button class="modal-default-button" @click="$emit('close')">
                                     Cancel
                                 </button>
-                                <button class="modal-default-button" @click="$emit('submit')">
+                                <button class="modal-default-button" @click="editSubmit()">
                                     Submit
                                 </button>
                             </slot>
@@ -132,8 +141,8 @@
                             <label v-bind:for="col_obj.field" style="font-weight: bold;">-{-col_obj.label-}-</label><br>
                             <grid-unit
                                     v-if="col_obj.field=='primary_contact'"
-                                    :content="[{'key': 'contact.email', 'label': 'Email', 'value': ''},
-                                              {'key': 'contact.name', 'label': 'Name', 'value': ''},
+                                    :content="[{'key': 'contact.name', 'label': 'Name', 'value': ''},
+                                              {'key': 'contact.email', 'label': 'Email', 'value': ''},
                                               {'key': 'contact.phone_number', 'label': 'Phone Number', 'value': ''}]"
                                     :is-edit="true"
                                     :name="col_obj.field"
@@ -155,7 +164,12 @@
         const bus = new Vue()
 
         Vue.component('modal', {
-            template: '#modal-template'
+            delimiters: ['-{-', '-}-'],
+            template: '#modal-template',
+            props: {
+                editSubmit: Function,
+                errors: Array
+            }
         })
 
         Vue.component('grid-unit', {
@@ -286,8 +300,13 @@
                 ],
                 gridData: [],
                 errors: [],
-                showModal: false,
-                editForm: {}
+                modalOperationData: {
+                    show: false,
+                    pk: null,
+                    isContactEditable: false
+                },
+                editForm: {},
+                editErrors: []
             },
             methods: {
                 list: function () {
@@ -300,6 +319,8 @@
                         let that = this
 
                         this.gridData = rawData.map(function (row) {
+                            row.is_contact_editable = true  // if no contact (default case): contact editable
+
                             for (var col of that.gridColumns) {
                                 if (col.field == 'primary_contact') {
                                     if (!row[col.field]) {
@@ -309,14 +330,14 @@
                                     let contact = row[col.field]
                                     row[col.field] = [
                                         {
-                                            key: 'email',
-                                            label: 'Email',
-                                            value: contact.email
-                                        },
-                                        {
                                             key: 'name',
                                             label: 'Name',
                                             value: contact.first_name + ' ' + contact.last_name
+                                        },
+                                        {
+                                            key: 'email',
+                                            label: 'Email',
+                                            value: contact.email
                                         },
                                         {
                                             key: 'phone number',
@@ -324,11 +345,14 @@
                                             value: contact.phone_number
                                         }
                                     ]
+                                    row.is_contact_editable = contact.is_temporary
                                     continue
                                 }
 
                                 row[col.field] = [row[col.field]]
                             }
+
+                            console.log(row.is_contact_editable)
 
                             return row
                         })
@@ -367,19 +391,24 @@
                 editEntry: function (senior) {
                     console.log(senior)
 
-                    this.showModal = true
+                    this.modalOperationData.show = true
+                    this.modalOperationData.pk = senior.pk
+                    this.modalOperationData.isContactEditable = senior.is_contact_editable
+
                     let contact = {
-                        email: (senior.primary_contact.length > 0 && senior.primary_contact[0].value) || '',
-                        name: (senior.primary_contact.length > 1 && senior.primary_contact[1].value) || '',
+                        name: (senior.primary_contact.length > 0 && senior.primary_contact[0].value) || '',
+                        email: (senior.primary_contact.length > 1 && senior.primary_contact[1].value) || '',
                         phone_number: (senior.primary_contact.length > 2 && senior.primary_contact[2].value) || ''
                     }
 
                     this.editForm = {
-                        first_name: senior.first_name,
-                        last_name: senior.last_name,
-                        room_no: senior.room_no,
-                        contact: contact
+                        first_name: senior.first_name[0],
+                        last_name: senior.last_name[0],
+                        room_no: senior.room_no[0]
                     }
+                    this.editForm['contact.name'] = contact.name
+                    this.editForm['contact.email'] = contact.email
+                    this.editForm['contact.phone_number'] = contact.phone_number
                 },
                 logout: function () {
                     this.$http({
@@ -412,6 +441,23 @@
                         console.log('success', response)
                     }, function (error) {
                         this.errors = error.data.errors
+                    })
+                },
+                editSubmit: function (pk) {
+                    this.editErrors = []
+
+                    this.$http({
+                        method: 'PUT',
+                        url: 'http://localhost:8000/api/seniors/'+ this.modalOperationData.pk + '/',
+                        headers: {
+                            Authorization: 'Bearer ' + this.access_token
+                        },
+                        body: this.editForm
+                    }).then(function(response){
+                        this.modalOperationData.show = false
+                        this.list()
+                    }, function(error) {
+                        this.editErrors = error.data.errors
                     })
                 }
             }
@@ -545,5 +591,12 @@
             transform: scale(1.1);
         }
 
+        .disabled {
+            color: #A4A4A4;
+        }
+        .disabled input {
+            cursor: not-allowed;
+            color: #A4A4A4;
+        }
     </style>
 {% endblock %}
