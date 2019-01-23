@@ -67,6 +67,12 @@ INSTALLED_APPS = [
     'senior_living_facility',
 ]
 
+AUTHENTICATION_BACKENDS = (
+    'oauth2_provider.backends.OAuth2Backend',
+    # Uncomment following if you want to access the admin
+    'django.contrib.auth.backends.ModelBackend',
+)
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -75,6 +81,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -129,6 +136,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CORS_ORIGIN_ALLOW_ALL = True
+
 CORS_ORIGIN_WHITELIST = tuple(os.getenv('CORS_ORIGIN_WHITELIST').split(','))
 # ^^^ These lines are needed to be configured for each developer who is trying to debug the app in his/her phone according to their local requirements
 
@@ -175,6 +184,8 @@ OAUTH2_PROVIDER = {
         'groups': 'Access to your groups',
     }
 }
+
+API_URL = os.environ.get('API_URL')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -227,3 +238,11 @@ CONVERSATION_ENGINES = {
 }
 
 admin.site.empty_value_display = '-empty-'
+
+WEB_CLIENT = {
+    'id': os.getenv('WEB_CLIENT_ID'),
+    'secret': os.getenv('WEB_CLIENT_SECRET'),
+}
+
+PHONENUMBER_DB_FORMAT = 'NATIONAL'
+PHONENUMBER_DEFAULT_REGION = 'US'

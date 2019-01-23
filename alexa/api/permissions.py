@@ -29,3 +29,16 @@ class CommentAccessible(BasePermission):
         circle = user.circle_set.all()[0]   # type: Circle
         return circle.is_member(request.user)
 
+
+class IsFacilityMember(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.user_type == User.CAREGIVER_ORG
+
+    def has_object_permission(self, request, view, obj):
+        assert isinstance(obj, User), (
+                "The object that is tried to be reached supposed to be User, found: '%s'" % type(obj)
+        )
+        senior = obj
+        if not senior.senior_living_facility:
+            return False
+        return senior.senior_living_facility == request.user.senior_living_facility

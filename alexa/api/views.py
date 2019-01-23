@@ -1,10 +1,49 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from alexa.api.serializers import MedicalStateSerializer, JokeSerializer, NewsSerializer
-from alexa.models import AUserMedicalState, Joke, News
 from utilities.views.mixins import SerializerRequestViewSetMixin
+from alexa.api.serializers import UserSerializer, SeniorSerializer, MedicalStateSerializer, JokeSerializer, NewsSerializer
+from alexa.models import AUserMedicalState, Joke, News, User
+from alexa.api.permissions import IsSameUser, IsFacilityMember
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
+from rest_framework.pagination import PageNumberPagination
+
+
+class UserMeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsSameUser, )
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class SeniorListViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.CreateModelMixin, mixins.ListModelMixin,
+                        viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsFacilityMember, )    # todo facility admin only check is needed
+    serializer_class = SeniorSerializer
+
+    class _Pagination(PageNumberPagination):
+        max_page_size = 10000
+        page_size_query_param = 'page_size'
+        page_size = 10000
+
+    pagination_class = _Pagination
+
+    def perform_destroy(self, instance):
+        instance.is_active = False
+        instance.save()
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_provider():
+            return []
+        queryset = User.objects.filter(user_type__exact=User.CARETAKER,
+                                       senior_living_facility=user.senior_living_facility,
+                                       is_active=True).all()
+        return queryset     # todo page size needs to be adjusted...
 
 
 class MedicalViewSet(viewsets.ModelViewSet):

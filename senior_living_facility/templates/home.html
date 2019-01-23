@@ -1,11 +1,641 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Facility Home</title>
-</head>
-<body>
-    <p>Hello {{ user.first_name }} from {{ facility_name }}!</p>
-    <p>These are the users</p>
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block content %}
+    <div id="app">
+        <modal v-if="modalOperationData.show" :errors="editErrors" :edit-submit="editSubmit" @close="modalOperationData.show = false">
+            <form slot="header">
+                <h3>Senior Personal Information</h3>
+                <div>
+                    <label>First Name:</label> <input name="first_name" v-model="editForm.first_name">
+                </div>
+                <div>
+                    <label>Last Name:</label> <input name="last_name" v-model="editForm.last_name">
+                </div>
+                <div>
+                    <label>Room Number:</label> <input name="room_no" v-model="editForm.room_no">
+                </div>
+                <hr>
+                <div :class="{disabled : !modalOperationData.isContactEditable}">
+                    <h3>Primary Contact <span v-if="!modalOperationData.isContactEditable">(Verified)</span></h3>
+                    <div>
+                        <label>Name:</label> <input :disabled="!modalOperationData.isContactEditable" v-model="editForm['contact.name']">
+                    </div>
+                    <div>
+                        <label>Email:</label> <input :disabled="!modalOperationData.isContactEditable" v-model="editForm['contact.email']">
+                    </div>
+                    <div>
+                        <label>Phone Number:</label> <input :disabled="!modalOperationData.isContactEditable" v-model="editForm['contact.phone_number']">
+                    </div>
+                </div>
+            </form>
+        </modal>
+
+        <div v-if="loading">
+            <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
+        </div>
+        <div v-else>
+            <div>Welcome -{-user.first_name-}- -{-user.last_name-}-</div>
+
+            <a v-on:click="logout()" href="#">Logout</a>
+
+            <div id="seniors">
+                <form id="search">Search <input name="query" v-model="searchQuery"></form>
+                <tabular-data :data="gridData" :columns="gridColumns" :filter-key="searchQuery" :edit-entry="editEntry"
+                              :delete-entry="deleteEntry" :on-submit="onSubmit"></tabular-data>
+            </div>
+
+            <div v-if="errors.length > 0" style="border: dashed red 4px">
+                <ul>
+                    <li v-for="error in errors">-{-error-}-</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block js %}
+    <script type="text/x-template" id="modal-template">
+        <transition name="modal">
+            <div class="modal-mask">
+                <div class="modal-wrapper">
+                    <div class="modal-container">
+
+                        <div class="modal-header">
+                            <slot name="header">
+                                default header
+                            </slot>
+                        </div>
+
+                        <div v-if="errors.length > 0" style="border: dashed red 4px">
+                            <ul>
+                                <li v-for="error in errors">-{-error-}-</li>
+                            </ul>
+                        </div>
+
+                        <div class="modal-footer">
+                            <slot name="footer">
+                                <button class="modal-default-button" @click="$emit('close')">
+                                    Cancel
+                                </button>
+                                <button class="modal-default-button" @click="editSubmit()">
+                                    Submit
+                                </button>
+                            </slot>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+    </script>
+
+    <script type="text/x-template" id="grid-unit-template">
+        <div>
+        <span v-if="content.length==1">
+            <input v-model='fieldValue' v-if="isEdit" v-on:keyup.stop="updateFormInput()" type="text" :name="name">
+            <span v-else>-{- content[0] -}-</span>
+        </span>
+            <div v-else v-for="entry in content">
+                <label style="font-weight: bold">-{- entry.label -}-: </label>
+                <grid-unit :content="[entry.value]" :is-edit="isEdit" :name="entry.key"></grid-unit>
+            </div>
+        </div>
+    </script>
+
+
+    <script type="text/x-template" id="tabular-template">
+        <div>
+            <form v-on:submit.prevent="onSubmit()">
+                <table>
+                    <thead>
+                    <tr>
+                        <th v-for="col_obj in columns" @click="sortBy(col_obj.field)"
+                            :class="{ active: sortKey == col_obj.field }">
+                            -{- col_obj.label -}-
+                            <span class="arrow" :class="sortOrders[col_obj.field] > 0 ? 'asc' : 'dsc'"></span>
+                        </th>
+                        <th>Edit</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr v-for="entry in filteredData">
+                        <td v-for="(col_obj, key) in columns">
+                            <grid-unit :content="entry[col_obj.field]" :is-edit="false"
+                                       :name="col_obj.field"></grid-unit>
+                        </td>
+                        <td>
+                            <i class="far fa-edit" v-on:click="editEntry(entry)"
+                               style="font-size:26px; color:seagreen; cursor: pointer;"></i>
+                            <i class="fas fa-ban" v-on:click="deleteEntry(entry.pk)"
+                               style="font-size:26px; color:indianred; cursor: pointer;"></i>
+                        </td>
+                    </tr>
+                    <tr v-if="filterKey && filteredData.length==0">
+                        <td :colspan="columns.length+1" style="color:indianred;">No entry found for search
+                            "-{-filterKey-}-"
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td v-for="(col_obj, key) in columns" style="border-top: darkblue solid 1px;">
+                            <label v-bind:for="col_obj.field" style="font-weight: bold;">-{-col_obj.label-}-</label><br>
+                            <grid-unit
+                                    v-if="col_obj.field=='primary_contact'"
+                                    :content="[{'key': 'contact.name', 'label': 'Name', 'value': ''},
+                                              {'key': 'contact.email', 'label': 'Email', 'value': ''},
+                                              {'key': 'contact.phone_number', 'label': 'Phone Number', 'value': ''}]"
+                                    :is-edit="true"
+                                    :name="col_obj.field"
+                                    :id="col_obj.field"></grid-unit>
+                            <grid-unit v-else :content="['']" :is-edit="true" :name="col_obj.field"
+                                       :id="col_obj.field"></grid-unit>
+                        </td>
+                        <td style="border-top: darkblue solid 1px;">
+                            <button type="submit"><i class="fas fa-plus" style="font-size:26px"></i> Add</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </form>
+        </div>
+    </script>
+
+    <script type="application/javascript">
+        const bus = new Vue()
+        const api = {
+            base: '{{ api_base }}',
+            url: function(path) {
+                return this.base + path;
+            }
+        }
+
+        Vue.component('modal', {
+            delimiters: ['-{-', '-}-'],
+            template: '#modal-template',
+            props: {
+                editSubmit: Function,
+                errors: Array
+            }
+        })
+
+        Vue.component('grid-unit', {
+            delimiters: ['-{-', '-}-'],
+            template: '#grid-unit-template',
+            props: {
+                content: Array,
+                name: String,
+                isEdit: Boolean
+            },
+            mounted: function () {
+                if (this.isEdit == false) {
+                    return
+                }
+
+                if (this.content.length > 1) {
+                    return
+                }
+
+                this.updateFormInput()
+                bus.$on('clearForm', this.clearForm)
+            },
+            data: function () {
+                return {
+                    fieldValue: ''
+                }
+            },
+            methods: {
+                updateFormInput: function () {
+                    this.$root.$data.formData[this.name] = this.fieldValue
+                },
+                clearForm: function () {
+                    this.fieldValue = ''
+                }
+            }
+        })
+
+        Vue.component('tabular-data', {
+            delimiters: ['-{-', '-}-'],
+            template: '#tabular-template',
+            props: {
+                data: Array,
+                columns: Array,
+                filterKey: String,
+                editEntry: Function,
+                deleteEntry: Function,
+                onSubmit: Function
+            },
+            data: function () {
+                var sortOrders = {}
+                this.columns.forEach(function (key) {
+                    sortOrders[key.field] = 1
+                })
+                return {
+                    sortKey: '',
+                    sortOrders: sortOrders,
+                    formData: {}
+                }
+            },
+            computed: {
+                filteredData: function () {
+                    var sortKey = this.sortKey
+                    var filterKey = this.filterKey && this.filterKey.toLowerCase()
+                    var order = this.sortOrders[sortKey] || 1
+                    var data = this.data
+                    if (filterKey) {
+                        data = data.filter(function (row) {
+                            return Object.keys(row).some(function (key) {
+                                return String(row[key]).toLowerCase().indexOf(filterKey) > -1
+                            })
+                        })
+                    }
+                    if (sortKey) {
+                        data = data.slice().sort(function (a, b) {
+                            a = a[sortKey]
+                            b = b[sortKey]
+                            return (a === b ? 0 : a > b ? 1 : -1) * order
+                        })
+                    }
+                    return data
+                }
+            },
+            methods: {
+                sortBy: function (key) {
+                    this.sortKey = key
+                    this.sortOrders[key] = this.sortOrders[key] * -1
+                }
+            }
+        })
+
+        let app = new Vue({
+            delimiters: ['-{-', '-}-'],
+            el: '#app',
+            mounted: function () {
+                this.access_token = this.$cookies.get('access_token')
+                this.refresh_token = this.$cookies.get('refresh_token')
+
+                // todo: make this one as a function as `requireLogin()`
+                if (!this.access_token) {
+                    window.location.href = api.url('accounts/login/');
+                }
+
+                // Get User Detail
+                let promise = this.getAdminData()
+                promise.then(
+                    function(response){
+                        this.user = response.data
+                        this.list()
+                        this.loading = false
+                    }, function(error) {
+                        let pro = this.refreshToken()
+                        pro.then(function(response) {
+                            this.access_token = response.body.access_token
+                            this.refresh_token = response.body.refresh_token
+                            this.$cookies.set('access_token', this.access_token)
+                            this.$cookies.set('refresh_token', this.refresh_token)
+
+                            this.getAdminData().then(function (response) {
+                                this.user = response.data
+                                this.list()
+                                this.loading = false
+                            }, function (error) {
+                                console.error('Unexpected error', error)
+                            })
+                        }, function(error) {
+                            this.$cookies.remove('access_token')
+                            this.$cookies.remove('refresh_token')
+                            window.location.href = api.url('accounts/login/');
+
+                        })
+                    })
+            },
+            data: {
+                loading: true,
+                formData: {},
+                user: {},
+                access_token: '',
+                refresh_token: '',
+                client_id: '{{ client_id }}',
+                client_secret: '{{ client_secret }}',
+                searchQuery: '',
+                gridColumns: [
+                    {field: 'first_name', label: 'First Name'},
+                    {field: 'last_name', label: 'Last Name'},
+                    {field: 'room_no', label: 'Room Number'},
+                    {field: 'primary_contact', label: 'Primary Contact'}
+                ],
+                gridData: [],
+                errors: [],
+                modalOperationData: {
+                    show: false,
+                    pk: null,
+                    isContactEditable: false
+                },
+                editForm: {},
+                editErrors: []
+            },
+            methods: {
+                refreshToken: function() {
+                    return this.$http({
+                        method: 'POST',
+                        url: api.url('o/token/'),
+                        emulateJSON: true,
+                        body: {
+                            grant_type:'refresh_token',
+                            refresh_token: this.refresh_token,
+                            client_id: this.client_id,
+                            client_secret: this.client_secret,
+                        }
+                    })
+                },
+                getAdminData: function() {
+                    return this.$http.get(api.url('api/users/me/'), {
+                        headers: {
+                            Authorization: 'Bearer ' + this.access_token
+                        }
+                    })
+                },
+                list: function () {
+                    this.$http.get(api.url('api/seniors/'), {
+                        headers: {
+                            Authorization: 'Bearer ' + this.access_token
+                        }
+                    }).then(function (response) {
+                        let rawData = response.data.results
+                        let that = this
+
+                        this.gridData = rawData.map(function (row) {
+                            row.is_contact_editable = true  // if no contact (default case): contact editable
+
+                            for (var col of that.gridColumns) {
+                                if (col.field == 'primary_contact') {
+                                    if (!row[col.field]) {
+                                        row[col.field] = ['']
+                                        continue
+                                    }
+                                    let contact = row[col.field]
+                                    row[col.field] = [
+                                        {
+                                            key: 'name',
+                                            label: 'Name',
+                                            value: contact.first_name + ' ' + contact.last_name
+                                        },
+                                        {
+                                            key: 'email',
+                                            label: 'Email',
+                                            value: contact.email
+                                        },
+                                        {
+                                            key: 'phone number',
+                                            label: 'Phone Number',
+                                            value: contact.phone_number
+                                        }
+                                    ]
+                                    row.is_contact_editable = contact.is_temporary
+                                    continue
+                                }
+
+                                row[col.field] = [row[col.field]]
+                            }
+                            return row
+                        })
+                    }, function (error) {
+                        console.error(error)
+                    })
+                },
+                deleteEntry: function (pk) {
+                    let deletedEntryList = this.gridData.filter(function (data) {
+                        return data.pk == pk
+                    })
+
+                    let confirmation = confirm("Are you sure deleting '" + deletedEntryList[0].first_name + "'?")
+                    if (!confirmation) {
+                        return
+                    }
+
+                    this.gridData = this.gridData.filter(function (data) {
+                        return data.pk != pk
+                    })
+
+                    this.$http({
+                        method: 'DELETE',
+                        url: api.url('api/seniors/' + pk + '/'),
+                        emulateJSON: true,
+                        headers: {
+                            Authorization: 'Bearer ' + this.access_token
+                        }
+                    }).then(function () {
+                        console.log('successful deletion')
+                    }, function (error) {
+                        alert('Something went wrong! Could not delete entry ' + deletedEntryList[0].first_name);
+                        this.gridData = deletedEntryList.concat(this.gridData)
+                    })
+                },
+                editEntry: function (senior) {
+                    this.modalOperationData.show = true
+                    this.modalOperationData.pk = senior.pk
+                    this.modalOperationData.isContactEditable = senior.is_contact_editable
+
+                    let contact = {
+                        name: (senior.primary_contact.length > 0 && senior.primary_contact[0].value) || '',
+                        email: (senior.primary_contact.length > 1 && senior.primary_contact[1].value) || '',
+                        phone_number: (senior.primary_contact.length > 2 && senior.primary_contact[2].value) || ''
+                    }
+
+                    this.editForm = {
+                        first_name: senior.first_name[0],
+                        last_name: senior.last_name[0],
+                        room_no: senior.room_no[0]
+                    }
+                    this.editForm['contact.name'] = contact.name
+                    this.editForm['contact.email'] = contact.email
+                    this.editForm['contact.phone_number'] = contact.phone_number
+                },
+                logout: function () {
+                    this.$http({
+                        method: 'POST',
+                        url: api.url('o/revoke_token/'),
+                        emulateJSON: true,
+                        body: {
+                            token: this.access_token,
+                            client_id: this.client_id,
+                            client_secret: this.client_secret
+                        }
+                    })
+                    this.$cookies.remove('access_token')
+                    this.$cookies.remove('refresh_token')
+                    window.location.href = api.url('accounts/login/');
+                },
+                onSubmit: function () {
+                    this.$http({
+                        method: 'POST',
+                        url: api.url('api/seniors/'),
+                        emulateHTTP: true,
+                        headers: {
+                            Authorization: 'Bearer ' + this.access_token
+                        },
+                        body: this.formData
+                    }).then(function (response) {
+                        bus.$emit('clearForm')
+                        this.list()
+                        this.errors = []
+                    }, function (error) {
+                        this.errors = error.data.errors
+                    })
+                },
+                editSubmit: function (pk) {
+                    this.editErrors = []
+
+                    this.$http({
+                        method: 'PUT',
+                        url: api.url('api/seniors/'+ this.modalOperationData.pk + '/'),
+                        headers: {
+                            Authorization: 'Bearer ' + this.access_token
+                        },
+                        body: this.editForm
+                    }).then(function(response){
+                        this.modalOperationData.show = false
+                        this.list()
+                    }, function(error) {
+                        this.editErrors = error.data.errors
+                    })
+                }
+            }
+        })
+    </script>
+{% endblock %}
+
+{% block css %}
+    <style type="text/css">
+        body {
+            font-family: Helvetica Neue, Arial, sans-serif;
+            font-size: 14px;
+            color: #444;
+        }
+
+        table {
+            border: 2px solid #42b983;
+            border-radius: 3px;
+            background-color: #fff;
+        }
+
+        th {
+            background-color: #42b983;
+            color: rgba(255, 255, 255, 0.66);
+            cursor: pointer;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        td {
+            background-color: #f9f9f9;
+        }
+
+        th, td {
+            min-width: 120px;
+            padding: 10px 20px;
+        }
+
+        th.active {
+            color: #fff;
+        }
+
+        th.active .arrow {
+            opacity: 1;
+        }
+
+        .arrow {
+            display: inline-block;
+            vertical-align: middle;
+            width: 0;
+            height: 0;
+            margin-left: 5px;
+            opacity: 0.66;
+        }
+
+        .arrow.asc {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 4px solid #fff;
+        }
+
+        .arrow.dsc {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid #fff;
+        }
+
+        .modal-mask {
+            position: fixed;
+            z-index: 9998;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, .5);
+            display: table;
+            transition: opacity .3s ease;
+        }
+
+        .modal-wrapper {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        .modal-container {
+            width: 300px;
+            margin: 0px auto;
+            padding: 20px 30px;
+            background-color: #fff;
+            border-radius: 2px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+            transition: all .3s ease;
+            font-family: Helvetica, Arial, sans-serif;
+        }
+
+        .modal-header h3 {
+            margin-top: 0;
+            color: #42b983;
+        }
+
+        .modal-body {
+            margin: 20px 0;
+        }
+
+        .modal-default-button {
+            float: right;
+        }
+
+        /*
+         * The following styles are auto-applied to elements with
+         * transition="modal" when their visibility is toggled
+         * by Vue.js.
+         *
+         * You can easily play with the modal transition by editing
+         * these styles.
+         */
+
+        .modal-enter {
+            opacity: 0;
+        }
+
+        .modal-leave-active {
+            opacity: 0;
+        }
+
+        .modal-enter .modal-container,
+        .modal-leave-active .modal-container {
+            -webkit-transform: scale(1.1);
+            transform: scale(1.1);
+        }
+
+        .disabled {
+            color: #A4A4A4;
+        }
+        .disabled input {
+            cursor: not-allowed;
+            color: #A4A4A4;
+        }
+    </style>
+{% endblock %}

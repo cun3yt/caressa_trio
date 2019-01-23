@@ -29,6 +29,7 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 
 
 class CaressaUserManager(BaseUserManager):
@@ -128,6 +129,17 @@ class User(AbstractCaressaUser, TimeStampedModel):
     state = models.TextField(blank=False, default='unknown')
     city = models.TextField(blank=False, default='unknown')
     senior_living_facility = models.ForeignKey(to=SeniorLivingFacility, on_delete=models.DO_NOTHING, null=True, )
+    room_no = models.CharField(verbose_name="Room Number",
+                               max_length=8,
+                               null=False,
+                               default='',
+                               blank=True,
+                               help_text="The room number of the senior. It is only meaningful for the senior", )
+    hardware = models.ForeignKey(to='streaming.HardwareRegistry',
+                                 null=True,
+                                 default=None,
+                                 help_text="The hardware in senior's room",
+                                 on_delete=models.DO_NOTHING, )
     is_anonymous_user = models.BooleanField(default=True,
                                             help_text='Having this field anonymous means that the content will '
                                                       'not be optimized on the personal level, e.g. calling by '
@@ -207,6 +219,10 @@ class Circle(TimeStampedModel):
     def is_member(self, member: User):
         return CircleMembership.is_member(self, member)
 
+    @property
+    def admins(self):
+        return self.members.filter(circle_memberships__is_admin=True).all()
+
 
 class CircleMembership(TimeStampedModel):
     class Meta:
@@ -238,6 +254,20 @@ class CircleMembership(TimeStampedModel):
         return 'CircleMembership ({id}): {member} in {circle} with admin: {admin} and POI: {poi}'\
             .format(id=self.id, member=self.member, circle=self.circle, admin=self.is_admin,
                     poi=(self.circle.person_of_interest == self.member))
+
+
+class FamilyProspect(TimeStampedModel):
+    class Meta:
+        db_table = 'family_prospect'
+
+    name = models.TextField(blank=False)
+    email = models.EmailField(blank=True, default='')
+    phone_number = PhoneNumberField(blank=True, default='')
+    senior = models.ForeignKey(to=User, on_delete=models.DO_NOTHING)
+
+    def clean(self):
+        if (not self.email) and (not self.phone_number):
+            raise ValidationError('Either email or phone_number must be provided for family member entry')
 
 
 class AUser(TimeStampedModel):

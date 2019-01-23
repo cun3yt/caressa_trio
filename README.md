@@ -57,6 +57,7 @@ This setup is written for Mac OS.
     * AWS_ACCESS_KEY_ID set to active AWS access key id.
     * AWS_SECRET_ACCESS_KEY set to active AWS secret access key id.
     * MEDIA_BUCKET set to active s3 bucket on AWS.
+    * API_URL: base api URL, e.g. "http://localhost:8000/"
 
 1. Run Database Migrations
     * Go to project root
