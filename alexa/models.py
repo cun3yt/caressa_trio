@@ -30,6 +30,7 @@ from django.contrib.auth.models import PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
+from uuid import uuid4
 
 
 class CaressaUserManager(BaseUserManager):
@@ -160,6 +161,14 @@ class User(AbstractCaressaUser, TimeStampedModel):
     def is_provider(self):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
 
+    @property
+    def senior_circle(self) -> 'Circle':
+        if self.user_type != self.CARETAKER:
+            raise KeyError("User type expected to be {user_type}. Found: {found_type}".format(user_type=self.CARETAKER,
+                                                                                              found_type=self.user_type))
+        return self.circle_set.all()[0]
+
+
     def create_initial_circle(self):
         membership = CircleMembership.objects.filter(member_id=self.id)
         if membership.count() > 0:
@@ -268,6 +277,80 @@ class FamilyProspect(TimeStampedModel):
     def clean(self):
         if (not self.email) and (not self.phone_number):
             raise ValidationError('Either email or phone_number must be provided for family member entry')
+
+    def send_email(self, address, template_name, context):
+        raise NotImplementedError   # todo Implement
+
+    def send_text(self, phone_number, template_name, context):
+        raise NotImplementedError   # todo Implement
+
+    def reach_prospect(self) -> bool:
+        try:
+            circle = self.senior.senior_circle
+        except KeyError as e:
+            log(str(e) + ' >> Function returning false')
+            return False
+
+        if circle.admins.count() > 0:
+            return False
+
+        # Assumption: FamilyOutreach is assumed to be successful outreach
+        family_outreach_qs = FamilyOutreach.objects.filter(prospect=self)
+
+        if family_outreach_qs.count() > 0:
+            return False
+
+        outreach = FamilyOutreach(prospect=self)    # todo check if tracking_code exists here (without save)
+
+        if self.email:
+            outreach.method = FamilyOutreach.TYPE_EMAIL
+            outreach.data = {
+                'email_address': self.email,
+                'email_template': 'tbd.html'     # todo: to be filled
+            }
+            outreach.save()
+            self.send_email(self.email,
+                            outreach.data['email_template'],
+                            context={
+                                'tracking_code': outreach.tracking_code,
+                                'senior': self.senior,
+                                'prospect': self
+                            })
+        elif self.phone_number:
+            outreach.method = FamilyOutreach.TYPE_TEXT
+            outreach.data = {
+                'phone_number': self.phone_number,
+                'text_content': 'tbd.html'  # todo: to be filled
+            }
+            outreach.save()
+            self.send_text(self.phone_number,
+                           outreach.data['text_content'],
+                           context={
+                               'tracking_code': outreach.tracking_code,
+                               'senior': self.senior,
+                               'prospect': self
+                           })
+
+
+class FamilyOutreach(TimeStampedModel):
+    class Meta:
+        db_table = 'family_outreach'
+
+    TYPE_EMAIL = 'email'
+    TYPE_TEXT = 'text'
+
+    TYPE_SET = (
+        (TYPE_EMAIL, 'email'),
+        (TYPE_TEXT, 'text'),
+    )
+
+    prospect = models.ForeignKey(to=FamilyProspect, null=True, on_delete=models.DO_NOTHING, )
+    method = models.TextField(choices=TYPE_SET,
+                              null=False, )
+    data = JSONField(default={})    # payload info: e.g. what email address
+    # todo success/failure state?
+    tracking_code = models.UUIDField(default=uuid4)
+    converted_user = models.ForeignKey(to=User, null=True, default=None, on_delete=models.DO_NOTHING, )
 
 
 class AUser(TimeStampedModel):
