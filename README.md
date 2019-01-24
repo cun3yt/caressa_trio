@@ -57,7 +57,14 @@ This setup is written for Mac OS.
     * AWS_ACCESS_KEY_ID set to active AWS access key id.
     * AWS_SECRET_ACCESS_KEY set to active AWS secret access key id.
     * MEDIA_BUCKET set to active s3 bucket on AWS.
-    * API_URL: base api URL, e.g. "http://localhost:8000/"
+    * API_URL: base api URL, e.g. "http://localhost:8000"
+    * WEB_BASE_URL: base web app URL, e.g. "http://localhost:8000" 
+    * Email backend SMTP setup (e.g. refer to mailgun account)
+        * EMAIL_HOST: SMTP server hostname.
+        * EMAIL_PORT
+        * EMAIL_HOST_USER
+        * EMAIL_USE_TLS
+        * EMAIL_HOST_PASSWORD
 
 1. Run Database Migrations
     * Go to project root

@@ -33,7 +33,7 @@
 {% block js %}
 <script type="application/javascript">
     const api = {
-        base: '{{ api_base }}',
+        base: '{{ api_base }}/',
         url: function(path) {
             return this.base + path;
         }

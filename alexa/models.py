@@ -31,6 +31,9 @@ from django.utils.translation import gettext_lazy as _
 from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
 from uuid import uuid4
+from django.urls import reverse
+from caressa.settings import WEB_BASE_URL
+from utilities.email import send_email
 
 
 class CaressaUserManager(BaseUserManager):
@@ -168,6 +171,9 @@ class User(AbstractCaressaUser, TimeStampedModel):
                                                                                               found_type=self.user_type))
         return self.circle_set.all()[0]
 
+    @property
+    def full_name(self):
+        return self.get_full_name()
 
     def create_initial_circle(self):
         membership = CircleMembership.objects.filter(member_id=self.id)
@@ -309,27 +315,32 @@ class FamilyProspect(TimeStampedModel):
                 'email_template': 'tbd.html'     # todo: to be filled
             }
             outreach.save()
-            self.send_email(self.email,
-                            outreach.data['email_template'],
-                            context={
-                                'tracking_code': outreach.tracking_code,
-                                'senior': self.senior,
-                                'prospect': self
-                            })
+
+            send_email(self.email,
+                       'Invitation from {}'.format(self.senior.senior_living_facility),
+                       'email/reach-prospect.html',
+                       'email/reach-prospect.txt',
+                       context={
+                           'prospect': self,
+                           'facility': self.senior.senior_living_facility,
+                           'invitation_url': outreach.invitation_url,
+                       })
+
         elif self.phone_number:
-            outreach.method = FamilyOutreach.TYPE_TEXT
-            outreach.data = {
-                'phone_number': self.phone_number,
-                'text_content': 'tbd.html'  # todo: to be filled
-            }
-            outreach.save()
-            self.send_text(self.phone_number,
-                           outreach.data['text_content'],
-                           context={
-                               'tracking_code': outreach.tracking_code,
-                               'senior': self.senior,
-                               'prospect': self
-                           })
+            raise NotImplementedError
+            # outreach.method = FamilyOutreach.TYPE_TEXT
+            # outreach.data = {
+            #     'phone_number': self.phone_number,
+            #     'text_content': 'tbd.html'  # todo: to be filled
+            # }
+            # outreach.save()
+            # self.send_text(self.phone_number,
+            #                outreach.data['text_content'],
+            #                context={
+            #                    'tracking_code': outreach.tracking_code,
+            #                    'senior': self.senior,
+            #                    'prospect': self
+            #                })
 
 
 class FamilyOutreach(TimeStampedModel):
@@ -349,8 +360,14 @@ class FamilyOutreach(TimeStampedModel):
                               null=False, )
     data = JSONField(default={})    # payload info: e.g. what email address
     # todo success/failure state?
-    tracking_code = models.UUIDField(default=uuid4)
+    tracking_code = models.UUIDField(default=uuid4, db_index=True)
     converted_user = models.ForeignKey(to=User, null=True, default=None, on_delete=models.DO_NOTHING, )
+
+    @property
+    def invitation_url(self):
+        return '{base_url}{url}?invitation_code={code}'.format(base_url=WEB_BASE_URL,
+                                                               url=reverse('family-prospect-invitation-code'),
+                                                               code=self.tracking_code)
 
 
 class AUser(TimeStampedModel):
