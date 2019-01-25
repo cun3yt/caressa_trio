@@ -5,9 +5,12 @@
     <p>Sign Up Here to Connect with {{ prospect.senior.full_name }} on Caressa.</p>
     <p>
         <div>
-            <input>
-            <input>
-            <button>Sign Up</button>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="hidden" name="invitation_code" value="{{ invitation_code}}">
+                <button type="submit">Sign up</button>
+            </form>
         </div>
     </p>
     <hr>

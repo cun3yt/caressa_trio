@@ -4,9 +4,11 @@
     <p>Sign Up Caressa</p>
     <p>
         <div>
-            <input>
-            <input>
-            <button>Sign Up</button>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Sign up</button>
+            </form>
         </div>
     </p>
     <hr>

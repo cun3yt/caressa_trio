@@ -23,7 +23,7 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
     phone_number = serializers.SerializerMethodField()
 
     def get_phone_number(self, user: User):
-        return user.phone_number.as_national
+        return user.phone_number.as_national if user.phone_number else ''
 
     def get_is_temporary(self, prospect: FamilyProspect):
         return False

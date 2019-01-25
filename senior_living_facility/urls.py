@@ -1,6 +1,6 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
-from senior_living_facility.views import facility_home, family_prospect_invitation
+from senior_living_facility.views import facility_home, family_prospect_invitation, sign_up, app_downloads
 
 from caressa.settings import WEB_CLIENT, API_URL
 
@@ -12,5 +12,7 @@ urls = [
                                                      'client_id': WEB_CLIENT['id'],
                                                      'client_secret': WEB_CLIENT['secret']}),
          name='login'),
+    path('sign-up/', sign_up, name='sign-up'),
+    path('app-downloads/', app_downloads, name='app-downloads'),
     path('invitation/', family_prospect_invitation, name='family-prospect-invitation-code')
 ]

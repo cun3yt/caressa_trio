@@ -311,20 +311,30 @@ class FamilyProspect(TimeStampedModel):
         if self.email:
             outreach.method = FamilyOutreach.TYPE_EMAIL
             outreach.data = {
-                'email_address': self.email,
-                'email_template': 'tbd.html'     # todo: to be filled
+                'type': 'email',
+                'status': 'attempted'
             }
             outreach.save()
 
-            send_email(self.email,
-                       'Invitation from {}'.format(self.senior.senior_living_facility),
-                       'email/reach-prospect.html',
-                       'email/reach-prospect.txt',
-                       context={
-                           'prospect': self,
-                           'facility': self.senior.senior_living_facility,
-                           'invitation_url': outreach.invitation_url,
-                       })
+            send_res, html_content, text_content, to_email_address = \
+                send_email(self.email,
+                           'Invitation from {}'.format(self.senior.senior_living_facility),
+                           'email/reach-prospect.html',
+                           'email/reach-prospect.txt',
+                           context={
+                               'prospect': self,
+                               'facility': self.senior.senior_living_facility,
+                               'invitation_url': outreach.invitation_url,
+                           })
+
+            outreach.data.update({
+                'status': 'sent',
+                'send_result': send_res,
+                'html_content': html_content,
+                'text_content': text_content,
+                'to_email_address': to_email_address
+            })
+            outreach.save()
 
         elif self.phone_number:
             raise NotImplementedError
