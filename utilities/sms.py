@@ -1,23 +1,24 @@
 from twilio.rest import Client
+from caressa.settings import TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER
+from django.template.loader import get_template
 
 
-def send_sms(to_phone_number, context):
+def send_sms(to_phone_number, context, template_txt):
+    context = {} if context is None else context
 
-    account_sid = 'AC6d70b398898414615a199da96fe39ed4'
-    auth_token = '1ee5facd877ea03c9bea6ae0001c3eb3'
-    from_phone_number = '+14156499485'
-    body = "Hello {prospect_name}, {facility_name} invited you to connect with your senior " \
-           "{prospect_senior_full_name} using Caressa. Click the link below to download Caressa app and feel " \
-           "better connected with {prospect_senior_first_name}. " \
-           "{invitation_url}"
+    text_template_content = get_template(template_txt)
 
-    to_send_text = body.format(prospect_name=context['prospect_name'],
-                               facility_name=context['facility_name'],
-                               prospect_senior_full_name=context['prospect_senior_full_name'],
-                               prospect_senior_first_name=context['prospect_senior_first_name'],
-                               invitation_url=context['invitation_url'])
+    data = context
 
-    client = Client(account_sid, auth_token)
-    send_res = client.messages.create(body=to_send_text, from_=from_phone_number, to=to_phone_number)
+    text_content = text_template_content.render(data)
 
-    return send_res, to_send_text, to_phone_number
+    client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+    message_instance = client.messages.create(body=text_content, from_=TWILIO_PHONE_NUMBER, to=to_phone_number)
+    send_res = {
+        'date_sent': message_instance.date_sent,
+        'direction': message_instance.direction,
+        'body': message_instance.body,
+        'from': message_instance.from_
+    }
+
+    return send_res, text_content, to_phone_number

@@ -340,20 +340,23 @@ class FamilyProspect(TimeStampedModel):
         elif self.phone_number:
             outreach.method = FamilyOutreach.TYPE_TEXT
             outreach.data = {
-                'type' : 'text',
+                'type': 'text',
                 'status': 'attempted'
             }
             outreach.save()
 
-            context = {
-                'prospect_name': self.name,
-                'facility_name': self.senior.senior_living_facility.name,
-                'prospect_senior_full_name' : self.senior.full_name,
-                'prospect_senior_first_name': self.senior.first_name,
-                'invitation_url': outreach.invitation_url
-            }
+            to_phone_number = str(self.phone_number)
 
-            send_res, text_content, to_phone_number = send_sms(to_phone_number=self.phone_number, context=context)
+            send_res, text_content, to_phone_number = send_sms(
+                to_phone_number=to_phone_number,
+                template_txt='email/reach-prospect.txt',
+                context={
+                    'prospect': self,
+                    'facility': self.senior.senior_living_facility,
+                    'prospect_senior_full_name': self.senior.full_name,
+                    'invitation_url': outreach.invitation_url
+                }
+            )
 
             outreach.data.update({
                 'status': 'sent',
@@ -362,20 +365,6 @@ class FamilyProspect(TimeStampedModel):
                 'to_phone_number': to_phone_number
             })
             outreach.save()
-
-            # outreach.method = FamilyOutreach.TYPE_TEXT
-            # outreach.data = {
-            #     'phone_number': self.phone_number,
-            #     'text_content': 'tbd.html'  # todo: to be filled
-            # }
-            # outreach.save()
-            # self.send_text(self.phone_number,
-            #                outreach.data['text_content'],
-            #                context={
-            #                    'tracking_code': outreach.tracking_code,
-            #                    'senior': self.senior,
-            #                    'prospect': self
-            #                })
 
 
 class FamilyOutreach(TimeStampedModel):
