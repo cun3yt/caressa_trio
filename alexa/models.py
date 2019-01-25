@@ -34,6 +34,7 @@ from uuid import uuid4
 from django.urls import reverse
 from caressa.settings import WEB_BASE_URL
 from utilities.email import send_email
+from utilities.sms import send_sms
 
 
 class CaressaUserManager(BaseUserManager):
@@ -337,7 +338,31 @@ class FamilyProspect(TimeStampedModel):
             outreach.save()
 
         elif self.phone_number:
-            raise NotImplementedError
+            outreach.method = FamilyOutreach.TYPE_TEXT
+            outreach.data = {
+                'type' : 'text',
+                'status': 'attempted'
+            }
+            outreach.save()
+
+            context = {
+                'prospect_name': self.name,
+                'facility_name': self.senior.senior_living_facility.name,
+                'prospect_senior_full_name' : self.senior.full_name,
+                'prospect_senior_first_name': self.senior.first_name,
+                'invitation_url': outreach.invitation_url
+            }
+
+            send_res, text_content, to_phone_number = send_sms(to_phone_number=self.phone_number, context=context)
+
+            outreach.data.update({
+                'status': 'sent',
+                'send_result': send_res,  # todo this includes auth keys. Need to configure
+                'text_content': text_content,
+                'to_phone_number': to_phone_number
+            })
+            outreach.save()
+
             # outreach.method = FamilyOutreach.TYPE_TEXT
             # outreach.data = {
             #     'phone_number': self.phone_number,
