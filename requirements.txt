@@ -34,3 +34,4 @@ django-admin-relation-links==0.0.5
 pydub==0.23.0
 google-cloud-texttospeech==0.2.0
 google-cloud-speech==0.36.0
+twilio==6.7.0

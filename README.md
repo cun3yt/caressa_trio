@@ -58,13 +58,20 @@ This setup is written for Mac OS.
     * AWS_SECRET_ACCESS_KEY set to active AWS secret access key id.
     * MEDIA_BUCKET set to active s3 bucket on AWS.
     * API_URL: base api URL, e.g. "http://localhost:8000"
-    * WEB_BASE_URL: base web app URL, e.g. "http://localhost:8000" 
+    * WEB_BASE_URL: base web app URL, e.g. "http://localhost:8000"
+    * Oauth2 Credentials (refer to oauth docs.)
+        * WEB_CLIENT_ID: Oauth2 client_id is a public identifier for apps.
+        * WEB_CLIENT_SECRET: Oauth2 client_secret known only to the application and the authorization server.
     * Email backend SMTP setup (e.g. refer to mailgun account)
         * EMAIL_HOST: SMTP server hostname.
         * EMAIL_PORT
         * EMAIL_HOST_USER
         * EMAIL_USE_TLS
         * EMAIL_HOST_PASSWORD
+    * SMS backend setup (e.g. refer to twilio account)
+        * TWILIO_ACCOUNT_SID
+        * TWILIO_AUTH_TOKEN
+        * TWILIO_PHONE_NUMBER
 
 1. Run Database Migrations
     * Go to project root
