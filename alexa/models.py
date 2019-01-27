@@ -285,12 +285,6 @@ class FamilyProspect(TimeStampedModel):
         if (not self.email) and (not self.phone_number):
             raise ValidationError('Either email or phone_number must be provided for family member entry')
 
-    def send_email(self, address, template_name, context):
-        raise NotImplementedError   # todo Implement
-
-    def send_text(self, phone_number, template_name, context):
-        raise NotImplementedError   # todo Implement
-
     def reach_prospect(self) -> bool:
         try:
             circle = self.senior.senior_circle
@@ -307,7 +301,7 @@ class FamilyProspect(TimeStampedModel):
         if family_outreach_qs.count() > 0:
             return False
 
-        outreach = FamilyOutreach(prospect=self)    # todo check if tracking_code exists here (without save)
+        outreach = FamilyOutreach(prospect=self)
 
         if self.email:
             outreach.method = FamilyOutreach.TYPE_EMAIL
@@ -360,7 +354,7 @@ class FamilyProspect(TimeStampedModel):
 
             outreach.data.update({
                 'status': 'sent',
-                'send_result': send_res,  # todo this includes auth keys. Need to configure
+                'send_result': send_res,
                 'text_content': text_content,
                 'to_phone_number': to_phone_number
             })

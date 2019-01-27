@@ -27,6 +27,8 @@ def sign_up(request):
 
 def app_downloads(request):
     context = {'message': 'Your account is created'} if request.GET.get('success') else {}
+
+    # todo: Implement the download template
     return TemplateResponse(request, 'app-downloads.html', context=context)
 
 
@@ -45,7 +47,7 @@ def family_prospect_invitation(request):
             senior = family_outreach.prospect.senior
             senior.senior_circle.add_member(member=user, is_admin=True)
             redirect_url = "{url}?success=1".format(url=reverse('app-downloads'))
-            return redirect(redirect_url)     # todo create url for apps
+            return redirect(redirect_url)
 
     form = UserCreationForm()
     try:

@@ -57,8 +57,8 @@ This setup is written for Mac OS.
     * AWS_ACCESS_KEY_ID set to active AWS access key id.
     * AWS_SECRET_ACCESS_KEY set to active AWS secret access key id.
     * MEDIA_BUCKET set to active s3 bucket on AWS.
-    * API_URL: base api URL, e.g. "http://localhost:8000"
-    * WEB_BASE_URL: base web app URL, e.g. "http://localhost:8000"
+    * API_URL: base api URL (without slash at the end), e.g. "http://localhost:8000"
+    * WEB_BASE_URL: base web app URL (without slash at the end), e.g. "http://localhost:8000"
     * Oauth2 Credentials (refer to oauth docs.)
         * WEB_CLIENT_ID: Oauth2 client_id is a public identifier for apps.
         * WEB_CLIENT_SECRET: Oauth2 client_secret known only to the application and the authorization server.
