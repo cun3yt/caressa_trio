@@ -202,7 +202,7 @@ class User(AbstractCaressaUser, TimeStampedModel):
                          last_name='AnonymousLastName',
                          is_staff=False,
                          is_superuser=False,
-                         email='test{}@caressa.ai'.format(get_random_string(15)),
+                         email='test{}@proxy.caressa.ai'.format(get_random_string(15)),
                          phone_number='+14153477898',
                          profile_pic='default_profile_pic',
                          state='test_state',

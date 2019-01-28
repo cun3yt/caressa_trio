@@ -270,7 +270,7 @@ class AUserModelTestCase(TestCase):
         self.assertFalse(auser.user.is_staff, 'Newly created user must be non-staff')
         self.assertFalse(auser.user.is_superuser, 'Newly created user must be no superuser')
         self.assertTrue(auser.user.email.startswith('test'))
-        self.assertTrue(auser.user.email.endswith('@caressa.ai'))
+        self.assertTrue(auser.user.email.endswith('@proxy.caressa.ai'))
         self.assertEqual(auser.user.phone_number, '+14153477898')
         self.assertEqual(auser.user.profile_pic, 'default_profile_pic')
 

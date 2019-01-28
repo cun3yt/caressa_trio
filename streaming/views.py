@@ -2,30 +2,27 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from utilities.dictionaries import deep_get
 from utilities.logger import log
-from alexa.models import AUser, User, Session
+from alexa.models import User
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.db import transaction
 from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, Playlist, AudioFile
 from scripts import replicate_playlist
 from streaming.exceptions import PlaylistAlreadyExistException
-
-
-# todo: Move them to DRF
+from oauth2_provider.decorators import protected_resource
 
 
 @csrf_exempt
+@protected_resource()
 def stream_io_wrapper(request):
     request_body = json.loads(request.body)
-    response_body = stream_io(request_body)   # type: dict
+    response_body = stream_io(request_body, request)   # type: dict
     return JsonResponse(response_body)
 
 
-def stream_io(req_body):
+def stream_io(req_body, request):
+    # todo get TrackingAction back in a new form to keep track of users' actions
     log(req_body)
-
-    session_id = deep_get(req_body, 'session.sessionId', '')
-    user_id = deep_get(req_body, 'context.System.user.userId', '')
-    device_id = deep_get(req_body, 'context.System.device.deviceId', '')
+    user = request.user
 
     req_type = deep_get(req_body, 'request.type')
     intent = deep_get(req_body, 'request.intent')
@@ -36,36 +33,24 @@ def stream_io(req_body):
     log("Intent: {}".format(intent))
     log("Intent Name: {}".format(intent_name))
 
-    alexa_user, _ = AUser.get_or_create_by(alexa_device_id=device_id, alexa_user_id=user_id)
-
     if req_type == 'SessionEndedRequest':
         return stop_session()
 
-    sess, is_new_session = Session.objects.get_or_create(alexa_id=session_id,
-                                                         alexa_user=alexa_user)
-
     if req_type in ['LaunchRequest', 'PlaybackController.PlayCommandIssued', ] \
             or intent_name in ['AMAZON.ResumeIntent', ]:
-        TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'resume_session')
-        return resume_session(alexa_user)
+        return resume_session(user)
     elif req_type in ['PlaybackController.NextCommandIssued', ] or intent_name in ['AMAZON.NextIntent', ]:
-        TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'next_intent_response')
-        return next_intent_response(alexa_user)
+        return next_intent_response(user)
     elif req_type in ['AudioPlayer.PlaybackNearlyFinished', ]:
-        TrackingAction.save_action(alexa_user, sess, req_type, 'enqueue_next_song')
-        return enqueue_next_song(alexa_user)
+        return enqueue_next_song(user)
     elif req_type in ['AudioPlayer.PlaybackStarted', ]:
-        TrackingAction.save_action(alexa_user, sess, req_type, 'filler')
-        save_state(alexa_user, req_body)
+        save_state(user, req_body)
         return filler()
     elif req_type in ['PlaybackController.PauseCommandIssued', ] or intent_name in ['AMAZON.PauseIntent', ]:
-        TrackingAction.save_action(alexa_user, sess, (req_type if req_type else intent_name), 'pause_session')
-        return pause_session(alexa_user)
+        return pause_session(user)
     elif intent is not None:
-        TrackingAction.save_action(alexa_user, sess, intent_name, 'stop_session')
         return stop_session()
 
-    TrackingAction.save_action(alexa_user, sess, 'fallback_state', 'filler')
     return filler()
 
 
@@ -83,8 +68,8 @@ def filler():
 
 
 @transaction.atomic()
-def save_state(alexa_user: AUser, req_body):
-    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
+def save_state(user: User, req_body):
+    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(user)
     offset = deep_get(req_body, 'context.AudioPlayer.offsetInMilliseconds')
     token = deep_get(req_body, 'context.AudioPlayer.token')  # token is combination of pha_hash and audio_id
 
@@ -117,8 +102,8 @@ def save_state(alexa_user: AUser, req_body):
 
 
 @transaction.atomic()
-def save_state_by_playlist_entry(alexa_user: AUser, pha: PlaylistHasAudio, audio_to_be_played: AudioFile):
-    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
+def save_state_by_playlist_entry(user: User, pha: PlaylistHasAudio, audio_to_be_played: AudioFile):
+    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(user)
     status.playlist_has_audio = pha
     status.current_active_audio = audio_to_be_played
     status.offset = 0
@@ -131,27 +116,20 @@ def save_state_by_playlist_entry(alexa_user: AUser, pha: PlaylistHasAudio, audio
 
 
 @transaction.atomic()
-def pause_session(alexa_user: AUser):
+def pause_session(user: User):
     log(' >> LOG: PAUSE')
-    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
+    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(user)
     playlist_has_audio = status.playlist_has_audio.next()
-    save_state_by_playlist_entry(alexa_user, playlist_has_audio, playlist_has_audio.get_audio())
+    save_state_by_playlist_entry(user, playlist_has_audio, playlist_has_audio.get_audio())
     return stop_session()
 
 
 @transaction.atomic()
-def resume_session(alexa_user: AUser):
+def resume_session(user: User):
     log(' >> LOG: RESUME_SESSION')
-    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
+    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(user)  # type: UserPlaylistStatus
     token = '{hash},{audio_id}'.format(hash=str(status.playlist_has_audio.hash),
                                        audio_id=str(status.current_active_audio_id))
-    # if not status.playlist_has_audio.is_current_content_time_fit():
-    #     next_content = status.playlist_has_audio.next()
-    #     save_state_by_playlist_entry(alexa_user, next_content)
-    #     updated_status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)  # type: UserPlaylistStatus
-    #     token = '{hash},{audio_id}'.format(hash=str(updated_status.playlist_has_audio.hash),
-    #                                        audio_id=str(updated_status.current_active_audio_id))
-    #     return start_session(updated_status.current_active_audio, token, updated_status.offset)
     return start_session(status.current_active_audio, token, status.offset)
 
 
@@ -201,19 +179,19 @@ def start_session(audio_to_be_played: AudioFile, token, offset=0):
 
 
 @transaction.atomic()
-def next_intent_response(alexa_user: AUser):
-    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
+def next_intent_response(user: User):
+    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(user)
     playlist_has_audio = status.playlist_has_audio.next()
     audio_to_be_played = playlist_has_audio.get_audio()
-    save_state_by_playlist_entry(alexa_user, playlist_has_audio, audio_to_be_played)
+    save_state_by_playlist_entry(user, playlist_has_audio, audio_to_be_played)
     token = '{hash},{audio_id}'.format(hash=str(playlist_has_audio.hash),
                                        audio_id=str(audio_to_be_played.id))
     return start_session(audio_to_be_played, token)
 
 
 @transaction.atomic()
-def enqueue_next_song(alexa_user: AUser):
-    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(alexa_user.user)
+def enqueue_next_song(user: User):
+    status, _ = UserPlaylistStatus.get_user_playlist_status_for_user(user)
     playlist_has_audio = status.playlist_has_audio.next()   # type: PlaylistHasAudio
 
     upcoming_file = playlist_has_audio.get_audio()
