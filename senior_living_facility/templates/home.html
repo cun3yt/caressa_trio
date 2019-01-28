@@ -163,7 +163,7 @@
     <script type="application/javascript">
         const bus = new Vue()
         const api = {
-            base: '{{ api_base }}',
+            base: '{{ api_base }}/',
             url: function(path) {
                 return this.base + path;
             }

@@ -30,6 +30,11 @@ from django.contrib.auth.models import PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
+from uuid import uuid4
+from django.urls import reverse
+from caressa.settings import WEB_BASE_URL
+from utilities.email import send_email
+from utilities.sms import send_sms
 
 
 class CaressaUserManager(BaseUserManager):
@@ -160,6 +165,17 @@ class User(AbstractCaressaUser, TimeStampedModel):
     def is_provider(self):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
 
+    @property
+    def senior_circle(self) -> 'Circle':
+        if self.user_type != self.CARETAKER:
+            raise KeyError("User type expected to be {user_type}. Found: {found_type}".format(user_type=self.CARETAKER,
+                                                                                              found_type=self.user_type))
+        return self.circle_set.all()[0]
+
+    @property
+    def full_name(self):
+        return self.get_full_name()
+
     def create_initial_circle(self):
         membership = CircleMembership.objects.filter(member_id=self.id)
         if membership.count() > 0:
@@ -186,12 +202,33 @@ class User(AbstractCaressaUser, TimeStampedModel):
                          last_name='AnonymousLastName',
                          is_staff=False,
                          is_superuser=False,
-                         email='test{}@caressa.ai'.format(get_random_string(15)),
+                         email='test{}@proxy.caressa.ai'.format(get_random_string(15)),
                          phone_number='+14153477898',
                          profile_pic='default_profile_pic',
                          state='test_state',
                          city='test_city', )
         return test_user
+
+    def communication_channels(self):
+        family_circle_channel_str = 'channel.family.circle.{id}'
+        senior_living_facility_channel_str = 'channel.slf.{id}'
+
+        if self.is_senior():
+            circle_channel = family_circle_channel_str.format(id=self.senior_circle.id)
+            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
+            return [circle_channel, slf_channel, ]
+
+        if self.is_family():
+            circle = self.circle_set.all()[0]
+            circle_channel = family_circle_channel_str.format(id=circle.id)
+            return [circle_channel, ]
+
+        if self.is_provider():
+            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
+            return [slf_channel, ]
+
+        return []
+
 
     def __repr__(self):
         return self.first_name.title()
@@ -268,6 +305,108 @@ class FamilyProspect(TimeStampedModel):
     def clean(self):
         if (not self.email) and (not self.phone_number):
             raise ValidationError('Either email or phone_number must be provided for family member entry')
+
+    def reach_prospect(self) -> bool:
+        try:
+            circle = self.senior.senior_circle
+        except KeyError as e:
+            log(str(e) + ' >> Function returning false')
+            return False
+
+        if circle.admins.count() > 0:
+            return False
+
+        # Assumption: FamilyOutreach is assumed to be successful outreach
+        family_outreach_qs = FamilyOutreach.objects.filter(prospect=self)
+
+        if family_outreach_qs.count() > 0:
+            return False
+
+        outreach = FamilyOutreach(prospect=self)
+
+        if self.email:
+            outreach.method = FamilyOutreach.TYPE_EMAIL
+            outreach.data = {
+                'type': 'email',
+                'status': 'attempted'
+            }
+            outreach.save()
+
+            send_res, html_content, text_content, to_email_address = \
+                send_email(self.email,
+                           'Invitation from {}'.format(self.senior.senior_living_facility),
+                           'email/reach-prospect.html',
+                           'email/reach-prospect.txt',
+                           context={
+                               'prospect': self,
+                               'facility': self.senior.senior_living_facility,
+                               'invitation_url': outreach.invitation_url,
+                           })
+
+            outreach.data.update({
+                'status': 'sent',
+                'send_result': send_res,
+                'html_content': html_content,
+                'text_content': text_content,
+                'to_email_address': to_email_address
+            })
+            outreach.save()
+
+        elif self.phone_number:
+            outreach.method = FamilyOutreach.TYPE_TEXT
+            outreach.data = {
+                'type': 'text',
+                'status': 'attempted'
+            }
+            outreach.save()
+
+            to_phone_number = str(self.phone_number)
+
+            send_res, text_content, to_phone_number = send_sms(
+                to_phone_number=to_phone_number,
+                template_txt='email/reach-prospect.txt',
+                context={
+                    'prospect': self,
+                    'facility': self.senior.senior_living_facility,
+                    'prospect_senior_full_name': self.senior.full_name,
+                    'invitation_url': outreach.invitation_url
+                }
+            )
+
+            outreach.data.update({
+                'status': 'sent',
+                'send_result': send_res,
+                'text_content': text_content,
+                'to_phone_number': to_phone_number
+            })
+            outreach.save()
+
+
+class FamilyOutreach(TimeStampedModel):
+    class Meta:
+        db_table = 'family_outreach'
+
+    TYPE_EMAIL = 'email'
+    TYPE_TEXT = 'text'
+
+    TYPE_SET = (
+        (TYPE_EMAIL, 'email'),
+        (TYPE_TEXT, 'text'),
+    )
+
+    prospect = models.ForeignKey(to=FamilyProspect, null=True, on_delete=models.DO_NOTHING, )
+    method = models.TextField(choices=TYPE_SET,
+                              null=False, )
+    data = JSONField(default={})    # payload info: e.g. what email address
+    # todo success/failure state?
+    tracking_code = models.UUIDField(default=uuid4, db_index=True)
+    converted_user = models.ForeignKey(to=User, null=True, default=None, on_delete=models.DO_NOTHING, )
+
+    @property
+    def invitation_url(self):
+        return '{base_url}{url}?invitation_code={code}'.format(base_url=WEB_BASE_URL,
+                                                               url=reverse('family-prospect-invitation-code'),
+                                                               code=self.tracking_code)
 
 
 class AUser(TimeStampedModel):

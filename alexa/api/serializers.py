@@ -14,6 +14,17 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
 
 
+class ChannelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'channels')
+
+    channels = serializers.SerializerMethodField()
+
+    def get_channels(self, user: User):
+        return user.communication_channels()
+
+
 class FamilyMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -23,7 +34,7 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
     phone_number = serializers.SerializerMethodField()
 
     def get_phone_number(self, user: User):
-        return user.phone_number.as_national
+        return user.phone_number.as_national if user.phone_number else ''
 
     def get_is_temporary(self, prospect: FamilyProspect):
         return False
