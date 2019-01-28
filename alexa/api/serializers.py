@@ -14,6 +14,17 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
 
 
+class ChannelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'channels')
+
+    channels = serializers.SerializerMethodField()
+
+    def get_channels(self, user: User):
+        return user.communication_channels()
+
+
 class FamilyMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

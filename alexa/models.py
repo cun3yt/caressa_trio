@@ -209,6 +209,27 @@ class User(AbstractCaressaUser, TimeStampedModel):
                          city='test_city', )
         return test_user
 
+    def communication_channels(self):
+        family_circle_channel_str = 'channel.family.circle.{id}'
+        senior_living_facility_channel_str = 'channel.slf.{id}'
+
+        if self.is_senior():
+            circle_channel = family_circle_channel_str.format(id=self.senior_circle.id)
+            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
+            return [circle_channel, slf_channel, ]
+
+        if self.is_family():
+            circle = self.circle_set.all()[0]
+            circle_channel = family_circle_channel_str.format(id=circle.id)
+            return [circle_channel, ]
+
+        if self.is_provider():
+            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
+            return [slf_channel, ]
+
+        return []
+
+
     def __repr__(self):
         return self.first_name.title()
 

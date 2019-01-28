@@ -2,7 +2,8 @@ from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from utilities.views.mixins import SerializerRequestViewSetMixin
-from alexa.api.serializers import UserSerializer, SeniorSerializer, MedicalStateSerializer, JokeSerializer, NewsSerializer
+from alexa.api.serializers import UserSerializer, SeniorSerializer, MedicalStateSerializer, JokeSerializer, \
+    NewsSerializer, ChannelSerializer
 from alexa.models import AUserMedicalState, Joke, News, User
 from alexa.api.permissions import IsSameUser, IsFacilityMember
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
@@ -14,6 +15,16 @@ class UserMeViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated, IsSameUser, )
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user
+
+
+class ChannelsViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
+    queryset = User.objects.all()
+    serializer_class = ChannelSerializer
 
     def get_object(self):
         return self.request.user
