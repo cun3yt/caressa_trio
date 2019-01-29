@@ -4,7 +4,8 @@ module.exports = function (ctx) {
   return {
     // app plugins (/src/plugins)
     plugins: [
-      'resource'
+      'resource',
+      'auth'
     ],
     css: [
       'app.styl'

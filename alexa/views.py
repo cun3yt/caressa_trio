@@ -13,10 +13,12 @@ from datetime import datetime, timedelta
 from django.shortcuts import render
 from utilities.logger import log
 from random import sample, random
+from django.contrib.auth.decorators import login_required
 
 
+@login_required
 def main_view(request):
-    return render(request, 'main.html')
+    return render(request, 'main.html', {'user': request.user})
 
 
 class TestSpawner:

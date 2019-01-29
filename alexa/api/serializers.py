@@ -1,15 +1,161 @@
 from rest_framework import serializers
-from alexa.models import AUserMedicalState, Joke, News, User, UserActOnContent
+from alexa.models import AUserMedicalState, Joke, News, User, FamilyProspect
 from actions.models import UserAction
-from rest_framework.pagination import PageNumberPagination
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
-from caressa.hardcodings import HC_USER_ID
+from random import randint
+from django.core.exceptions import ValidationError
+from rest_framework.serializers import ValidationError as RestFrameworkValidationError
 
 
-class ExtendedPageNumberPagination(PageNumberPagination):   # todo Move to a proper place
-    max_page_size = 100
-    page_size_query_param = 'page_size'
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
+
+
+class ChannelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'channels')
+
+    channels = serializers.SerializerMethodField()
+
+    def get_channels(self, user: User):
+        return user.communication_channels()
+
+
+class FamilyMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'phone_number', 'is_temporary', )
+
+    is_temporary = serializers.SerializerMethodField()  # Being temporary means that it is editable on form.
+    phone_number = serializers.SerializerMethodField()
+
+    def get_phone_number(self, user: User):
+        return user.phone_number.as_national if user.phone_number else ''
+
+    def get_is_temporary(self, prospect: FamilyProspect):
+        return False
+
+
+class FamilyProspectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FamilyProspect
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'phone_number', 'is_temporary', )
+
+    is_temporary = serializers.SerializerMethodField() # Being temporary means that it is editable on form.
+    first_name = serializers.SerializerMethodField()
+    last_name = serializers.SerializerMethodField()
+    user_type = serializers.SerializerMethodField()
+    phone_number = serializers.SerializerMethodField()
+
+    def get_first_name(self, prospect: FamilyProspect):
+        return prospect.name
+
+    def get_last_name(self, prospect: FamilyProspect):
+        return ''
+
+    def get_user_type(self, prospect: FamilyProspect):
+        return User.FAMILY
+
+    def get_phone_number(self, prospect: FamilyProspect):
+        if not prospect.phone_number:
+            return ''
+        return prospect.phone_number.as_national
+
+    def get_is_temporary(self, prospect: FamilyProspect):
+        return True
+
+
+class SeniorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'first_name', 'last_name', 'room_no', 'primary_contact', )
+
+    primary_contact = serializers.SerializerMethodField()
+
+    def get_primary_contact(self, senior: User):
+        circle = senior.circle_set.all()[0]
+        admins = circle.admins
+        if admins.count() == 0:
+            prospects = FamilyProspect.objects.filter(senior=senior).all()
+            return FamilyProspectSerializer(prospects[0]).data if prospects.count() > 0 else None
+        return FamilyMemberSerializer(admins[0]).data if admins.count() else None
+
+    def create(self, validated_data):
+        facility_admin = self.context['request'].user   # type: User
+
+        validated_data['senior_living_facility'] = facility_admin.senior_living_facility
+        validated_data['user_type'] = User.CARETAKER
+        validated_data['email'] = 'admin_created_{}_{}@proxy.caressa.ai'.format(facility_admin.senior_living_facility.facility_id,
+                                                                                randint(0,1000000))
+        first_name = validated_data['first_name']
+
+        if not first_name:
+            raise RestFrameworkValidationError(detail={'errors': ["Senior's first name is required."]})
+        senior = super(SeniorSerializer, self).create(validated_data)
+
+        contact_name = self.context['request'].data.get('contact.name')
+        if contact_name:
+            contact_email = self.context['request'].data.get('contact.email')
+            contact_phone_number = self.context['request'].data.get('contact.phone_number')
+            fp = FamilyProspect(name=contact_name,
+                                email=contact_email,
+                                phone_number=contact_phone_number,
+                                senior=senior)
+
+            try:
+                fp.full_clean()
+            except ValidationError as e:
+                raise RestFrameworkValidationError(detail={'errors': e.messages})
+
+            fp.save()
+
+        return senior
+
+    def update(self, instance, validate_data):
+        senior = super(SeniorSerializer, self).update(instance, validate_data)
+
+        circle = senior.circle_set.all()[0]
+        admins = circle.admins
+        if admins.count() > 0:
+            return senior
+
+        contact = self.context['request'].data
+        contact_name = contact.get('contact.name')
+        contact_email = contact.get('contact.email')
+        contact_phone_number = contact.get('contact.phone_number')
+
+        if FamilyProspect.objects.filter(senior=senior).count() > 0:    # already there is family prospect
+            if not any([contact_name, contact_email, contact_phone_number]):    # all empty
+                raise RestFrameworkValidationError(detail={'errors': ['You cannot delete existing contact']})
+
+            if not contact_name:    # deleting name field
+                raise RestFrameworkValidationError(detail={'errors': ['You cannot remove existing contact name']})
+
+        if not any([contact_name, contact_email, contact_phone_number]):    # no family propect earlier, all contact fields are empty
+            return senior
+
+        # This is only created for validation
+        fp = FamilyProspect(name=contact_name,
+                            email=contact_email,
+                            phone_number=contact_phone_number,
+                            senior=senior)
+
+        try:
+            fp.full_clean()
+        except ValidationError as e:
+            raise RestFrameworkValidationError(detail={'errors': e.messages})
+
+        FamilyProspect.objects.update_or_create(senior=senior, defaults={
+            'name': contact_name,
+            'email': contact_email,
+            'phone_number': contact_phone_number
+        })
+
+        return senior
 
 
 class MedicalStateSerializer(serializers.ModelSerializer):
@@ -38,10 +184,10 @@ class JokeSerializer(serializers.ModelSerializer):
         :return:
         """
 
-        user_id = HC_USER_ID
-        actions = action_object_stream(joke).filter(actor_object_id=user_id)
+        user = self.context['request'].user
+        actions = action_object_stream(joke).filter(actor_object_id=user.id)
         user_actions = UserAction.objects.all().filter(id__in=[action.id for action in actions])
-        return ActionSerializer(user_actions, many=True).data
+        return ActionSerializer(user_actions, many=True, context={'request': self.context['request']}).data
 
 
 class NewsSerializer(serializers.ModelSerializer):
@@ -62,26 +208,7 @@ class NewsSerializer(serializers.ModelSerializer):
         :return:
         """
 
-        user_id = HC_USER_ID
-        actions = action_object_stream(news).filter(actor_object_id=user_id)
+        user = self.context['request'].user
+        actions = action_object_stream(news).filter(actor_object_id=user.id)
         user_actions = UserAction.objects.all().filter(id__in=[action.id for action in actions])
-        return ActionSerializer(user_actions, many=True).data
-
-
-class UserActOnContentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserActOnContent
-        fields = (
-            'user',
-            'verb',
-            'object',
-        )
-
-    user = serializers.SerializerMethodField()
-
-    def get_user(self, user_act_on_content: UserActOnContent):
-        user = user_act_on_content.user
-        return {
-            'id': user.id,
-            'profile_pic': user.get_profile_pic(),
-        }
+        return ActionSerializer(user_actions, many=True, context={'request': self.context['request']}).data

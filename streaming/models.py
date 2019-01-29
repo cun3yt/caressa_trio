@@ -1,7 +1,7 @@
+from caressa.settings import AUTH_USER_MODEL as User
 from django.db import models
 from model_utils.models import TimeStampedModel
 from jsonfield import JSONField
-from alexa.models import User, Session, AUser
 from django.db.models import signals
 from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
@@ -349,6 +349,7 @@ class UserPlaylistStatus(TimeStampedModel):
 
 
 class HardwareRegistry(TimeStampedModel):
+    # todo: this model may need to be associated with a specific senior living facility
     class Meta:
         db_table = 'hardware_registry'
         verbose_name_plural = 'Hardware Registries'
@@ -366,14 +367,14 @@ class TrackingAction(TimeStampedModel):
         ]
 
     user = models.ForeignKey(to=User, db_index=True, on_delete=models.DO_NOTHING)
-    session = models.ForeignKey(to=Session, db_index=True, on_delete=models.DO_NOTHING)
+    session = models.ForeignKey(to='alexa.Session', db_index=True, on_delete=models.DO_NOTHING)
     segment0 = models.CharField(max_length=100, default=None, null=True)
     segment1 = models.CharField(max_length=100, default=None, null=True)
     segment2 = models.CharField(max_length=100, default=None, null=True)
     segment3 = models.CharField(max_length=100, default=None, null=True)
 
     @staticmethod
-    def save_action(a_user: AUser, session: Session, segment0, segment1=None, segment2=None, segment3=None):
+    def save_action(a_user, session, segment0, segment1=None, segment2=None, segment3=None):
         action = TrackingAction(user=a_user.user,
                                 session=session,
                                 segment0=segment0,
