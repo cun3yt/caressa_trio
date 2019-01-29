@@ -4,7 +4,6 @@ from caressa.settings import REST_FRAMEWORK
 from alexa.models import Joke, User, News, Song
 from generic_relations.relations import GenericRelatedField
 from django.db.utils import IntegrityError
-from caressa.hardcodings import HC_USER_ID
 
 
 class JokeSerializer(serializers.ModelSerializer):
@@ -31,7 +30,6 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('id', 'comment', 'created', 'comment_backers', 'responses')
 
     comment_backers = serializers.SerializerMethodField()
-
     responses = serializers.SerializerMethodField()
 
     def get_responses(self, comment: Comment):
@@ -46,9 +44,11 @@ class CommentSerializer(serializers.ModelSerializer):
         return response_list
 
     def get_if_user_backed_the_comment(self, comment_id):
-        user_id = HC_USER_ID
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
         comment = Comment.objects.get(pk=comment_id)
-        return comment.comment_backers.filter(id=user_id)
+        return comment.comment_backers.filter(id=user.id) if user else []
 
     def get_comment_backers(self, comment: Comment):
         user_backed_qs = self.get_if_user_backed_the_comment(comment.id)
@@ -64,17 +64,16 @@ class CommentSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        user_id = HC_USER_ID
-        backer_instance = User.objects.get(id=user_id)
+        backer_instance = self.context['request'].user
         validated_data['comment_backers'] = [backer_instance, ]
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
         new_comment = validated_data['comment']
-        comments_qs = Comment.objects.filter(comment=new_comment)
+        comments_qs = Comment.objects.filter(comment=new_comment)   # todo What happens if the same comment exists in another circle?
         if not comments_qs.exists():
             return super(CommentSerializer, self).create(validated_data)
         try:
-            comments_qs[0].comment_backers.add(backer_instance)  # todo: Move to `hard_codes`
+            comments_qs[0].comment_backers.add(backer_instance)
         except IntegrityError:
             pass  # todo returns unique key errors with same comment_id, user_id pair
         return comments_qs[0]
@@ -98,8 +97,8 @@ class ReactionSerializer(serializers.ModelSerializer):
         return owner_profile
 
     def create(self, validated_data):
-        user_id = HC_USER_ID
-        validated_data['owner'] = User.objects.get(id=user_id)
+        user = self.context['request'].user
+        validated_data['owner'] = User.objects.get(id=user.id)
         content_id = self.context['request'].parser_context['kwargs']['parent_lookup_content']
         validated_data['content'] = UserAction.objects.get(id=content_id)
         return super(ReactionSerializer, self).create(validated_data)
@@ -146,6 +145,12 @@ class ActionSerializer(serializers.ModelSerializer):
             'profile_pic': user.get_profile_pic()
         }
 
+    @property
+    def context_to_nested_serializers(self):
+        request = self.context.get('request')
+        context = {} if request is None else {'request': request}
+        return context
+
     def get_paginated_comments(self, user_action: UserAction):
         page_size = REST_FRAMEWORK.get('PAGE_SIZE', 5)
         comments = user_action.action_comments.order_by('-created').all()[:page_size]
@@ -156,18 +161,21 @@ class ActionSerializer(serializers.ModelSerializer):
                 base=self.context['request'].META['HTTP_HOST'],
                 id=user_action.id) if user_action.number_of_comments > page_size else None,
             'previous': None,
-            'results': CommentSerializer(comments, many=True).data,
+            'results': CommentSerializer(comments,
+                                         context=self.context_to_nested_serializers,
+                                         many=True).data,
         }
 
     def get_if_user_liked_the_action(self, action_id):
-        user_id = HC_USER_ID  # todo move to `hard-coding`
-        user = User.objects.get(id=user_id)
+        user = self.context['request'].user
         return UserReaction.objects.filter(content_id=action_id, owner=user)
 
     def get_user_reactions(self, user_action: UserAction):
         action_id = user_action.id
         reactions = UserReaction.objects.filter(content_id=action_id).order_by('-created')
-        serialized_reactions = ReactionSerializer(reactions, many=True).data
+        serialized_reactions = ReactionSerializer(reactions,
+                                                  context=self.context_to_nested_serializers,
+                                                  many=True).data
 
         user_like_qs = self.get_if_user_liked_the_action(action_id)
         did_user_like = user_like_qs.exists()

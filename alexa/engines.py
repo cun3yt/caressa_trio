@@ -548,8 +548,8 @@ class TalkBitEngine(Engine):
         time_past = djtimesince(user_post.created, timezone.now()) \
             .encode('utf8').replace(b'\xc2\xa0', b' ').decode('utf8')
 
-        statement = '{username} said this {time} ago:<break time="1s"/> {post_content}. Isn\'t it cool?' \
-            .format(username=user_post.user.username,
+        statement = '{full_name} said this {time} ago:<break time="1s"/> {post_content}. Isn\'t it cool?' \
+            .format(full_name=user_post.user.get_full_name(),
                     time=time_past,
                     post_content=user_post)
 

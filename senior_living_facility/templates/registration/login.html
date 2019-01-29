@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div id="app">
+        {% if form.errors %}
+        <p>Your email address and password didn't match. Please try again.</p>
+        {% endif %}
+
+        Login
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <table>
+            <tr>
+                <td>{{ form.username.label_tag }}</td>
+                <td>
+                    <input type="text" name="username" autofocus="autofocus" maxlength="254" required="required" id="id_username" v-model="username">
+                </td>
+            </tr>
+            <tr>
+                <td>{{ form.password.label_tag }}</td>
+                <td>
+                    <input type="password" name="password" required="required" id="id_password" v-model="password">
+                </td>
+            </tr>
+            </table>
+
+            <input type="hidden" name="next" value="{{ next }}" />
+            <input type="submit" value="Login" v-on:click.prevent='login' />
+        </form>
+    </div>
+{% endblock %}
+
+{% block js %}
+<script type="application/javascript">
+    const api = {
+        base: '{{ api_base }}/',
+        url: function(path) {
+            return this.base + path;
+        }
+    }
+
+    let app = new Vue({
+        delimiters: ['-{-', '-}-'],
+        el: '#app',
+        data: {
+            client_id: '{{ client_id }}',
+            client_secret: '{{ client_secret }}',
+            username: '',
+            password: ''
+        },
+        methods: {
+            login: function() {
+                let that = this
+                this.$http(
+                    {   method: 'POST',
+                        url: api.url('o/token/'),
+                        emulateJSON: true,
+                        body: {
+                            grant_type: 'password',
+                            username: this.username,
+                            password: this.password
+                        },
+                        headers: {
+                            Authorization: 'Basic ' + btoa(this.client_id + ':' + this.client_secret)
+                        }
+                    }
+                ).then(function(response){
+                    that.$cookies.set('access_token', response.body.access_token)
+                    that.$cookies.set('refresh_token', response.body.refresh_token)
+                    window.location.href = api.url('accounts/facility/');
+                }).catch(function(err){
+                    console.error(err)
+                })
+            }
+        }
+    });
+</script>
+{% endblock %}

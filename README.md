@@ -57,6 +57,21 @@ This setup is written for Mac OS.
     * AWS_ACCESS_KEY_ID set to active AWS access key id.
     * AWS_SECRET_ACCESS_KEY set to active AWS secret access key id.
     * MEDIA_BUCKET set to active s3 bucket on AWS.
+    * API_URL: base api URL (without slash at the end), e.g. "http://localhost:8000"
+    * WEB_BASE_URL: base web app URL (without slash at the end), e.g. "http://localhost:8000"
+    * Oauth2 Credentials (refer to oauth docs.)
+        * WEB_CLIENT_ID: Oauth2 client_id is a public identifier for apps.
+        * WEB_CLIENT_SECRET: Oauth2 client_secret known only to the application and the authorization server.
+    * Email backend SMTP setup (e.g. refer to mailgun account)
+        * EMAIL_HOST: SMTP server hostname.
+        * EMAIL_PORT
+        * EMAIL_HOST_USER
+        * EMAIL_USE_TLS
+        * EMAIL_HOST_PASSWORD
+    * SMS backend setup (e.g. refer to twilio account)
+        * TWILIO_ACCOUNT_SID
+        * TWILIO_AUTH_TOKEN
+        * TWILIO_PHONE_NUMBER
 
 1. Run Database Migrations
     * Go to project root
@@ -114,7 +129,7 @@ app.hosts = {
 }
 ```
 where you are serving your REST globally. Check it out [Serveo](serveo.net). Your phone need to be able to reach that url so it is better to have something global.
-1. You need to config CORS: Caressa > settings.py > CORS_ORIGIN_WHITELIST add your IP that is trying to reach resources you can see in debugger configured at Debugging your IOS Build section.
+1. You need to config CORS_ORIGIN_WHITELIST on your .envrc. Add your IP that is trying to reach resources. You can see the IP in debugger which is configured at Debugging your IOS Build section.
 1. Start dev server: `quasar dev -m cordova -T ios`. If build is successful application will automatically open in your phone. Well in most cases..
 1. If any problem occurs you can check debugging feature.  
 1. We need to use legacy build option for Cordova built. To do that in XCode open your project. File > Workspace Settings > Build System choose Legacy Build System

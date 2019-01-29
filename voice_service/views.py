@@ -12,6 +12,7 @@ from voice_service.google.intents import yes_intent, no_intent
 from caressa.settings import PROJECT_ROOT
 
 
+# todo: File Upload needs to be written in DRF
 @csrf_exempt
 def speech_to_text(request):
     if request.method == 'POST':

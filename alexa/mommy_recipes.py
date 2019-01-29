@@ -1,11 +1,11 @@
-from model_mommy.recipe import Recipe, foreign_key
+from model_mommy.recipe import Recipe, foreign_key, seq
 from alexa.models import User, AUser, EngineSession, Song, Circle, CircleMembership, Session
 
 user = Recipe(
     User,
     first_name='TestFirstName1',
     last_name='TestLastName1',
-    email='TestEMail1',
+    email=seq('user1@example.com'),
     phone_number='+14151234567',
     profile_pic='TestProfilePic1',
     state='TestState1',
@@ -16,7 +16,7 @@ user2 = Recipe(
     User,
     first_name='TestFirstName2',
     last_name='TestLastName2',
-    email='TestEMail2',
+    email=seq('user2@example.com'),
     phone_number='+11112223344',
     profile_pic='TestProfilePic2',
     state='TestState2',

@@ -140,13 +140,16 @@ class FactEngineTestCase(TestCase):
 class UserModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user_one = mommy.make_recipe('alexa.user')
+        cls.user_one = mommy.make_recipe('alexa.user', email='user1@example.com')
 
-        cls.user_two = mommy.make_recipe('alexa.user', user_type='FAMILY')
+        cls.user_two = mommy.make_recipe('alexa.user', user_type='FAMILY',
+                                         email='user2@example.com')
 
-        cls.user_three = mommy.make_recipe('alexa.user', user_type='CAREGIVER')
+        cls.user_three = mommy.make_recipe('alexa.user', user_type='CAREGIVER',
+                                           email='user3@example.com')
 
-        cls.user_four = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG')
+        cls.user_four = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG',
+                                          email='user4@example.com')
 
     def test_get_profile_object(self):
         self.assertEqual(self.user_one.get_profile_pic(), '/statics/TestProfilePic1.png')
@@ -171,7 +174,7 @@ class UserModelTestCase(TestCase):
         signals.post_save.disconnect(sender=User, dispatch_uid='create_circle_for_user')
         user_five = User(first_name='TestFirstName1',
                          last_name='TestLastName1',
-                         email='TestEMail1',
+                         email='my.test.user@example.com',
                          phone_number='+14151234567',
                          profile_pic='TestProfilePic1')
         user_five.save()
@@ -182,7 +185,7 @@ class UserModelTestCase(TestCase):
 class CircleModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user_one = mommy.make_recipe('alexa.user')
+        cls.user_one = mommy.make_recipe('alexa.user', email='user@example.com')
         cls.circle = mommy.make(Circle)
 
     def test_add_member(self):
@@ -266,7 +269,8 @@ class AUserModelTestCase(TestCase):
         self.assertEqual(auser.user.last_name, 'AnonymousLastName')
         self.assertFalse(auser.user.is_staff, 'Newly created user must be non-staff')
         self.assertFalse(auser.user.is_superuser, 'Newly created user must be no superuser')
-        self.assertEqual(auser.user.email, 'test@caressa.ai')
+        self.assertTrue(auser.user.email.startswith('test'))
+        self.assertTrue(auser.user.email.endswith('@proxy.caressa.ai'))
         self.assertEqual(auser.user.phone_number, '+14153477898')
         self.assertEqual(auser.user.profile_pic, 'default_profile_pic')
 
@@ -276,7 +280,7 @@ class AUserModelTestCase(TestCase):
         self.assertIsInstance(auser, AUser, 'Known device ID and user ID must lead to an AUser instance')
         self.assertEqual(auser.user.first_name, 'TestFirstName1')
         self.assertEqual(auser.user.last_name, 'TestLastName1')
-        self.assertEqual(auser.user.email, 'TestEMail1')
+        self.assertTrue(auser.user.email.startswith('user1@example.com'))
         self.assertEqual(auser.user.phone_number, '+14151234567')
         self.assertEqual(auser.user.profile_pic, 'TestProfilePic1')
 

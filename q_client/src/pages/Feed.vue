@@ -40,6 +40,7 @@ import UserPostFeed from 'components/UserPostFeed'
 import RegularFeed from 'components/RegularFeed'
 import CommentSection from 'components/CommentSection'
 import Pusher from 'pusher-js'
+import {bus} from '../plugins/auth.js'
 
 // Pusher.logToConsole = true // for logging purpose
 
@@ -72,11 +73,9 @@ export default {
     addFeeds () {
       let vm = this
       ++this.pageNumber
-
-      this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`, {})
+      this.$auth.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`)
         .then(response => {
           vm.feeds = vm.feeds.concat(response.data['results'])
-
           if (vm.bottomVisible()) {
             vm.addFeeds()
           }
@@ -117,14 +116,17 @@ export default {
       }
     }
   },
+  mounted () {
+    bus.$on('addFeeds', this.addFeeds)
+  },
   created () {
+    this.addFeeds()
     this.setupContent({
       title: 'Maggy'
     })
     window.addEventListener('scroll', () => {
       this.moreFeedsNeeded = this.bottomVisible()
     })
-    this.addFeeds()
     this.pushFeeds()
   }
 }

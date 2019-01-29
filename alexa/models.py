@@ -1,5 +1,5 @@
 from caressa.settings import ENV as SETTINGS_ENV
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import BaseUserManager
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
@@ -24,12 +24,94 @@ from random import sample
 from icalendar import Calendar
 from django.utils.crypto import get_random_string
 from caressa.hardcodings import HC_HARDWARE_USER_DEVICE_ID_PREFIX
+from senior_living_facility.models import SeniorLivingFacility
+from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.models import PermissionsMixin
+from django.utils.translation import gettext_lazy as _
+from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
+from uuid import uuid4
+from django.urls import reverse
+from caressa.settings import WEB_BASE_URL
+from utilities.email import send_email
+from utilities.sms import send_sms
 
 
-class User(AbstractUser, TimeStampedModel):
+class CaressaUserManager(BaseUserManager):
+    def create_user(self, email, password=None):
+        if not email:
+            raise ValueError('Users must have an email address')
+
+        user = self.model(
+            email=self.normalize_email(email),
+        )
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password):
+        user = self.create_user(
+            email,
+            password=password,
+        )
+        user.is_admin = True
+        user.save(using=self._db)
+        return user
+
+
+class AbstractCaressaUser(AbstractBaseUser, PermissionsMixin):
+    first_name = models.CharField(_('first name'), max_length=30, blank=True)
+    last_name = models.CharField(_('last name'), max_length=150, blank=True)
+    email = models.EmailField(_('email address'), blank=False, null=False, unique=True)
+    is_staff = models.BooleanField(
+        _('staff status'),
+        default=False,
+        help_text=_('Designates whether the user can log into this admin site.'),
+    )
+    is_active = models.BooleanField(
+        _('active'),
+        default=True,
+        help_text=_(
+            'Designates whether this user should be treated as active. '
+            'Unselect this instead of deleting accounts.'
+        ),
+    )
+    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+
+    objects = CaressaUserManager()
+
+    EMAIL_FIELD = 'email'
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
     class Meta:
+        verbose_name = _('user')
+        verbose_name_plural = _('users')
+        abstract = True
         db_table = 'user'
 
+    def clean(self):
+        super().clean()
+        self.email = self.__class__.objects.normalize_email(self.email)
+
+    def get_full_name(self):
+        """
+        Return the first_name plus the last_name, with a space in between.
+        """
+        full_name = '%s %s' % (self.first_name, self.last_name)
+        return full_name.strip()
+
+    def get_short_name(self):
+        """Return the short name for the user."""
+        return self.first_name
+
+    def email_user(self, subject, message, from_email=None, **kwargs):
+        """Send an email to this user."""
+        send_mail(subject, message, from_email, [self.email], **kwargs)
+
+
+class User(AbstractCaressaUser, TimeStampedModel):
     CARETAKER = 'SENIOR'
     FAMILY = 'FAMILY'
     CAREGIVER = 'CAREGIVER'
@@ -51,11 +133,25 @@ class User(AbstractUser, TimeStampedModel):
     profile_pic = models.TextField(blank=True, default='')
     state = models.TextField(blank=False, default='unknown')
     city = models.TextField(blank=False, default='unknown')
+    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility, on_delete=models.DO_NOTHING, null=True, )
+    room_no = models.CharField(verbose_name="Room Number",
+                               max_length=8,
+                               null=False,
+                               default='',
+                               blank=True,
+                               help_text="The room number of the senior. It is only meaningful for the senior", )
+    hardware = models.ForeignKey(to='streaming.HardwareRegistry',
+                                 null=True,
+                                 default=None,
+                                 help_text="The hardware in senior's room",
+                                 on_delete=models.DO_NOTHING, )
     is_anonymous_user = models.BooleanField(default=True,
                                             help_text='Having this field anonymous means that the content will '
                                                       'not be optimized on the personal level, e.g. calling by '
                                                       'name. Once you set the user\'s first name properly you can '
                                                       'set this field to `False`', )
+
+    objects = CaressaUserManager()
 
     def get_profile_pic(self):
         return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None
@@ -69,6 +165,17 @@ class User(AbstractUser, TimeStampedModel):
     def is_provider(self):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
 
+    @property
+    def senior_circle(self) -> 'Circle':
+        if self.user_type != self.CARETAKER:
+            raise KeyError("User type expected to be {user_type}. Found: {found_type}".format(user_type=self.CARETAKER,
+                                                                                              found_type=self.user_type))
+        return self.circle_set.all()[0]
+
+    @property
+    def full_name(self):
+        return self.get_full_name()
+
     def create_initial_circle(self):
         membership = CircleMembership.objects.filter(member_id=self.id)
         if membership.count() > 0:
@@ -79,21 +186,49 @@ class User(AbstractUser, TimeStampedModel):
         circle.add_member(circle_member, False)
         return True
 
+    @property
+    def pusher_channel(self):
+        assert self.user_type == self.CARETAKER, (
+            "pusher_channel is only available for user_type: senior. "
+            "It is {user_type} for user.id: {user_id}".format(user_type=self.user_user_type,
+                                                              user_id=self.id)
+        )
+        return 'family.senior.{id}'.format(id=self.id)
+
     @staticmethod
     def create_test_user():
-        username = 'Test{date}'.format(date=datetime.now().strftime('%Y%m%d%H%M'))
-        test_user = User(username=username,
-                         password=get_random_string(),
+        test_user = User(password=get_random_string(),
                          first_name='AnonymousFirstName',
                          last_name='AnonymousLastName',
                          is_staff=False,
                          is_superuser=False,
-                         email='test@caressa.ai',
+                         email='test{}@proxy.caressa.ai'.format(get_random_string(15)),
                          phone_number='+14153477898',
                          profile_pic='default_profile_pic',
                          state='test_state',
                          city='test_city', )
         return test_user
+
+    def communication_channels(self):
+        family_circle_channel_str = 'channel.family.circle.{id}'
+        senior_living_facility_channel_str = 'channel.slf.{id}'
+
+        if self.is_senior():
+            circle_channel = family_circle_channel_str.format(id=self.senior_circle.id)
+            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
+            return [circle_channel, slf_channel, ]
+
+        if self.is_family():
+            circle = self.circle_set.all()[0]
+            circle_channel = family_circle_channel_str.format(id=circle.id)
+            return [circle_channel, ]
+
+        if self.is_provider():
+            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
+            return [slf_channel, ]
+
+        return []
+
 
     def __repr__(self):
         return self.first_name.title()
@@ -120,6 +255,10 @@ class Circle(TimeStampedModel):
 
     def is_member(self, member: User):
         return CircleMembership.is_member(self, member)
+
+    @property
+    def admins(self):
+        return self.members.filter(circle_memberships__is_admin=True).all()
 
 
 class CircleMembership(TimeStampedModel):
@@ -152,6 +291,122 @@ class CircleMembership(TimeStampedModel):
         return 'CircleMembership ({id}): {member} in {circle} with admin: {admin} and POI: {poi}'\
             .format(id=self.id, member=self.member, circle=self.circle, admin=self.is_admin,
                     poi=(self.circle.person_of_interest == self.member))
+
+
+class FamilyProspect(TimeStampedModel):
+    class Meta:
+        db_table = 'family_prospect'
+
+    name = models.TextField(blank=False)
+    email = models.EmailField(blank=True, default='')
+    phone_number = PhoneNumberField(blank=True, default='')
+    senior = models.ForeignKey(to=User, on_delete=models.DO_NOTHING)
+
+    def clean(self):
+        if (not self.email) and (not self.phone_number):
+            raise ValidationError('Either email or phone_number must be provided for family member entry')
+
+    def reach_prospect(self) -> bool:
+        try:
+            circle = self.senior.senior_circle
+        except KeyError as e:
+            log(str(e) + ' >> Function returning false')
+            return False
+
+        if circle.admins.count() > 0:
+            return False
+
+        # Assumption: FamilyOutreach is assumed to be successful outreach
+        family_outreach_qs = FamilyOutreach.objects.filter(prospect=self)
+
+        if family_outreach_qs.count() > 0:
+            return False
+
+        outreach = FamilyOutreach(prospect=self)
+
+        if self.email:
+            outreach.method = FamilyOutreach.TYPE_EMAIL
+            outreach.data = {
+                'type': 'email',
+                'status': 'attempted'
+            }
+            outreach.save()
+
+            send_res, html_content, text_content, to_email_address = \
+                send_email(self.email,
+                           'Invitation from {}'.format(self.senior.senior_living_facility),
+                           'email/reach-prospect.html',
+                           'email/reach-prospect.txt',
+                           context={
+                               'prospect': self,
+                               'facility': self.senior.senior_living_facility,
+                               'invitation_url': outreach.invitation_url,
+                           })
+
+            outreach.data.update({
+                'status': 'sent',
+                'send_result': send_res,
+                'html_content': html_content,
+                'text_content': text_content,
+                'to_email_address': to_email_address
+            })
+            outreach.save()
+
+        elif self.phone_number:
+            outreach.method = FamilyOutreach.TYPE_TEXT
+            outreach.data = {
+                'type': 'text',
+                'status': 'attempted'
+            }
+            outreach.save()
+
+            to_phone_number = str(self.phone_number)
+
+            send_res, text_content, to_phone_number = send_sms(
+                to_phone_number=to_phone_number,
+                template_txt='email/reach-prospect.txt',
+                context={
+                    'prospect': self,
+                    'facility': self.senior.senior_living_facility,
+                    'prospect_senior_full_name': self.senior.full_name,
+                    'invitation_url': outreach.invitation_url
+                }
+            )
+
+            outreach.data.update({
+                'status': 'sent',
+                'send_result': send_res,
+                'text_content': text_content,
+                'to_phone_number': to_phone_number
+            })
+            outreach.save()
+
+
+class FamilyOutreach(TimeStampedModel):
+    class Meta:
+        db_table = 'family_outreach'
+
+    TYPE_EMAIL = 'email'
+    TYPE_TEXT = 'text'
+
+    TYPE_SET = (
+        (TYPE_EMAIL, 'email'),
+        (TYPE_TEXT, 'text'),
+    )
+
+    prospect = models.ForeignKey(to=FamilyProspect, null=True, on_delete=models.DO_NOTHING, )
+    method = models.TextField(choices=TYPE_SET,
+                              null=False, )
+    data = JSONField(default={})    # payload info: e.g. what email address
+    # todo success/failure state?
+    tracking_code = models.UUIDField(default=uuid4, db_index=True)
+    converted_user = models.ForeignKey(to=User, null=True, default=None, on_delete=models.DO_NOTHING, )
+
+    @property
+    def invitation_url(self):
+        return '{base_url}{url}?invitation_code={code}'.format(base_url=WEB_BASE_URL,
+                                                               url=reverse('family-prospect-invitation-code'),
+                                                               code=self.tracking_code)
 
 
 class AUser(TimeStampedModel):
@@ -238,8 +493,6 @@ class AUser(TimeStampedModel):
         :param alexa_device_id: string
         :param alexa_user_id: int
         :return: (AUser, bool)
-
-        @todo write test
         """
 
         alexa_user, is_created = AUser.objects.get_or_create(alexa_device_id=alexa_device_id,
@@ -442,7 +695,6 @@ class Fact(TimeStampedModel, FetchRandomMixin):
     entry_text = models.TextField(null=False, blank=False)
     fact_list = JSONField(default=[])
     ending_yes_no_question = models.TextField(null=False, blank=False)
-    # todo consider column on action, e.g. "found interesting" for the question of "Did you find this fact interesting?"
 
     def get_random_content(self):
         return sample(self.fact_list, 1)[0]

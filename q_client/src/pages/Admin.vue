@@ -141,7 +141,7 @@ export default {
       if (this.messageText !== '') {
         this.textMessageObj.text.push(this.messageText)
       }(this.messages.push(this.textMessageObj))
-      this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'userId': textMessageObj.id,
         'type': 'facility_ios_text',
         'key': key,
@@ -211,7 +211,7 @@ export default {
       myMedia.play()
     },
     uploadRecord: function () {
-      this.$http.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
         'userId': this.$root.$options.user.id,
         'audio': 'audio',
         'job-type': '1',
@@ -240,7 +240,7 @@ export default {
             ft.upload(file.nativeURL, response.body,
               function (response) {
                 console.log(response)
-                vm.$http.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
+                vm.$auth.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
                   'userId': vm.$root.$options.user.id,
                   'type': 'facility_ios_audio',
                   'key': vm.audioMessageObj.key
