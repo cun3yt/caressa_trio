@@ -231,7 +231,7 @@ export default {
         title: '',
         subtitle: '..'
       },
-      seniors: [
+      seniors: [ // todo Fix
         {
           name: 'Maggy'
         },
@@ -239,7 +239,7 @@ export default {
           name: 'Duke'
         }
       ],
-      activeSenior: 'Maggy',
+      activeSenior: 'Maggy', // todo Fix
       user: {
         name: '',
         id: '',
@@ -260,6 +260,11 @@ export default {
           name: 'settings',
           label: 'Settings',
           icon: 'fas fa-cog'
+        },
+        {
+          name: 'contact',
+          label: 'Contact',
+          icon: 'fas fa-hand-holding-heart' // todo find a better icon e.g. headset
         }
       ]
     }

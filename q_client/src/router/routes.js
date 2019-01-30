@@ -3,6 +3,7 @@ import Main from '../layouts/Main'
 import Feed from '../pages/Feed'
 import Chat from '../pages/Chat'
 import Settings from '../pages/Settings'
+import Contact from '../pages/Contact'
 import Index from '../pages/index'
 import PageNotFound from '../pages/404'
 
@@ -28,6 +29,11 @@ export default [
         // component: () => import('pages/Settings'),
         component: Settings,
         name: 'settings'
+      },
+      {
+        path: 'contact',
+        component: Contact,
+        name: 'contact'
       },
       {
         path: '/',

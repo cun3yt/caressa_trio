@@ -35,6 +35,7 @@
       <q-route-tab slot="title" icon="fas fa-plus-square" :to="{ name: 'post' }" replace label="Post" />
       <q-route-tab slot="title" icon="fas fa-comments" :to="{ name: 'chat' }" replace label="Chat" />
       <q-route-tab slot="title" icon="fas fa-cog" :to="{ name: 'settings' }" replace label="Settings" />
+      <q-route-tab slot="title" icon="fas fa-hand-holding-heart" :to="{ name: 'contact' }" replace label="Contact" />
       <!--<q-route-tab slot="title" icon="date_range" :to="{ name: 'today' }" replace label="Tasks" />-->
       <!--<q-route-tab slot="title" icon="people" :to="{ name: 'care-circle' }" replace label="Circle" />-->
     </q-tabs>
@@ -43,7 +44,28 @@
 </template>
 
 <script>
-  import {
+import {
+  QBtn,
+  QIcon,
+  QLayout,
+  QTabs,
+  QToolbar,
+  QToolbarTitle,
+  QRouteTab
+} from 'quasar'
+
+export const layoutStore = {
+  view: 'lHr lpr fFr',
+  reveal: false,
+  leftScroll: true,
+  rightScroll: true,
+  leftBreakpoint: 996,
+  rightBreakpoint: 1200,
+  hideTabs: false
+}
+
+export default {
+  components: {
     QBtn,
     QIcon,
     QLayout,
@@ -51,48 +73,27 @@
     QToolbar,
     QToolbarTitle,
     QRouteTab
-  } from 'quasar'
-
-  export const layoutStore = {
-    view: 'lHr lpr fFr',
-    reveal: false,
-    leftScroll: true,
-    rightScroll: true,
-    leftBreakpoint: 996,
-    rightBreakpoint: 1200,
-    hideTabs: false
-  }
-
-  export default {
-    components: {
-      QBtn,
-      QIcon,
-      QLayout,
-      QTabs,
-      QToolbar,
-      QToolbarTitle,
-      QRouteTab
-    },
-    data () {
-      return {
-        layoutStore,
-        header: {
-          cta: null,
-          title: '',
-          subtitle: ''
-        }
+  },
+  data () {
+    return {
+      layoutStore,
+      header: {
+        cta: null,
+        title: '',
+        subtitle: ''
       }
-    },
-    methods: {
-      setupContent ({cta = null, title = '', subtitle = ''} = {}) {
-        this.header.cta = cta
-        this.header.title = title
-        this.header.subtitle = subtitle
-      }
-    },
-    watch: {
-      '$route' (to, from) {
-        this.setupContent()
+    }
+  },
+  methods: {
+    setupContent ({cta = null, title = '', subtitle = ''} = {}) {
+      this.header.cta = cta
+      this.header.title = title
+      this.header.subtitle = subtitle
+    }
+  },
+  watch: {
+    '$route' (to, from) {
+      this.setupContent()
       }
     },
     name: 'layout'
