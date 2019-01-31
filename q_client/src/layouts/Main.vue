@@ -200,7 +200,6 @@
 </template>
 
 <script>
-import vars from '../.env'
 import {bus} from '../plugins/auth.js'
 
 export default {
@@ -284,21 +283,26 @@ export default {
       this.loginModal = true
     },
     submitLogin: function () {
-      let data = `grant_type=password&username=${this.loginEmail}&password=${this.loginPassword}&client_id=${vars.CLIENT_ID}&client_secret=${vars.CLIENT_SECRET}`
-      this.$auth.post(`${this.$root.$options.hosts.rest}/o/token/`, data, 'login').then(
+      let data = {
+        'username': this.loginEmail,
+        'password': this.loginPassword
+      }
+      this.$auth.login(data).then(
         response => {
-          console.log('success')
+          console.log(response, 'success')
           this.loginEmail = ''
           this.loginPassword = ''
           bus.$emit('addFeeds')
         }, response => {
-          console.log('error')
+          console.log(response, 'error')
         })
       this.loginModal = this.$auth.isLoggedOut()
     },
-    loginRedirect: function (currentModal) {
+    loginRedirect: function (currentModal=null) {
       this.loginModal = true
-      this[currentModal] = false
+      if(this[currentModal]){
+        this[currentModal] = false
+      }
     },
     videoDirection: function (calledFrom) {
       this.lastPosition = calledFrom
@@ -318,6 +322,9 @@ export default {
       })
       this.activeSenior = data.name
     }
+  },
+  mounted () {
+    bus.$on('loginRedirect', this.loginRedirect)
   },
   watch: {
     '$route' (to, from) {
