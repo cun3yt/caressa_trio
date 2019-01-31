@@ -292,15 +292,16 @@ export default {
           console.log(response, 'success')
           this.loginEmail = ''
           this.loginPassword = ''
+          this.loginModal = false
           bus.$emit('addFeeds')
         }, response => {
           console.log(response, 'error')
+          this.loginModal = true
         })
-      this.loginModal = this.$auth.isLoggedOut()
     },
-    loginRedirect: function (currentModal=null) {
+    loginRedirect: function (currentModal = null) {
       this.loginModal = true
-      if(this[currentModal]){
+      if (this[currentModal]) {
         this[currentModal] = false
       }
     },
