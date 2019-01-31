@@ -1,0 +1,35 @@
+{
+  "name": "caressa",
+  "version": "1.0.0",
+  "description": "Caressa Web dependencies, mostly tooling related: webpack, VueJS loader. It doesn't include mobile dependencies, mobile has its own setup under its directory unless it is another repository.",
+  "main": "static/javascript/index.js",
+  "private": true,
+  "dependencies": {
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.3.1",
+    "babel-loader": "^8.0.5",
+    "css-loader": "^2.1.0",
+    "vue": "^2.5.22",
+    "vue-loader": "^15.6.1",
+    "vue-style-loader": "^4.1.2",
+    "vue-template-compiler": "^2.5.22",
+    "webpack": "^4.29.0",
+    "webpack-cli": "^3.2.1"
+  },
+  "scripts": {
+    "build": "webpack --config static/webpack.config.js"
+  },
+  "keywords": [
+    "caressa",
+    "web"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/cun3yt/caressa-hw.git"
+  },
+  "author": "Cuneyt Mertayak",
+  "license": "ISC"
+}
