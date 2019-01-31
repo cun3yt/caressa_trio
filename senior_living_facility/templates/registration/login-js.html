@@ -1,0 +1,8 @@
+{% extends "base-js.html" %}
+
+{% block content %}
+    <div id="app" data-component="login" data-client-id="{{ client_id }}"
+         data-client-secret="{{ client_secret }}"
+         data-api-base="{{ api_base }}" data-next-page="{{ next_page }}"
+    data-login-url="{% url 'login' %}"></div>
+{% endblock %}

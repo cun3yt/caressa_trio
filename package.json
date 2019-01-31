@@ -5,7 +5,8 @@
   "main": "static/javascript/index.js",
   "private": true,
   "dependencies": {
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.11",
+    "vue-cookies": "^1.5.12"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
@@ -14,6 +15,7 @@
     "css-loader": "^2.1.0",
     "vue": "^2.5.22",
     "vue-loader": "^15.6.1",
+    "vue-resource": "^1.5.1",
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.5.22",
     "webpack": "^4.29.0",

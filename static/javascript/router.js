@@ -1,7 +1,7 @@
 import App from './pages/App.vue'
-import SampleApp from './pages/Sample.vue'
+import LoginApp from './pages/Login.vue'
 
 export default {
     main: App,
-    sample: SampleApp
+    login: LoginApp
 }
