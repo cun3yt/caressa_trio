@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from actions.models import UserAction, Comment, UserReaction, UserPost, CommentResponse
+from actions.models import UserAction, Comment, UserReaction, UserPost, CommentResponse, UserQuery
 from caressa.settings import REST_FRAMEWORK
 from alexa.models import Joke, User, News, Song
 from generic_relations.relations import GenericRelatedField
@@ -22,6 +22,31 @@ class SongSerializer(serializers.ModelSerializer):
     class Meta:
         model = Song
         fields = ('id', 'title', 'artist', 'duration', 'genre', 'file_name')
+
+
+class QuerySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserQuery
+        fields = ('id', 'message', 'reply_message', 'solve_date')
+
+    message = serializers.SerializerMethodField()
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        message = {
+            'title': self.context['request'].data['title'],
+            'main': self.context['request'].data['main']
+        }
+        validated_data['user'] = User.objects.get(id=user.id)
+        validated_data['message'] = message
+        return super(QuerySerializer, self).create(validated_data)
+
+    def get_message(self, user_query: UserQuery):
+            data = {
+                'title': user_query.message['title'],
+                'main': user_query.message['main']
+            }
+            return data
 
 
 class CommentSerializer(serializers.ModelSerializer):

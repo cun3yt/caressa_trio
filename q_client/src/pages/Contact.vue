@@ -29,31 +29,18 @@
       <q-list >
         <q-item>
         <q-item-main>
-          <q-collapsible
-            multiline
-            class="bg-tertiary text-primary"
-            icon="fas fa-check"
-            label="Message sending problem"
-            sublabel="Solved"
-          >
-            <p class="text-primary">I cannot send message to my mom!</p>
-          </q-collapsible>
-          <q-collapsible
-            multiline
-            class="bg-warning text-primary"
-            icon="far fa-clock"
-            label="Message recieving problem"
-            sublabel="Working"
-          >
-            <p class="text-primary">I cannot send message to my mom!</p>
-          </q-collapsible>
         <q-collapsible
-          v-for="ticket in tickets"
-          :key="ticket.id"
-          group="oldInquiries"
-          :icon="ticket.isSolved ? 'fas fa-check' : 'far fa-clock'"
-          class="bg-positive"
-        >
+          v-if="queries.length > 0"
+          v-for="query in queries"
+          :key="query.id"
+          group="queries"
+          multiline
+          :class="query.solve_date ? 'bg-tertiary text-primary' : 'bg-warning text-primary'"
+          :icon="query.solve_date ? 'fas fa-check' : 'far fa-clock'"
+          :label="query.message.title ? query.message.title : 'No Title'"
+          :sublabel="query.solve_date ? 'Solved' : 'Waiting'"
+          >
+          <p class="text-primary">{{query.message.main}}</p>
         </q-collapsible>
         </q-item-main>
         </q-item>
@@ -73,21 +60,35 @@ export default {
   },
   methods: {
     submitFrom: function () {
-      return null // todo implement
+      let vm = this
+      vm.$auth.post(`${vm.$root.$options.hosts.rest}/act/queries/`, {
+        'title': this.contactFormTitle,
+        'main': this.contactFormMain
+      }).then(response => {
+        console.log(response, 'contact form submit success')
+      }, response => {
+        console.log(response, 'contact form submit error')
+      })
     },
-    loadOldInquiries: function () {
-      return null // todo implement
+    loadQueries: function () {
+      let vm = this
+      vm.$auth.get(`${vm.$root.$options.hosts.rest}/act/queries/`)
+        .then(response => {
+          console.log(response.data.results, 'get form response')
+          this.queries = response.data['results']
+          console.log(this.queries)
+        })
     }
   },
   data () {
     return {
       contactFormMain: '',
       contactFormTitle: '',
-      oldTickets: []
+      queries: []
     }
   },
   mounted () {
-    this.loadOldInquiries()
+    this.loadQueries()
   }
 }
 </script>

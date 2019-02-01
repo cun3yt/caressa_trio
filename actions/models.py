@@ -6,7 +6,6 @@ from actstream.models import Action
 from model_utils.models import TimeStampedModel
 from alexa.models import User, Joke, News, Circle, Song
 from django.utils.translation import ugettext as _
-from django.contrib.contenttypes.fields import GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from jsonfield import JSONField
 from utilities.logger import log
@@ -81,6 +80,7 @@ class CommentResponse(TimeStampedModel):
 
     owner = models.ForeignKey(to=User,
                               on_delete=models.DO_NOTHING, )
+
 
 class UserReaction(TimeStampedModel):
     class Meta:
@@ -237,3 +237,13 @@ class UserListened(TimeStampedModel):
         db_table = 'user_listened'
 
     action = models.ForeignKey(UserAction, on_delete=models.DO_NOTHING)
+
+
+class UserQuery(TimeStampedModel):
+    class Meta:
+        db_table = 'user_query'
+
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    message = JSONField(default={})
+    reply_message = models.TextField(null=True, blank=False, default='')
+    solve_date = models.DateTimeField(null=True)

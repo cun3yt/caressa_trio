@@ -299,6 +299,9 @@ export default {
           this.loginModal = true
         })
     },
+    loginSuccessRedirect: function () {
+      this.loginModal = false
+    },
     loginRedirect: function (currentModal = null) {
       this.loginModal = true
       if (this[currentModal]) {
@@ -326,6 +329,7 @@ export default {
   },
   mounted () {
     bus.$on('loginRedirect', this.loginRedirect)
+    bus.$on('loginSuccessRedirect', this.loginSuccessRedirect)
   },
   watch: {
     '$route' (to, from) {

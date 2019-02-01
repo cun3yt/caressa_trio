@@ -54,6 +54,12 @@ let authModule = {
         }
       }).then(response => {
         console.log(response, 'refresh success')
+        Cookies.set('access_token', response.data.access_token, {expires: 10})
+        Cookies.set('refresh_token', response.data.refresh_token, {expires: 100})
+        this.access_token = Cookies.get('access_token')
+        this.refresh_token = Cookies.get('refresh_token')
+        console.log(this.isLoggedOut())
+        bus.$emit('loginSuccessRedirect')
         return true
       }, response => {
         console.log(response, 'refresh error')
