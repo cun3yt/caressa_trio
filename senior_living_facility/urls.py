@@ -1,7 +1,6 @@
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import path, reverse_lazy
 from senior_living_facility.views import facility_home, family_prospect_invitation, sign_up, app_downloads
-
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -10,7 +9,8 @@ urls = [
          auth_views.LoginView.as_view(template_name='registration/login-js.html',
                                       extra_context={'api_base': API_URL,
                                                      'client_id': WEB_CLIENT['id'],
-                                                     'client_secret': WEB_CLIENT['secret']}),
+                                                     'client_secret': WEB_CLIENT['secret'],
+                                                     'forget_password_url': reverse_lazy('password_reset')}),
          name='login'),
     path('sign-up/', sign_up, name='sign-up'),
     path('app-downloads/', app_downloads, name='app-downloads'),

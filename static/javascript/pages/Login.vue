@@ -30,6 +30,10 @@
             <input type="hidden" name="next" :value="nextPage">
             <input type="submit" value="Login" v-on:click.prevent="login()">
         </form>
+
+        <p>
+            Forget Your Password? <a :href="forgetPasswordUrl">Click Here</a>
+        </p>
     </div>
 </template>
 
@@ -37,11 +41,12 @@
     export default {
         name: "Login",
         props: {
-            clientId: null,
-            clientSecret: null,
-            apiBase: null,
-            nextPage: null,
-            loginUrl: null
+            clientId: String,
+            clientSecret: String,
+            apiBase: String,
+            nextPage: String,
+            loginUrl: String,
+            forgetPasswordUrl: String
         },
         data () {
             return {
