@@ -3,7 +3,8 @@ import vars from '../.env'
 import {Cookies} from 'quasar'
 export const bus = new Vue()
 
-let authModule = {
+let authModule
+authModule = {
   access_token: Cookies.get('access_token'),
   refresh_token: Cookies.get('refresh_token'),
   isLoggedOut: function () {
@@ -33,6 +34,7 @@ let authModule = {
       this.access_token = Cookies.get('access_token')
       this.refresh_token = Cookies.get('refresh_token')
       console.log(this.isLoggedOut())
+      bus.$emit('loginSuccessRedirect')
     }, response => {
       console.log(response, 'login fail')
       bus.$emit('loginRedirect')
@@ -98,12 +100,13 @@ let authModule = {
   },
   get: function (url) {
     let vm = this
-    return Vue.http.get(url, {
+    let promise = Vue.http.get(url, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         'Authorization': `Bearer ${this.access_token}`
       }
-    }).then(response => {
+    })
+    promise.then(response => {
       console.log(response, 'get success')
       return response
     }, response => {
@@ -115,27 +118,28 @@ let authModule = {
         }
       }
     })
+    return promise
   },
-  post: function (url, data, type = 'update') {
-    if (type === 'update') {
-      return Vue.http({
-        method: 'POST',
-        url: url,
-        emulateJSON: true,
-        body: data,
-        headers: {'Authorization': `Bearer ${this.access_token}`}
-      }).then(response => {
-        console.log(response, 'post success')
-      }, response => {
-        console.log(response, 'post error')
-        if (response.status === 401) {
-          let isRefreshSuccess = this.refreshToken()
-          if (isRefreshSuccess) {
-            return this.post(url, data)
-          }
+  post: function (url, data) {
+    let promise = Vue.http({
+      method: 'POST',
+      url: url,
+      emulateJSON: true,
+      body: data,
+      headers: {'Authorization': `Bearer ${this.access_token}`}
+    })
+    promise.then(response => {
+      console.log(response, 'post success')
+    }, response => {
+      console.log(response, 'post error')
+      if (response.status === 401) {
+        let isRefreshSuccess = this.refreshToken()
+        if (isRefreshSuccess) {
+          return this.post(url, data)
         }
-      })
-    }
+      }
+    })
+    return promise
   },
   delete: function (url, data) {
     return Vue.http({

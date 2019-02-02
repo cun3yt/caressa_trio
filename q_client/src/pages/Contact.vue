@@ -26,21 +26,19 @@
         </q-item>
       </q-list>
       <q-item separator />
-      <q-list >
+      <q-list v-if="queries.length > 0">
         <q-item>
         <q-item-main>
-        <q-collapsible
-          v-if="queries.length > 0"
-          v-for="query in queries"
-          :key="query.id"
-          group="queries"
-          multiline
-          :class="query.solve_date ? 'bg-tertiary text-primary' : 'bg-warning text-primary'"
-          :icon="query.solve_date ? 'fas fa-check' : 'far fa-clock'"
-          :label="query.message.title ? query.message.title : 'No Title'"
-          :sublabel="query.solve_date ? 'Solved' : 'Waiting'"
-          >
-          <p class="text-primary">{{query.message.main}}</p>
+        <q-collapsible v-for="query in queries" :key="query.id"  group="queries" multiline>
+          <template slot="header">
+            <q-icon :name="query.solve_date ? 'fas fa-check' : 'far fa-clock'"
+                    class="q-mr-md"
+                    size="1.2em"
+                    :color="query.solve_date ? 'tertiary' : 'warning'"/>
+            <q-item-main :label="query.message.title ? query.message.title : 'No Title'" :sublabel="query.solve_date ? 'Solved' : 'Waiting'"/>
+          </template>
+            <p class="text-primary">{{query.message.main}}</p>
+            <p>We will contact you from {{email}}</p>
         </q-collapsible>
         </q-item-main>
         </q-item>
@@ -50,6 +48,7 @@
 </template>
 
 <script>
+import {Cookies} from 'quasar'
 export default {
   name: 'contact',
   props: ['setupContent'],
@@ -65,9 +64,10 @@ export default {
         'title': this.contactFormTitle,
         'main': this.contactFormMain
       }).then(response => {
-        console.log(response, 'contact form submit success')
-      }, response => {
-        console.log(response, 'contact form submit error')
+        console.log('contact form submit success', response)
+        this.submitNotify()
+      }, error => {
+        console.log('error from Contact', error)
       })
     },
     loadQueries: function () {
@@ -78,17 +78,31 @@ export default {
           this.queries = response.data['results']
           console.log(this.queries)
         })
+    },
+    submitNotify: function () {
+      this.$q.notify({
+        message: 'Form Submitted',
+        color: 'tertiary',
+        icon: 'fas fa-check',
+        timout: '3000',
+        position: 'top-right',
+        detail: `We will reach you from ${this.email}`
+      })
     }
   },
   data () {
     return {
       contactFormMain: '',
       contactFormTitle: '',
-      queries: []
+      queries: [],
+      email: Cookies.get('email')
     }
   },
   mounted () {
     this.loadQueries()
+    this.setupContent({
+      title: 'Reach Us'
+    })
   }
 }
 </script>

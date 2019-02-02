@@ -7,7 +7,7 @@
     <q-layout-header>
       <q-toolbar>
         <q-toolbar-title>
-          {{activeSenior}}
+          {{header.title}}
         </q-toolbar-title>
         <q-btn v-if="header.cta"
                class="within-iframe-hide"
@@ -201,6 +201,7 @@
 
 <script>
 import {bus} from '../plugins/auth.js'
+import {Cookies} from 'quasar'
 
 export default {
   data () {
@@ -300,7 +301,22 @@ export default {
         })
     },
     loginSuccessRedirect: function () {
-      this.loginModal = false
+      let vm = this
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/channels/`)
+        .then(response => {
+          Cookies.set('pusher_channel', response.data['channels'][0], {expires: 10})
+          vm.$root.$options.pusherConfig = response.data['channels'][0]
+        }, response => {
+          console.log(response, 'something failed.')
+        })
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/`)
+        .then(response => {
+          Cookies.set('user_id', response.data['pk'], {expires: 10})
+          Cookies.set('email', response.data['email'], {expires: 10})
+          vm.$root.$options.user.id = response.data['pk']
+          vm.$root.$options.user.email = response.data['email']
+          this.loginModal = false
+        })
     },
     loginRedirect: function (currentModal = null) {
       this.loginModal = true
