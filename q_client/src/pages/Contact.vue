@@ -3,8 +3,10 @@
     <div class="main-content">
       <q-item separator />
       <q-list>
-        <q-list-header>Contact Us</q-list-header>
+        <q-list-header>Contact Us For Our Services</q-list-header>
         <q-item>
+          <p class=" text-weight-thin">We will do our best!</p></q-item>
+        <q-item class="q-pt-none">
           <q-input
             v-model="form.contactFormTitle"
             type="text"
@@ -31,7 +33,7 @@
       <q-list v-if="queries.length > 0">
         <q-item>
         <q-item-main>
-        <q-collapsible v-for="query in queries" :key="query.id"  group="queries" multiline>
+        <q-collapsible v-for="query in queries" :key="query.id"  group="queries" multiline class="q-mb-xs shadow-1">
           <template slot="header">
             <q-icon :name="query.solve_date ? 'fas fa-check' : 'far fa-clock'"
                     class="q-mr-md"
@@ -40,8 +42,9 @@
             <q-item-main :label="query.message.title ? query.message.title : 'No Title'" :sublabel="query.solve_date ? 'Solved' : 'Waiting'"/>
           </template>
             <p class="text-primary">{{query.message.main}}</p>
-            <p>We will contact you from {{email}}</p>
+            <p v-if="!query.solve_date" class="text-info text-weight-thin">We will contact you from <span class="text-weight-light">{{email}}</span></p>
         </q-collapsible>
+
         </q-item-main>
         </q-item>
       </q-list>

@@ -16,7 +16,7 @@ def send_email(to_email_address, subject, template_html, template_txt, context=N
     text_content = text_template_content.render(data)
     html_content = html_template_content.render(data)
 
-    msg = EmailMultiAlternatives(subject, text_content, FROM_EMAIL, [to_email_address])
+    msg = EmailMultiAlternatives(subject, text_content, FROM_EMAIL, to_email_address)
     msg.attach_alternative(html_content, "text/html")
 
     send_res = msg.send()

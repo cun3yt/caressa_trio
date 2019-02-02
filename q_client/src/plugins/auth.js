@@ -11,8 +11,7 @@ authModule = {
     return !(this.access_token && this.refresh_token)
   },
   url: function (path) {
-    let base = `${vars.API_HOST}`
-    return base + path
+    return `${vars.API_HOST}${path}`
   },
   login: function (data) {
     let vm = this
@@ -24,8 +23,8 @@ authModule = {
         grant_type: 'password',
         username: data.username,
         password: data.password,
-        client_id: `${vars.CLIENT_ID}`,
-        client_secret: `${vars.CLIENT_SECRET}`
+        client_id: vars.CLIENT_ID,
+        client_secret: vars.CLIENT_SECRET
       }
     }).then(response => {
       console.log(response, 'login success')
@@ -51,8 +50,8 @@ authModule = {
         body: {
           grant_type: 'refresh_token',
           refresh_token: Cookies.get('refresh_token'),
-          client_id: `${vars.CLIENT_ID}`,
-          client_secret: `${vars.CLIENT_SECRET}`
+          client_id: vars.CLIENT_ID,
+          client_secret: vars.CLIENT_SECRET
         }
       }).then(response => {
         console.log(response, 'refresh success')
@@ -85,8 +84,8 @@ authModule = {
       emulateJSON: true,
       body: {
         token: this.access_token,
-        client_id: `${vars.CLIENT_ID}`,
-        client_secret: `${vars.CLIENT_SECRET}`
+        client_id: vars.CLIENT_ID,
+        client_secret: vars.CLIENT_SECRET
       }
     }).then(response => {
       console.log(response, 'Logged Out')

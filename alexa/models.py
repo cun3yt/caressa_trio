@@ -333,7 +333,7 @@ class FamilyProspect(TimeStampedModel):
             outreach.save()
 
             send_res, html_content, text_content, to_email_address = \
-                send_email(self.email,
+                send_email([self.email],
                            'Invitation from {}'.format(self.senior.senior_living_facility),
                            'email/reach-prospect.html',
                            'email/reach-prospect.txt',

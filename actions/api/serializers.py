@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from actions.models import UserAction, Comment, UserReaction, UserPost, CommentResponse, UserQuery
-from caressa.settings import REST_FRAMEWORK
+from caressa.settings import REST_FRAMEWORK, SUPPORT_EMAIL_ACCOUNTS
 from alexa.models import Joke, User, News, Song
 from generic_relations.relations import GenericRelatedField
 from django.db.utils import IntegrityError
+from utilities.email import send_email
+
 
 
 class JokeSerializer(serializers.ModelSerializer):
@@ -39,6 +41,14 @@ class QuerySerializer(serializers.ModelSerializer):
         }
         validated_data['user'] = User.objects.get(id=user.id)
         validated_data['message'] = message
+        send_email(SUPPORT_EMAIL_ACCOUNTS,
+                   'New Support Request From {}'.format(user.full_name),
+                   'email/support-request.html',
+                   'email/support-request.txt',
+                   context={
+                       'user_full_name': user.full_name,
+                       'user_mail': user.email
+                   })
         return super(QuerySerializer, self).create(validated_data)
 
     def get_message(self, user_query: UserQuery):

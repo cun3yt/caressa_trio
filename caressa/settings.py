@@ -39,6 +39,11 @@ ALLOWED_HOSTS = [
     '.serveo.net',
 ]
 
+SUPPORT_EMAIL_ACCOUNTS = [
+    'mikail@caressa.ai',
+    'cuneyt@caressa.ai',
+]
+
 HOSTED_ENV = os.environ.get('HOSTED_ENV')
 
 # Application definition
