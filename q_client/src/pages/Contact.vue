@@ -6,20 +6,22 @@
         <q-list-header>Contact Us</q-list-header>
         <q-item>
           <q-input
-            v-model="contactFormTitle"
+            v-model="form.contactFormTitle"
             type="text"
             float-label="Enter the subject here"
+            :error="$v.form.contactFormTitle.$error"
           >
           </q-input>
         </q-item>
         <q-item>
           <q-item-main>
             <q-input
-              v-model="contactFormMain"
+              v-model="form.contactFormMain"
               type="textarea"
               float-label="Enter your message here"
               :max-height="100"
               rows="7"
+              :error="$v.form.contactFormMain.$error"
             />
             <q-btn @click="submitFrom">Submit</q-btn>
           </q-item-main>
@@ -49,6 +51,8 @@
 
 <script>
 import {Cookies} from 'quasar'
+import { required } from 'vuelidate/lib/validators'
+
 export default {
   name: 'contact',
   props: ['setupContent'],
@@ -59,10 +63,15 @@ export default {
   },
   methods: {
     submitFrom: function () {
+      this.$v.form.$touch()
+      if (this.$v.form.$error) {
+        this.$q.notify('Field is required')
+        return
+      }
       let vm = this
       vm.$auth.post(`${vm.$root.$options.hosts.rest}/act/queries/`, {
-        'title': this.contactFormTitle,
-        'main': this.contactFormMain
+        'title': this.form.contactFormTitle,
+        'main': this.form.contactFormMain
       }).then(response => {
         console.log('contact form submit success', response)
         this.submitNotify()
@@ -92,10 +101,18 @@ export default {
   },
   data () {
     return {
-      contactFormMain: '',
-      contactFormTitle: '',
+      form: {
+        contactFormMain: '',
+        contactFormTitle: ''
+      },
       queries: [],
       email: Cookies.get('email')
+    }
+  },
+  validations: {
+    form: {
+      contactFormMain: { required },
+      contactFormTitle: { required }
     }
   },
   mounted () {

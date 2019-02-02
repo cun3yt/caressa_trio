@@ -5,7 +5,8 @@ module.exports = function (ctx) {
     // app plugins (/src/plugins)
     plugins: [
       'resource',
-      'auth'
+      'auth',
+      'vuelidate',
     ],
     css: [
       'app.styl'
