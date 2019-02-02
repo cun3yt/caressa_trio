@@ -1,7 +1,6 @@
 from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from alexa.admin import UserCreationForm
-from senior_living_facility.forms import LoginForm
 from django.views.decorators.csrf import csrf_exempt
 from caressa.settings import WEB_CLIENT, API_URL
 from alexa.models import FamilyOutreach
@@ -17,7 +16,7 @@ def facility_home(request):
         'client_id': WEB_CLIENT['id'],
         'client_secret': WEB_CLIENT['secret'],
     }
-    return TemplateResponse(request, 'home.html', context)
+    return TemplateResponse(request, 'seniors-list.html', context)
 
 
 def sign_up(request):
