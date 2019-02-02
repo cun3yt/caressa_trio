@@ -72,6 +72,12 @@ This setup is written for Mac OS.
         * TWILIO_ACCOUNT_SID
         * TWILIO_AUTH_TOKEN
         * TWILIO_PHONE_NUMBER
+1. Javascript codebase 
+    * JS codes are based on VueJS, with application definitions under /static/javascript/pages/
+    * You need to setup webpack to compile the Vue files:
+        * Install `npm` if you haven't done already.
+        * Install npm package: `npm install`
+        * Run webpack builder which is an npm run script (see in package.json): `npm run build`. You need to run it every time you make a change in Vue files, related JS files and html templates. It may be wise to setup a file watcher to run it, see "IDE-Related Workflow" section below. 
 
 1. Run Database Migrations
     * Go to project root
@@ -91,11 +97,11 @@ This setup is written for Mac OS.
         * If there is not Python change tests will not be executed.
         * If you have any tests that are not committed yet they will not be executed.
 
-## Specific to PyCharm & Possibly IntelliJ
+## IDE-Related Workflow (Specific to PyCharm & Possibly IntelliJ)
 
 * PyCharm's debug server is extremely useful for debugging. In order to use it is needed to specify the Python interpreter properly: The one that is available in the virtual environment. It can be set under `PyCharm > Preferences > Project: xxx > Project Interpreter > Project Interpreter`
 * Make sure that the IDE is set properly for Django: Go to `PyCharm > Preferences > Language & Frameworks > Django`. Mark `Enable Django Support` checked, set the "Django Project Root" to the folder where `settings.py` file is in (absolute url of the directory), set "Settings" to `settings.py` (just file name), specify the Manage script to the absolute url of `manage.py` file.
-
+* You can setup a file watcher to bundle static files. Go to `PyCharm > Preferences > Tools > File Watchers`. Add watchers for JS and Vue files (possibly two separate files) to run `npm run build`.
 
 # Quasar Codebase
 
@@ -113,7 +119,6 @@ This setup is written for Mac OS.
 1. Start dev server: `quasar dev`. If build is successful hit to `http://localhost:8080/main/health-numbers`. If you see meaningful app-like looking page you're done. Congrats.
 
 ## IOS Build
-
 
 1. You need to sign your development team in project. I think there is a better way to do that but I did it like this, first open the project in Xcode and choose the development team as yourself manually in Xcode.
 1. q_client/src/plugins/resource.js
