@@ -51,7 +51,7 @@ class SeniorDevice(TimeStampedModel):
         verbose_name_plural = 'Senior Devices'
 
     serial = models.CharField(primary_key=True, max_length=50, blank=True, default='', null=False, )
-    user = models.ForeignKey(to='alexa.User', on_delete=models.DO_NOTHING, null=True, )
+    user = models.ForeignKey(to='alexa.User', on_delete=models.DO_NOTHING, null=True, related_name='devices', )
     is_online = models.BooleanField(default=False, )
     status_checked = models.DateTimeField(null=False, )
     raw_log = models.ForeignKey(to='senior_living_facility.SeniorDevicesRawLog', null=True, on_delete=models.DO_NOTHING)

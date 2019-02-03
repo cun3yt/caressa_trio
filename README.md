@@ -72,6 +72,9 @@ This setup is written for Mac OS.
         * TWILIO_ACCOUNT_SID
         * TWILIO_AUTH_TOKEN
         * TWILIO_PHONE_NUMBER
+    * Dataplicity for device connectivity/status check
+        * DATAPLICITY_USER: user email address
+        * DATAPLICITY_PASSWD: user password
 1. Javascript codebase 
     * JS codes are based on VueJS, with application definitions under /static/javascript/pages/
     * You need to setup webpack to compile the Vue files:

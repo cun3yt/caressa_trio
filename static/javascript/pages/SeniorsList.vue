@@ -127,6 +127,7 @@
                     {field: 'first_name', label: 'First Name', sortable: true},
                     {field: 'last_name', label: 'Last Name', sortable: true},
                     {field: 'room_no', label: 'Room Number', sortable: true},
+                    {field: 'device_status', label: 'Device Status', sortable: false},
                     {field: 'primary_contact', label: 'Primary Contact', sortable: false}
                 ],
                 gridData: [],
@@ -177,6 +178,15 @@
                         row.is_contact_editable = true  // if no contact (default case): contact editable
 
                         for (var col of that.gridColumns) {
+                            if (col.field == 'device_status') {
+                                if ( !row[col.field] ) {
+                                    row[col.field] = [ null ]
+                                    continue
+                                }
+                                row[col.field] = [ row[col.field].is_online ]
+                                continue
+                            }
+
                             if (col.field == 'primary_contact') {
                                 if (!row[col.field]) {
                                     row[col.field] = ['']
