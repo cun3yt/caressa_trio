@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import AUserMedicalState, Joke, News, User, FamilyProspect
+from alexa.models import AUserMedicalState, Joke, News, User, FamilyProspect, Circle
 from actions.models import UserAction
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
@@ -12,6 +12,21 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
+
+
+class CircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = ('pk', 'members', 'senior')
+
+    senior = serializers.SerializerMethodField()
+    members = serializers.SerializerMethodField()
+
+    def get_members(self, circle: Circle):
+        return UserSerializer(circle.members, many=True).data
+
+    def get_senior(self, circle: Circle):
+        return SeniorSerializer(circle.person_of_interest).data
 
 
 class ChannelSerializer(serializers.ModelSerializer):
