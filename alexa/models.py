@@ -304,7 +304,7 @@ class FamilyProspect(TimeStampedModel):
 
     def clean(self):
         if (not self.email) and (not self.phone_number):
-            raise ValidationError('Either email or phone_number must be provided for family member entry')
+            raise ValidationError('At least email address or phone number must be provided for family member')
 
     def reach_prospect(self) -> bool:
         try:

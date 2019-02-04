@@ -1,9 +1,11 @@
+{% load static %}
+
 <html>
     <head>
         <title>Caressa</title>
     </head>
     <body>
-        <div class="content">Hello</div>
-        <div>{{ user }}</div>
+        <div id="app" data-component="main" data-user-id="{{ context.userId }}"></div>
+        <script src="{% static "main.js" %}"></script>
     </body>
 </html>

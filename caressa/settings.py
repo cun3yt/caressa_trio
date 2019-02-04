@@ -168,8 +168,8 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static_files_compiled')
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = (
-    os.path.join(PROJECT_ROOT, 'static'),
-    os.path.join(BASE_DIR, "static"),
+    os.path.join(PROJECT_ROOT, 'static/dist/'),
+    os.path.join(BASE_DIR, "static/dist/"),
 )
 
 SITE_ID = 1

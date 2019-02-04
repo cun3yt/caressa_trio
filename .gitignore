@@ -7,3 +7,5 @@ q_client/cordova
 q_client/build
 caressa/sensitive/
 caressa/uploads/
+node_modules/
+static/dist/
