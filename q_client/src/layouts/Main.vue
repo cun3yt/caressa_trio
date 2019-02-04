@@ -231,15 +231,7 @@ export default {
         title: '',
         subtitle: '..'
       },
-      seniors: [ // todo Fix
-        {
-          name: 'Maggy'
-        },
-        {
-          name: 'Duke'
-        }
-      ],
-      activeSenior: 'Maggy', // todo Fix
+      seniors: [], // not in use, can be used in future.
       user: {
         name: '',
         id: '',
@@ -333,14 +325,6 @@ export default {
       this.videoModal = false
       const lastModal = this.lastPosition
       this[`${lastModal}`] = true
-    },
-    notify (data) {
-      this.$q.notify({
-        color: 'green',
-        message: 'Switching to ' + data.name + '\'s profile',
-        icon: 'fas fa-info-circle'
-      })
-      this.activeSenior = data.name
     }
   },
   mounted () {

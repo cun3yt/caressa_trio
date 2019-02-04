@@ -18,7 +18,7 @@ export default ({ app, router, Vue }) => {
     }
   }
   app.pusherConfig = {
-    channelName: Cookies.get('pusher_channel'), // todo these items need to go to `hard-coding`
+    channelName: Cookies.get('pusher_channel'), // todo need to handle if not exist in Cookie
     pusherKey: vars.PUSHER_KEY,
     pusherCluster: vars.PUSHER_CLUSTER
   }

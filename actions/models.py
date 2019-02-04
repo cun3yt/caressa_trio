@@ -245,5 +245,7 @@ class UserQuery(TimeStampedModel):
 
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     message = JSONField(default={})
-    reply_message = models.TextField(null=True, blank=False, default='')
-    solve_date = models.DateTimeField(null=True)
+    resolution = models.TextField(null=False, blank=False, default='',
+                                  help_text="How this case is resolved or what actions are taken so far. "
+                                            "It is for Caressa Team usage only")
+    solved = models.DateTimeField(null=True)

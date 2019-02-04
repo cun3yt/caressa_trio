@@ -29,7 +29,7 @@ class SongSerializer(serializers.ModelSerializer):
 class QuerySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserQuery
-        fields = ('id', 'message', 'reply_message', 'solve_date')
+        fields = ('id', 'message', 'solved')
 
     message = serializers.SerializerMethodField()
 

@@ -32,7 +32,6 @@ authModule = {
       Cookies.set('refresh_token', response.data.refresh_token, {expires: 100})
       this.access_token = Cookies.get('access_token')
       this.refresh_token = Cookies.get('refresh_token')
-      console.log(this.isLoggedOut())
       bus.$emit('loginSuccessRedirect')
     }, response => {
       console.log(response, 'login fail')
@@ -59,7 +58,6 @@ authModule = {
         Cookies.set('refresh_token', response.data.refresh_token, {expires: 100})
         this.access_token = Cookies.get('access_token')
         this.refresh_token = Cookies.get('refresh_token')
-        console.log(this.isLoggedOut())
         bus.$emit('loginSuccessRedirect')
         return true
       }, response => {

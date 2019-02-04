@@ -35,14 +35,14 @@
         <q-item-main>
         <q-collapsible v-for="query in queries" :key="query.id"  group="queries" multiline class="q-mb-xs shadow-1">
           <template slot="header">
-            <q-icon :name="query.solve_date ? 'fas fa-check' : 'far fa-clock'"
+            <q-icon :name="query.solved ? 'fas fa-check' : 'far fa-clock'"
                     class="q-mr-md"
                     size="1.2em"
-                    :color="query.solve_date ? 'tertiary' : 'warning'"/>
-            <q-item-main :label="query.message.title ? query.message.title : 'No Title'" :sublabel="query.solve_date ? 'Solved' : 'Waiting'"/>
+                    :color="query.solved ? 'tertiary' : 'warning'"/>
+            <q-item-main :label="query.message.title ? query.message.title : 'No Title'" :sublabel="query.solved ? 'Solved' : 'Waiting'"/>
           </template>
             <p class="text-primary">{{query.message.main}}</p>
-            <p v-if="!query.solve_date" class="text-info text-weight-thin">We will contact you from <span class="text-weight-light">{{email}}</span></p>
+            <p v-if="!query.solved" class="text-info text-weight-thin">We will contact you from <span class="text-weight-light">{{email}}</span></p>
         </q-collapsible>
 
         </q-item-main>
