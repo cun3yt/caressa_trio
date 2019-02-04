@@ -1,0 +1,4 @@
+Hello Caressa Support Team,
+There is a new Support Request from {{ user_full_name }} check your management panel.
+Contact Info: {{ user_mail }}
+Thanks!

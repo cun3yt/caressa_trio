@@ -7,7 +7,7 @@
     <q-layout-header>
       <q-toolbar>
         <q-toolbar-title>
-          {{activeSenior}}
+          {{header.title}}
         </q-toolbar-title>
         <q-btn v-if="header.cta"
                class="within-iframe-hide"
@@ -200,8 +200,8 @@
 </template>
 
 <script>
-import vars from '../.env'
 import {bus} from '../plugins/auth.js'
+import {Cookies} from 'quasar'
 
 export default {
   data () {
@@ -231,15 +231,7 @@ export default {
         title: '',
         subtitle: '..'
       },
-      seniors: [
-        {
-          name: 'Maggy'
-        },
-        {
-          name: 'Duke'
-        }
-      ],
-      activeSenior: 'Maggy',
+      seniors: [], // not in use, can be used in future.
       user: {
         name: '',
         id: '',
@@ -260,6 +252,11 @@ export default {
           name: 'settings',
           label: 'Settings',
           icon: 'fas fa-cog'
+        },
+        {
+          name: 'contact',
+          label: 'Contact',
+          icon: 'fas fa-hand-holding-heart' // todo find a better icon e.g. headset
         }
       ]
     }
@@ -279,21 +276,45 @@ export default {
       this.loginModal = true
     },
     submitLogin: function () {
-      let data = `grant_type=password&username=${this.loginEmail}&password=${this.loginPassword}&client_id=${vars.CLIENT_ID}&client_secret=${vars.CLIENT_SECRET}`
-      this.$auth.post(`${this.$root.$options.hosts.rest}/o/token/`, data, 'login').then(
+      let data = {
+        'username': this.loginEmail,
+        'password': this.loginPassword
+      }
+      this.$auth.login(data).then(
         response => {
-          console.log('success')
+          console.log(response, 'success')
           this.loginEmail = ''
           this.loginPassword = ''
+          this.loginModal = false
           bus.$emit('addFeeds')
         }, response => {
-          console.log('error')
+          console.log(response, 'error')
+          this.loginModal = true
         })
-      this.loginModal = this.$auth.isLoggedOut()
     },
-    loginRedirect: function (currentModal) {
+    loginSuccessRedirect: function () {
+      let vm = this
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/channels/`)
+        .then(response => {
+          Cookies.set('pusher_channel', response.data['channels'][0], {expires: 10})
+          vm.$root.$options.pusherConfig = response.data['channels'][0]
+        }, response => {
+          console.log(response, 'something failed.')
+        })
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/`)
+        .then(response => {
+          Cookies.set('user_id', response.data['pk'], {expires: 10})
+          Cookies.set('email', response.data['email'], {expires: 10})
+          vm.$root.$options.user.id = response.data['pk']
+          vm.$root.$options.user.email = response.data['email']
+          this.loginModal = false
+        })
+    },
+    loginRedirect: function (currentModal = null) {
       this.loginModal = true
-      this[currentModal] = false
+      if (this[currentModal]) {
+        this[currentModal] = false
+      }
     },
     videoDirection: function (calledFrom) {
       this.lastPosition = calledFrom
@@ -304,15 +325,11 @@ export default {
       this.videoModal = false
       const lastModal = this.lastPosition
       this[`${lastModal}`] = true
-    },
-    notify (data) {
-      this.$q.notify({
-        color: 'green',
-        message: 'Switching to ' + data.name + '\'s profile',
-        icon: 'fas fa-info-circle'
-      })
-      this.activeSenior = data.name
     }
+  },
+  mounted () {
+    bus.$on('loginRedirect', this.loginRedirect)
+    bus.$on('loginSuccessRedirect', this.loginSuccessRedirect)
   },
   watch: {
     '$route' (to, from) {
