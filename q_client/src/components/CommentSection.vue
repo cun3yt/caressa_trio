@@ -56,6 +56,9 @@ export default {
         response => {
           vm.comments = response.data // todo this line gives error because of prop mutation inside component.
           vm.next_url = response.data['next']
+        },
+        response => {
+          console.log(response)
         }
       )
     },
