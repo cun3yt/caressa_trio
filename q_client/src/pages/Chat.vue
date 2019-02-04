@@ -293,11 +293,11 @@ export default {
         .then(response => {
           this.isLoading = false
           this.senior = response.body.senior
-          setTimeout(deviceCheckFn, 3000)
+          setTimeout(deviceCheckFn, 300000)
         }, error => {
           this.isLoading = false
           this.error = error
-          setTimeout(deviceCheckFn, 3000)
+          setTimeout(deviceCheckFn, 300000)
         })
     }
 
