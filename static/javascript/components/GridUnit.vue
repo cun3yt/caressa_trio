@@ -2,7 +2,7 @@
     <div>
         <div v-if="content.length==1">
             <input v-if="isEdit" v-model='fieldValue' v-on:keyup.stop="updateFormInput()" type="text" :name="name">
-            <div v-else-if="name=='device_status'">
+            <div v-else-if="name=='deviceStatus'">
                 <div v-if="content[0]==null">No Device</div>
                 <div v-else-if="content[0]" class="online">
                     <i class="fas fa-circle"></i>

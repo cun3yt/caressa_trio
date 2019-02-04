@@ -1,4 +1,5 @@
-from alexa.api.views import JokeViewSet, NewsViewSet, MedicalViewSet, UserMeViewSet, SeniorListViewSet, ChannelsViewSet
+from alexa.api.views import JokeViewSet, NewsViewSet, MedicalViewSet, UserMeViewSet, SeniorListViewSet, \
+    ChannelsViewSet, CirclesViewSet
 from actions.api.views import ActionViewSet
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from rest_framework import routers
@@ -34,6 +35,7 @@ def register_flat_routes(flat_router: routers):
 def individual_paths():
     lst = [
         path('api/users/me/', UserMeViewSet.as_view({'get': 'retrieve'})),
+        path('api/users/me/circles/', CirclesViewSet.as_view({'get': 'retrieve'})),
         path('api/users/me/channels/', ChannelsViewSet.as_view({'get': 'retrieve'})),
         path('api/seniors/', SeniorListViewSet.as_view({'get': 'list',
                                                        'post': 'create', })),
