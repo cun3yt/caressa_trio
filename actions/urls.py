@@ -1,4 +1,4 @@
-from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet
+from actions.api.views import ActionViewSet, CommentViewSet, ReactionViewSet, QueryViewSet
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from rest_framework import routers
 
@@ -15,6 +15,9 @@ def register_nested_routes(router: ExtendedSimpleRouter):
                            ReactionViewSet,
                            base_name='actions-reaction',
                            parents_query_lookups=['content'], )
+    router.register(r'queries',
+                    QueryViewSet,
+                    base_name='query',)
     return router
 
 

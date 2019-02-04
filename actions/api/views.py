@@ -4,8 +4,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated
-from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer
-from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song, CommentResponse
+from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer, QuerySerializer
+from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song, CommentResponse, UserQuery
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 from streaming.models import Messages
@@ -40,6 +40,17 @@ class ReactionViewSet(SerializerRequestViewSetMixin, NestedViewSetMixin, viewset
     permission_classes = (IsAuthenticated, )    # todo: add permission to check if it is mine for deletion??
     serializer_class = ReactionSerializer
     queryset = UserReaction.objects.all().order_by('-id')
+
+
+class QueryViewSet(viewsets.ModelViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
+    serializer_class = QuerySerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = UserQuery.objects.all().filter(user=user).order_by('-created')
+        return queryset
 
 
 @authentication_classes((OAuth2Authentication, ))
