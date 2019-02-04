@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import AUserMedicalState, Joke, News, User, FamilyProspect
+from alexa.models import AUserMedicalState, Joke, News, User, FamilyProspect, Circle
 from actions.models import UserAction
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
@@ -12,6 +12,21 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
+
+
+class CircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = ('pk', 'members', 'senior')
+
+    senior = serializers.SerializerMethodField()
+    members = serializers.SerializerMethodField()
+
+    def get_members(self, circle: Circle):
+        return UserSerializer(circle.members, many=True).data
+
+    def get_senior(self, circle: Circle):
+        return SeniorSerializer(circle.person_of_interest).data
 
 
 class ChannelSerializer(serializers.ModelSerializer):
@@ -72,9 +87,10 @@ class FamilyProspectSerializer(serializers.ModelSerializer):
 class SeniorSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'room_no', 'primary_contact', )
+        fields = ('pk', 'first_name', 'last_name', 'room_no', 'primary_contact', 'device_status', )
 
     primary_contact = serializers.SerializerMethodField()
+    device_status = serializers.SerializerMethodField()
 
     def get_primary_contact(self, senior: User):
         circle = senior.circle_set.all()[0]
@@ -83,6 +99,15 @@ class SeniorSerializer(serializers.ModelSerializer):
             prospects = FamilyProspect.objects.filter(senior=senior).all()
             return FamilyProspectSerializer(prospects[0]).data if prospects.count() > 0 else None
         return FamilyMemberSerializer(admins[0]).data if admins.count() else None
+
+    def get_device_status(self, senior: User):
+        if senior.devices.count() == 0:
+            return None
+        device = senior.devices.all()[0]
+        return {
+            'is_online': device.is_online,
+            'status_checked': device.status_checked,
+        }
 
     def create(self, validated_data):
         facility_admin = self.context['request'].user   # type: User

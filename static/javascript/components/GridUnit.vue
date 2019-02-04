@@ -1,9 +1,20 @@
 <template>
     <div>
-        <span v-if="content.length==1">
-            <input v-model='fieldValue' v-if="isEdit" v-on:keyup.stop="updateFormInput()" type="text" :name="name">
+        <div v-if="content.length==1">
+            <input v-if="isEdit" v-model='fieldValue' v-on:keyup.stop="updateFormInput()" type="text" :name="name">
+            <div v-else-if="name=='deviceStatus'">
+                <div v-if="content[0]==null">No Device</div>
+                <div v-else-if="content[0]" class="online">
+                    <i class="fas fa-circle"></i>
+                    Online
+                </div>
+                <div v-else class="offline">
+                    <i class="fas fa-circle"></i>
+                    Offline
+                </div>
+            </div>
             <span v-else>{{ content[0] }}</span>
-        </span>
+        </div>
         <div v-else v-for="entry in content">
             <label style="font-weight: bold">{{ entry.label }}:</label>
             <grid-unit :content="[entry.value]" :is-edit="isEdit" :name="entry.key"></grid-unit>
@@ -51,5 +62,10 @@
 </script>
 
 <style scoped>
-
+    .online {
+        color: seagreen;
+    }
+    .offline {
+        color: indianred;
+    }
 </style>

@@ -1,6 +1,15 @@
 <template>
   <q-page padding class="row justify-center">
     <div class="main-content">
+      <div v-if="isLoading">
+        <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
+      </div>
+      <div v-else-if="error">
+        Could not connect to the server for device status.
+      </div>
+      <div v-else>
+        <div :class="isOnline ? 'online' : 'offline'"><i class="fas fa-circle"></i> {{ deviceStatus }}</div>
+      </div>
       <div style="width: 500px; max-width: 90vw;">
         <div v-for="(msg, index) in messages" :key="`reg-${index}`">
           <q-chat-message
@@ -256,6 +265,9 @@ export default {
   },
   data () {
     return {
+      isLoading: true,
+      error: null,
+      senior: null,
       formData1: [],
       audio: {},
       avatars: {
@@ -274,6 +286,44 @@ export default {
         }
       ]
     }
+  },
+  mounted () {
+    let deviceCheckFn = () => {
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
+        .then(response => {
+          this.isLoading = false
+          this.senior = response.body.senior
+          setTimeout(deviceCheckFn, 300000)
+        }, error => {
+          this.isLoading = false
+          this.error = error
+          setTimeout(deviceCheckFn, 300000)
+        })
+    }
+
+    deviceCheckFn()
+  },
+  computed: {
+    deviceStatus () {
+      if (!this.senior.device_status) {
+        return 'Device Not Found'
+      }
+      if (this.senior.device_status.is_online) {
+        return 'Online'
+      }
+      return 'Offline'
+    },
+    isOnline: function () {
+      return this.senior.device_status && this.senior.device_status.is_online
+    }
   }
 }
 </script>
+<style scoped>
+  .online {
+    color: #4caba5
+  }
+  .offline {
+    color: #ef4b63
+  }
+</style>

@@ -3,6 +3,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.contrib.auth.models import Group
+from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext, gettext_lazy as _
 from alexa.models import Fact, FactType, User, Circle
 from django.db import models
@@ -70,7 +72,7 @@ class UserAdmin(BaseUserAdmin):
     add_form = UserCreationForm
 
     fieldsets = (
-        (None, {'fields': ('email', 'password', 'user_type', )}),
+        (None, {'fields': ('email', 'password', 'user_type', 'device_serial', 'device_status', )}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone_number', )}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser',
                                        'groups', 'user_permissions')}),
@@ -88,6 +90,7 @@ class UserAdmin(BaseUserAdmin):
                     'last_name',
                     'email',
                     'user_type',
+                    'device_status',
                     'date_joined',
                     'is_anonymous_user',
                     'is_staff',
@@ -98,9 +101,36 @@ class UserAdmin(BaseUserAdmin):
     readonly_fields = ('id',
                        'profile_pic',
                        'date_joined',
-                       'is_active', )
-    search_fields = ('email',)
+                       'is_active',
+                       'device_status',
+                       'device_serial', )
+    search_fields = ('first_name', 'last_name', 'email',)
     ordering = ('email',)
+    list_filter = ('user_type', 'is_staff', 'is_superuser', 'is_active', 'groups', )
+
+    def device_serial(self, user: User):
+        if not user.is_senior():
+            return format_html("<span style='color: #aaa'>N/A</span>")
+        qs = user.devices.all()
+        if qs.count() == 0:
+            return format_html("<span style='color: #888'>No Device</span>")
+        device = qs[0]
+
+        return format_html("<a href={}>{}</a>",
+                           reverse('admin:senior_living_facility_seniordevice_change', args=(device.serial, )),
+                           device.serial)
+
+    def device_status(self, user: User):
+        if not user.is_senior():
+            return format_html("<span style='color: #aaa'>N/A</span>")
+        qs = user.devices.all()
+        if qs.count() == 0:
+            return format_html("<span style='color: #888'>No Device</span>")
+        device = qs[0]
+
+        return format_html("<span style='color:{}; font-weight: bold; border:1px dashed #555; padding: 3px;'>{}</span>",
+                           'green' if device.is_online else 'red',
+                           'Online' if device.is_online else 'Offline', )
 
 
 admin.site.register(User, UserAdmin)
