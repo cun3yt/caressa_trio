@@ -127,7 +127,7 @@
                     {field: 'first_name', label: 'First Name', sortable: true},
                     {field: 'last_name', label: 'Last Name', sortable: true},
                     {field: 'room_no', label: 'Room Number', sortable: true},
-                    {field: 'deviceStatus', label: 'Device Status', sortable: false},
+                    {field: 'device_status', label: 'Device Status', sortable: false},
                     {field: 'primary_contact', label: 'Primary Contact', sortable: false}
                 ],
                 gridData: [],
@@ -178,7 +178,7 @@
                         row.is_contact_editable = true  // if no contact (default case): contact editable
 
                         for (var col of that.gridColumns) {
-                            if (col.field == 'deviceStatus') {
+                            if (col.field == 'device_status') {
                                 console.log("device status part")
                                 console.log("col.field: ", col.field)
                                 console.log("row[col.field] ", row[col.field])
