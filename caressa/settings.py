@@ -10,22 +10,28 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
-import os
+from os.path import (
+    join as path_join,
+    dirname,
+    abspath,
+    normpath as path_normpath,
+)
+from os import environ
 import dj_database_url
 import pusher
 from django.contrib import admin
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = dirname(dirname(abspath(__file__)))
+UPLOADS_DIR = path_normpath(path_join(BASE_DIR, 'uploads/'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
 
-ENV = os.environ.get('ENV')
+ENV = environ.get('ENV')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('ENV_KEY')
+SECRET_KEY = environ.get('ENV_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = (ENV == 'dev')
@@ -44,7 +50,7 @@ SUPPORT_EMAIL_ACCOUNTS = [
     'cuneyt@caressa.ai',
 ]
 
-HOSTED_ENV = os.environ.get('HOSTED_ENV')
+HOSTED_ENV = environ.get('HOSTED_ENV')
 
 # Application definition
 
@@ -96,7 +102,7 @@ ROOT_URLCONF = 'caressa.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates/')],
+        'DIRS': [path_join(BASE_DIR, 'templates/')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -143,7 +149,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-CORS_ORIGIN_WHITELIST = tuple(os.getenv('CORS_ORIGIN_WHITELIST').split(','))
+CORS_ORIGIN_WHITELIST = tuple(environ.get('CORS_ORIGIN_WHITELIST', '').split(','))
 # ^^^ These lines are needed to be configured for each developer who is trying to debug the app in his/her phone according to their local requirements
 
 
@@ -164,12 +170,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static_files_compiled')
+STATIC_ROOT = path_normpath(path_join(BASE_DIR, 'static_files_compiled/'))
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = (
-    os.path.join(PROJECT_ROOT, 'static/dist/'),
-    os.path.join(BASE_DIR, "static/dist/"),
+    path_normpath(path_join(BASE_DIR, 'static/')),
 )
 
 SITE_ID = 1
@@ -190,8 +195,8 @@ OAUTH2_PROVIDER = {
     }
 }
 
-API_URL = os.environ.get('API_URL')
-WEB_BASE_URL = os.environ.get('WEB_BASE_URL')
+API_URL = environ.get('API_URL')
+WEB_BASE_URL = environ.get('WEB_BASE_URL')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -212,7 +217,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 5,
 }
 
-DB_DEBUG = os.environ.get('DB_DEBUG', False)
+DB_DEBUG = environ.get('DB_DEBUG', False)
 
 if DB_DEBUG:
     LOGGING = {
@@ -225,16 +230,16 @@ if DB_DEBUG:
     }
 
 # Pusher ENV variables
-pusher_app_id = os.environ.get('PUSHER_APP_ID')
-pusher_key_id = os.environ.get('PUSHER_KEY')
-pusher_secret = os.environ.get('PUSHER_SECRET')
-pusher_cluster = os.environ.get('PUSHER_CLUSTER')
+pusher_app_id = environ.get('PUSHER_APP_ID')
+pusher_key_id = environ.get('PUSHER_KEY')
+pusher_secret = environ.get('PUSHER_SECRET')
+pusher_cluster = environ.get('PUSHER_CLUSTER')
 pusher_client = pusher.Pusher(app_id=pusher_app_id, key=pusher_key_id, secret=pusher_secret, cluster=pusher_cluster)
 
 # AWS ENV variables
-AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
-MEDIA_BUCKET = os.environ.get('MEDIA_BUCKET')
+AWS_ACCESS_KEY_ID = environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = environ.get('AWS_SECRET_ACCESS_KEY')
+MEDIA_BUCKET = environ.get('MEDIA_BUCKET')
 S3_RAW_UPLOAD_BUCKET = 'caressa-upload'
 S3_PRODUCTION_BUCKET = 'caressa-prod'
 S3_REGION = 'https://s3-us-west-1.amazonaws.com'
@@ -246,8 +251,8 @@ CONVERSATION_ENGINES = {
 admin.site.empty_value_display = '-empty-'
 
 WEB_CLIENT = {
-    'id': os.getenv('WEB_CLIENT_ID'),
-    'secret': os.getenv('WEB_CLIENT_SECRET'),
+    'id': environ.get('WEB_CLIENT_ID', ''),
+    'secret': environ.get('WEB_CLIENT_SECRET', ''),
 }
 
 PHONENUMBER_DB_FORMAT = 'NATIONAL'
@@ -255,13 +260,13 @@ PHONENUMBER_DEFAULT_REGION = 'US'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-EMAIL_HOST = os.environ.get('EMAIL_HOST')
-EMAIL_PORT = os.environ.get('EMAIL_PORT', '587')
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-EMAIL_USE_TLS = os.environ.get('EMAIL_TLS', True)
-EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', False)
+EMAIL_HOST = environ.get('EMAIL_HOST')
+EMAIL_PORT = environ.get('EMAIL_PORT', '587')
+EMAIL_HOST_USER = environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = environ.get('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = environ.get('EMAIL_TLS', True)
+EMAIL_USE_SSL = environ.get('EMAIL_USE_SSL', False)
 
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
+TWILIO_ACCOUNT_SID = environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = environ.get('TWILIO_AUTH_TOKEN')
+TWILIO_PHONE_NUMBER = environ.get('TWILIO_PHONE_NUMBER')

@@ -5,7 +5,7 @@
 //    - Routing logic for HTML data attributes to Vue Application (see the file `router.js`)
 //
 
-import Vue from 'Vue'
+import Vue from 'vue'
 import router from './router.js'
 import plugins from './plugins.common.js';
 
