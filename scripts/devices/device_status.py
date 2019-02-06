@@ -131,14 +131,14 @@ def fetch_and_process_device_statuses():
 
 def run(fn_name=None, *args):
     """
-    Usage: `./manage.py runscript devices.device_status --script-args <function_name> <args_to_function>`
+    Usage: `./manage.py runscript scripts.devices.device_status --script-args <function_name> <args_to_function>`
     To fetch raw log:
-        * (Dry Run) `./manage.py runscript devices.device_status --script-args fetch_raw_log True`
-        * `./manage.py runscript devices.device_status --script-args fetch_raw_log False`
+        * (Dry Run) `./manage.py runscript scripts.devices.device_status --script-args fetch_raw_log True`
+        * `./manage.py runscript scripts.devices.device_status --script-args fetch_raw_log False`
     To create device statuses from the latest raw log (this log must have been created before):
-        * `./manage.py runscript devices.device_status --script-args create_device_statuses`
+        * `./manage.py runscript scripts.devices.device_status --script-args create_device_statuses`
     To run both fetching raw log and saving to the statuses to the database:
-        * `./manage.py runscript devices.device_status --script-args fetch_and_process_device_statuses`
+        * `./manage.py runscript scripts.devices.device_status --script-args fetch_and_process_device_statuses`
     """
 
     if fn_name is None:
