@@ -6,23 +6,24 @@
   "private": true,
   "dependencies": {
     "lodash": "^4.17.11",
-    "vue-cookies": "^1.5.12"
+    "vue": "^2.5.22",
+    "vue-cookies": "^1.5.12",
+    "vue-resource": "^1.5.1"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",
     "@babel/preset-env": "^7.3.1",
     "babel-loader": "^8.0.5",
     "css-loader": "^2.1.0",
-    "vue": "^2.5.22",
     "vue-loader": "^15.6.1",
-    "vue-resource": "^1.5.1",
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.5.22",
     "webpack": "^4.29.0",
     "webpack-cli": "^3.2.1"
   },
   "scripts": {
-    "build": "webpack --config static/webpack.config.js"
+    "build": "webpack --config static/webpack.config.js",
+    "heroku-postbuild": "webpack -p --config static/webpack.config.js"
   },
   "keywords": [
     "caressa",
@@ -31,6 +32,9 @@
   "repository": {
     "type": "git",
     "url": "git://github.com/cun3yt/caressa-hw.git"
+  },
+  "engines": {
+    "node": "10.3.0"
   },
   "author": "Cuneyt Mertayak",
   "license": "ISC"

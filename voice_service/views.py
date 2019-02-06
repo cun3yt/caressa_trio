@@ -9,7 +9,7 @@ from voice_service.google.tts import tts
 from voice_service.google.transcribe import transcribe_file
 from voice_service.google.intents import yes_intent, no_intent
 
-from caressa.settings import PROJECT_ROOT
+from caressa.settings import UPLOADS_DIR
 
 
 # todo: File Upload needs to be written in DRF
@@ -22,7 +22,7 @@ def speech_to_text(request):
             print('no file is found!')
             return
 
-        file_saved_path = os.path.join(PROJECT_ROOT, 'uploads/{}'.format(data.name))
+        file_saved_path = os.path.normpath(os.path.join(UPLOADS_DIR, '/', data.name))
         path = default_storage.save(file_saved_path, ContentFile(data.read()))
         print('file saved here: {}. Also check: {}'.format(file_saved_path, path))
 
