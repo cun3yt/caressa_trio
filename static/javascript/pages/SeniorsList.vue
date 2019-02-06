@@ -179,6 +179,10 @@
 
                         for (var col of that.gridColumns) {
                             if (col.field == 'deviceStatus') {
+                                console.log("device status part")
+                                console.log("col.field: ", col.field)
+                                console.log("row[col.field] ", row[col.field])
+
                                 if ( !row[col.field] ) {
                                     row[col.field] = [ null ]
                                     continue
