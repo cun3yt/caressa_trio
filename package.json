@@ -5,6 +5,7 @@
   "main": "static/javascript/index.js",
   "private": true,
   "dependencies": {
+    "lamejs": "^1.2.0",
     "lodash": "^4.17.11",
     "vue": "^2.5.22",
     "vue-cookies": "^1.5.12",
@@ -19,7 +20,8 @@
     "vue-style-loader": "^4.1.2",
     "vue-template-compiler": "^2.5.22",
     "webpack": "^4.29.0",
-    "webpack-cli": "^3.2.1"
+    "webpack-cli": "^3.2.1",
+    "webpack-dev-server": "^3.1.14"
   },
   "scripts": {
     "build": "webpack --config static/webpack.config.js",

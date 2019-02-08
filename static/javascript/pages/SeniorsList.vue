@@ -41,12 +41,16 @@
         <div v-if="loading">
             <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
         </div>
-
         <div v-else>
             <div>Welcome {{user.first_name}} {{user.last_name}}</div>
 
             <a v-on:click="logout()" href="#">Logout</a>
-
+            <div>
+            isRecording : {{isRecording}}
+            <i class="fas fa-microphone" v-on:click="toggleRecorder"
+               style="font-size:26px; color:indianred; cursor: pointer;"></i>
+            <audio controls id="player" :src="audioSource && audioSource.url"/>
+            </div>
             <div id="seniors">
                 <form id="search">Search <input name="query" v-model="searchQuery"></form>
                 <tabular-data :data="gridData" :columns="gridColumns"
@@ -67,6 +71,7 @@
     import TabularData from '../components/TabularData.vue'
     import EditModal from '../components/EditModal.vue'
     import bus from '../utils.communication.js'
+    import Recorder from '../plugins/recorder.js';
 
     export default {
         name: "SeniorsList",
@@ -77,6 +82,7 @@
             apiBase: String
         },
         mounted: function () {
+            this.audio.player = document.getElementById('player')
             this.accessToken = this.$cookies.get('access_token')
             this.refreshToken = this.$cookies.get('refresh_token')
 
@@ -138,10 +144,54 @@
                     isContactEditable: false
                 },
                 editForm: {},
-                editErrors: []
+                editErrors: [],
+                audio: {
+                    isUploading   : false,
+                    recorder      : this._initRecorder(),
+                    recordList    : [],
+                    selected      : {},
+                    uploadStatus  : null,
+                    isPlaying: false
+                }
             }
         },
         methods: {
+            playback () {
+                if (!this.audioSource) {
+                    return
+                }
+                if (this.audio.isPlaying) {
+                    this.audio.player.pause()
+                } else {
+                    setTimeout(() => { this.audio.player.play() }, 0)
+                }
+                this.audio.isPlaying = !this.audio.isPlaying
+            },
+            toggleRecorder () {
+                console.log(this.audio)
+                if (!this.isRecording || (this.isRecording && this.isPause)) {
+                    this.audio.recorder.start()
+                } else {
+                    this.audio.recorder.stop()
+                }
+            },
+            stopRecorder () {
+                if (!this.isRecording) {
+                    return
+                }
+                this.audio.recorder.stop()
+                this.audio.recordList = this.audio.recorder.recordList()
+            },
+            _initRecorder () {
+                return new Recorder({
+                    beforeRecording : (val) => { console.log(`beforeRecording ${val}`) },
+                    afterRecording  : (val) => { console.log(`afterRecording: ${val}`) },
+                    pauseRecording  : (val) => { console.log(`pauseRecording: ${val}`) },
+                    micFailed       : (val) => {console.log(`micFailed: ${val}`)},
+                    bitRate         : this.bitRate,
+                    sampleRate      : this.sampleRate
+                })
+            },
             api_url(path) {
                 return `${this.apiBase}/${path}`
             },
@@ -321,6 +371,20 @@
                 }, function(error) {
                     that.editErrors = error.data.errors
                 })
+            }
+        },
+        computed: {
+            isRecording () {
+                return this.audio.recorder.isRecording
+            },
+            audioSource () {
+                const recorderLength = this.audio.recorder.records.length
+                const url = this.audio.recorder.records[recorderLength - 1]
+                if (url) {
+                    return url
+                } else {
+                    return false
+                }
             }
         }
     }
