@@ -40,7 +40,7 @@ def audio_worker(publisher, next_queued_job: Messages):
     new_audio = AudioFile(audio_type=audio_type, url=url, name=file_key, description=description)
     new_audio.save()
 
-    tag = Tag.objects.get(name='{publisher}-update'.format(publisher=publisher))
+    tag, _ = Tag.objects.get_or_create(name='{publisher}-update'.format(publisher=publisher))
     new_audio.tags.add(tag)
 
     next_queued_job.process_state = Messages.PROCESS_COMPLETE
@@ -51,7 +51,7 @@ def audio_worker(publisher, next_queued_job: Messages):
     assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
     source = User.objects.get(pk=user_id)
 
-    destination = source.circle_set[0].person_of_interest
+    destination = source.circle_set.all()[0].person_of_interest
 
     pusher_client.trigger(destination.pusher_channel,
                           mail_type,
@@ -93,7 +93,7 @@ def text_worker(publisher, next_queued_job: Messages):
     assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
     source = User.objects.get(pk=user_id)
 
-    destination = source.circle_set[0].person_of_interest
+    destination = source.circle_set.all()[0].person_of_interest
     pusher_client.trigger(destination.pusher_channel,
                           mail_type,
                           url)
@@ -138,7 +138,7 @@ def personalization_worker(publisher, next_queued_job: Messages):
     assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
     source = User.objects.get(pk=user_id)
 
-    destination = source.circle_set[0].person_of_interest
+    destination = source.circle_set.all()[0].person_of_interest
 
     pusher_client.trigger(destination.pusher_channel,
                           mail_type,
@@ -174,6 +174,7 @@ worker_registry = {     # Mapping from message type to [consumer (worker fn), pu
 }
 
 
+# todo: Fix: successful re-run of failed messages still contain the error messages
 def run():
     while True:
         messages_qs = Messages.objects.filter(process_state=Messages.PROCESS_QUEUED).order_by('created')
