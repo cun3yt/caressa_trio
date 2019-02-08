@@ -10,7 +10,7 @@ from time import sleep
 import traceback
 
 
-def audio_worker(publisher, next_queued_job):
+def audio_worker(publisher, next_queued_job: Messages):
     ios_file_key = next_queued_job.message['key']
     file_key = ios_file_key + '.mp3'
     mail_type = 'voice_mail'
@@ -40,7 +40,7 @@ def audio_worker(publisher, next_queued_job):
     new_audio = AudioFile(audio_type=audio_type, url=url, name=file_key, description=description)
     new_audio.save()
 
-    tag = Tag.objects.get(name='{publisher}-update'.format(publisher=publisher))
+    tag, _ = Tag.objects.get_or_create(name='{publisher}-update'.format(publisher=publisher))
     new_audio.tags.add(tag)
 
     next_queued_job.process_state = Messages.PROCESS_COMPLETE
@@ -51,7 +51,7 @@ def audio_worker(publisher, next_queued_job):
     assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
     source = User.objects.get(pk=user_id)
 
-    destination = source.circle_set[0].person_of_interest
+    destination = source.circle_set.all()[0].person_of_interest
 
     pusher_client.trigger(destination.pusher_channel,
                           mail_type,
@@ -63,7 +63,7 @@ def audio_worker(publisher, next_queued_job):
     return 'Job Finished...'
 
 
-def text_worker(publisher, next_queued_job):
+def text_worker(publisher, next_queued_job: Messages):
     text = next_queued_job.message['content']
     mail_type = 'voice_mail'
     if publisher == 'facility':
@@ -93,7 +93,7 @@ def text_worker(publisher, next_queued_job):
     assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
     source = User.objects.get(pk=user_id)
 
-    destination = source.circle_set[0].person_of_interest
+    destination = source.circle_set.all()[0].person_of_interest
     pusher_client.trigger(destination.pusher_channel,
                           mail_type,
                           url)
@@ -138,7 +138,7 @@ def personalization_worker(publisher, next_queued_job: Messages):
     assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
     source = User.objects.get(pk=user_id)
 
-    destination = source.circle_set[0].person_of_interest
+    destination = source.circle_set.all()[0].person_of_interest
 
     pusher_client.trigger(destination.pusher_channel,
                           mail_type,
@@ -150,34 +150,50 @@ def personalization_worker(publisher, next_queued_job: Messages):
     log('Job Finished...')
 
 
+worker_registry = {     # Mapping from message type to [consumer (worker fn), publisher (originator)] pair
+    'family_ios_audio': {
+        'publisher': 'family',
+        'consumer': 'audio_worker',
+    },
+    'family_ios_text': {
+        'publisher': 'family',
+        'consumer': 'text_worker',
+    },
+    'facility_ios_audio': {
+        'publisher': 'facility',
+        'consumer': 'audio_worker',
+    },
+    'facility_ios_text': {
+        'publisher': 'facility',
+        'consumer': 'text_worker',
+    },
+    'genres': {
+        'publisher': 'family',
+        'consumer': 'personalization_worker',
+    },
+}
+
+
+# todo: Fix: successful re-run of failed messages still contain the error messages
 def run():
     while True:
-        sleep(2)
+        messages_qs = Messages.objects.filter(process_state=Messages.PROCESS_QUEUED).order_by('created')
+        messages_count = messages_qs.count()
 
-        if not Messages.objects.filter(process_state='queued').count() > 0:
-            log('Queue is empty...')
+        if messages_count == 0:
+            log('Queue is empty, waiting for 2 seconds...')
+            sleep(2)
             continue
 
-        next_queued_job = Messages.objects.filter(process_state='queued').order_by('created')[0]
-        message = next_queued_job.message
-
-        log('Queue State : {process_state}'.format(process_state=next_queued_job.process_state))
+        next_queued_job = messages_qs[0]
+        log('Processing 1 of {num} Queued Message, id: {id}'.format(num=messages_count, id=next_queued_job))
 
         try:
-            if message['message_type'] == 'family_ios_audio':
-                audio_worker(publisher='family', next_queued_job=next_queued_job)
-
-            elif message['message_type'] == 'family_ios_text':
-                text_worker(publisher='family', next_queued_job=next_queued_job)
-
-            elif message['message_type'] == 'facility_ios_audio':
-                audio_worker(publisher='facility', next_queued_job=next_queued_job)
-
-            elif message['message_type'] == 'facility_ios_text':
-                text_worker(publisher='facility', next_queued_job=next_queued_job)
-
-            elif message['message_type'] == 'genres':
-                personalization_worker(publisher='family', next_queued_job=next_queued_job)
+            message = next_queued_job.message
+            typ = message['message_type']
+            consumer = worker_registry[typ]['consumer']
+            publisher = worker_registry[typ]['publisher']
+            globals()[consumer](publisher, next_queued_job)
         except Exception:
             error_message = traceback.format_exc()
             next_queued_job.message['error'] = error_message

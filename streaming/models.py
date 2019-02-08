@@ -407,8 +407,10 @@ class Messages(TimeStampedModel):
 
     process_state = models.CharField(max_length=50,
                                      choices=PROCESS_SET,
-                                     default=PROCESS_QUEUED
-                                     )
+                                     default=PROCESS_QUEUED,
+                                     db_index=True, )
+
+Messages._meta.get_field('created').db_index = True
 
 
 class VoiceMessageStatus(TimeStampedModel):
