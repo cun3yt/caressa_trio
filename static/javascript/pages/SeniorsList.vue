@@ -46,10 +46,16 @@
 
             <a v-on:click="logout()" href="#">Logout</a>
             <div>
-            isRecording : {{isRecording}}
-            <i class="fas fa-microphone" v-on:click="toggleRecorder"
-               style="font-size:26px; color:indianred; cursor: pointer;"></i>
-            <audio controls id="player" :src="audioSource && audioSource.url"/>
+                <div>
+                    <i id="play" :class="playerIcon"
+                       @click="playback"
+                       style="font-size:26px; color:royalblue; cursor: pointer;"
+                    />
+                    <i :class="isRecording ? 'fas fa-stop-circle' : 'fas fa-microphone'"
+                       v-on:click="toggleRecorder"
+                       style="font-size:26px; color:royalblue; cursor: pointer;"/>
+                    <audio ref="player" id="player" :src="audioSource && audioSource.url"/>
+                </div>
             </div>
             <div id="seniors">
                 <form id="search">Search <input name="query" v-model="searchQuery"></form>
@@ -68,6 +74,7 @@
 </template>
 
 <script>
+    import Vue from 'vue'
     import TabularData from '../components/TabularData.vue'
     import EditModal from '../components/EditModal.vue'
     import bus from '../utils.communication.js'
@@ -82,7 +89,6 @@
             apiBase: String
         },
         mounted: function () {
-            this.audio.player = document.getElementById('player')
             this.accessToken = this.$cookies.get('access_token')
             this.refreshToken = this.$cookies.get('refresh_token')
 
@@ -99,6 +105,9 @@
                     this.user = response.data
                     this.list()
                     this.loading = false
+                    Vue.nextTick().then(() => {this.setupPlayer()})
+                    // this.setupPlayer()
+                    // setTimeout(() => {this.setupPlayer()}, 500)
                 }, function(error) {
                     let pro = that.useRefreshToken()
                     pro.then(function(response) {
@@ -134,7 +143,7 @@
                     {field: 'last_name', label: 'Last Name', sortable: true},
                     {field: 'room_no', label: 'Room Number', sortable: true},
                     {field: 'device_status', label: 'Device Status', sortable: false},
-                    {field: 'primary_contact', label: 'Primary Contact', sortable: false}
+                    {field: 'primary_contact', label: 'Primary Contact', sortable: false},
                 ],
                 gridData: [],
                 errors: [],
@@ -151,11 +160,18 @@
                     recordList    : [],
                     selected      : {},
                     uploadStatus  : null,
-                    isPlaying: false
+                    isPlaying: false,
+                    player: null,
                 }
             }
         },
         methods: {
+            setupPlayer () {
+                this.audio.player = this.$refs.player
+                this.audio.player.addEventListener('ended', () => {
+                    this.audio.isPlaying = false
+                })
+            },
             playback () {
                 if (!this.audioSource) {
                     return
@@ -168,7 +184,6 @@
                 this.audio.isPlaying = !this.audio.isPlaying
             },
             toggleRecorder () {
-                console.log(this.audio)
                 if (!this.isRecording || (this.isRecording && this.isPause)) {
                     this.audio.recorder.start()
                 } else {
@@ -374,6 +389,9 @@
             }
         },
         computed: {
+            playerIcon () {
+                return this.audio.isPlaying ? 'fas fa-pause' : 'fas fa-play'
+            },
             isRecording () {
                 return this.audio.recorder.isRecording
             },
@@ -392,6 +410,6 @@
 
 <style scoped>
     .errors {
-        border: dashed red 4px;
+        border: dashed indianred 4px;
     }
 </style>
