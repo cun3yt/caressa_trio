@@ -3,20 +3,23 @@ from mock import patch
 from model_mommy import mommy
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio,\
     UserPlaylistStatus, TrackingAction
-from streaming.views import stream_io
+# from streaming.views import stream_io
 from alexa.models import AUser, Session
 from django.db.models import signals
 import datetime
 import boto3
 from random import randint
-from streaming.test_helper_functions import request_body_creator_for_next_command, request_body_creator_for_intent, \
-    request_body_creator, request_body_creator_for_audio_player, request_body_creator_for_pause_command
-import botocore
+# from streaming.test_helper_functions import request_body_creator_for_next_command, request_body_creator_for_intent, \
+#     request_body_creator, request_body_creator_for_audio_player, request_body_creator_for_pause_command
+# import botocore
 
 
 class TagModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
+        signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
+                                    sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
+
         tag1 = mommy.make(Tag, name='song-classical')
         cls.user_one = mommy.make_recipe('alexa.user')
         cls.context = {'user': cls.user_one}
@@ -163,6 +166,7 @@ class PlaylistModelTestCase(TestCase):
     def setUpTestData(cls):
         signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
                                     sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
+
         cls.playlist_has_audio = mommy.make_recipe('streaming.playlist_has_audio_recipe')  # type: PlaylistHasAudio
         cls.audio_file_1 = mommy.make_recipe('streaming.audio_file_recipe', duration=40)  # type: AudioFile
 
@@ -220,6 +224,8 @@ class PlaylistHasAudioModelTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
+                                    sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
 
         tag1 = mommy.make(Tag, name='song-classical')
         cls.playlist_has_audio = mommy.make_recipe('streaming.playlist_has_audio_recipe')

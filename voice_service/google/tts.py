@@ -2,6 +2,7 @@ from google.cloud.texttospeech import TextToSpeechClient, types, enums
 from boto3 import client as boto3_client
 from django.utils.crypto import get_random_string
 from datetime import datetime
+from .setup import credentials
 
 S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 S3_PRODUCTION_BUCKET = 'caressa-prod'
@@ -16,7 +17,7 @@ def tts(**kwargs) -> (str, str):
     elif text and ssml:
         raise ValueError('either text or ssml must be provided as a keyword argument, not both of them')
 
-    client = TextToSpeechClient()
+    client = TextToSpeechClient(credentials=credentials)
 
     synthesis_input = types.SynthesisInput(**kwargs)
 
