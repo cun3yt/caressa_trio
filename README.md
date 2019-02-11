@@ -75,6 +75,12 @@ This setup is written for Mac OS.
     * Dataplicity for device connectivity/status check
         * DATAPLICITY_USER: user email address
         * DATAPLICITY_PASSWD: user password
+    * Google Cloud Credentials (based on [this article](Google Cloud Credentials from Environment Variable)):
+        * `GOOGLE_APPLICATION_CREDENTIALS_RAW` the content of the JSON file. You can put a line similar to 
+        the one below to your `.envrc`:
+        `export GOOGLE_APPLICATION_CREDENTIALS_RAW="$(< your-google_key-file.json)"`
+        * The credentials can be set as the content of the file on the server, e.g. for Heroku, 
+        `heroku config:set GOOGLE_APPLICATION_CREDENTIALS="$(< credentials.json)"`
 1. Javascript codebase 
     * JS codes are based on VueJS, with application definitions under /static/javascript/pages/
     * You need to setup webpack to compile the Vue files:
