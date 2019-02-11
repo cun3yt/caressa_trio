@@ -75,7 +75,7 @@ This setup is written for Mac OS.
     * Dataplicity for device connectivity/status check
         * DATAPLICITY_USER: user email address
         * DATAPLICITY_PASSWD: user password
-    * Google Cloud Credentials (based on [this article](Google Cloud Credentials from Environment Variable)):
+    * Google Cloud Credentials (based on [this article](https://simpleit.rocks/apis/google-cloud/using-google-cloud-with-heroku/)):
         * `GOOGLE_APPLICATION_CREDENTIALS_RAW` the content of the JSON file. You can put a line similar to 
         the one below to your `.envrc`:
         `export GOOGLE_APPLICATION_CREDENTIALS_RAW="$(< your-google_key-file.json)"`
