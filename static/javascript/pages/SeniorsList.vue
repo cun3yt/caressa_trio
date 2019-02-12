@@ -1,7 +1,7 @@
 <template>
     <div>
-        <edit-modal v-if="modalOperationData.show" :errors="editErrors" :edit-submit="editSubmit"
-                    @close="modalOperationData.show = false">
+        <edit-modal v-if="modalOperationData.editModal.show" :errors="editErrors" :edit-submit="editSubmit"
+                    @close="modalOperationData.editModal.show = false">
             <form slot="header">
                 <h3>Senior Personal Information</h3>
                 <div>
@@ -17,21 +17,21 @@
                     <input name="room_no" v-model="editForm.room_no">
                 </div>
                 <hr>
-                <div :class="{disabled : !modalOperationData.isContactEditable}">
-                    <h3>Primary Contact <span v-if="!modalOperationData.isContactEditable">(Verified)</span></h3>
+                <div :class="{disabled : !modalOperationData.editModal.isContactEditable}">
+                    <h3>Primary Contact <span v-if="!modalOperationData.editModal.isContactEditable">(Verified)</span></h3>
                     <div>
                         <label>Name:</label>
-                        <input :disabled="!modalOperationData.isContactEditable"
+                        <input :disabled="!modalOperationData.editModal.isContactEditable"
                                v-model="editForm['contact.name']">
                     </div>
                     <div>
                         <label>Email:</label>
-                        <input :disabled="!modalOperationData.isContactEditable"
+                        <input :disabled="!modalOperationData.editModal.isContactEditable"
                                v-model="editForm['contact.email']">
                     </div>
                     <div>
                         <label>Phone Number:</label>
-                        <input :disabled="!modalOperationData.isContactEditable"
+                        <input :disabled="!modalOperationData.editModal.isContactEditable"
                                v-model="editForm['contact.phone_number']">
                     </div>
                 </div>
@@ -42,8 +42,7 @@
             <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
         </div>
         <div v-else>
-            <div>Welcome {{user.first_name}} {{user.last_name}}</div>
-
+            <fixed-header :user="user"></fixed-header>
             <a v-on:click="logout()" href="#">Logout</a>
             <div>
                 <div>
@@ -77,12 +76,13 @@
     import Vue from 'vue'
     import TabularData from '../components/TabularData.vue'
     import EditModal from '../components/EditModal.vue'
+    import FixedHeader from '../components/FixedHeader.vue'
     import bus from '../utils.communication.js'
     import Recorder from '../plugins/recorder.js';
 
     export default {
         name: "SeniorsList",
-        components: {TabularData, EditModal},
+        components: {TabularData, EditModal, FixedHeader},
         props: {
             clientId: String,
             clientSecret: String,
@@ -148,9 +148,14 @@
                 gridData: [],
                 errors: [],
                 modalOperationData: {
-                    show: false,
-                    pk: null,
-                    isContactEditable: false
+                    editModal:{
+                        show: false,
+                        pk: null,
+                        isContactEditable: false
+                    },
+                    publicAddressModal:{
+
+                    }
                 },
                 editForm: {},
                 editErrors: [],
@@ -317,9 +322,9 @@
                 })
             },
             editEntry: function (senior) {
-                this.modalOperationData.show = true
-                this.modalOperationData.pk = senior.pk
-                this.modalOperationData.isContactEditable = senior.is_contact_editable
+                this.modalOperationData.editModal.show = true
+                this.modalOperationData.editModal.pk = senior.pk
+                this.modalOperationData.editModal.isContactEditable = senior.is_contact_editable
 
                 let contact = {
                     name: (senior.primary_contact.length > 0 && senior.primary_contact[0].value) || '',
@@ -375,13 +380,13 @@
 
                 this.$http({
                     method: 'PUT',
-                    url: this.api_url(`api/seniors/${this.modalOperationData.pk}/`),
+                    url: this.api_url(`api/seniors/${this.modalOperationData.editModal.pk}/`),
                     headers: {
                         Authorization: `Bearer ${this.accessToken}`
                     },
                     body: this.editForm
                 }).then(function(response){
-                    that.modalOperationData.show = false
+                    that.modalOperationData.editModal.show = false
                     that.list()
                 }, function(error) {
                     that.editErrors = error.data.errors
