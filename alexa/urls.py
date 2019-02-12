@@ -1,4 +1,4 @@
-from alexa.api.views import JokeViewSet, NewsViewSet, MedicalViewSet, UserMeViewSet, SeniorListViewSet, \
+from alexa.api.views import JokeViewSet, NewsViewSet, UserMeViewSet, SeniorListViewSet, \
     ChannelsViewSet, CirclesViewSet
 from actions.api.views import ActionViewSet
 from rest_framework_extensions.routers import ExtendedSimpleRouter
@@ -26,7 +26,6 @@ def register_nested_routes(router: ExtendedSimpleRouter):
 
 
 def register_flat_routes(flat_router: routers):
-    flat_router.register(r'medical-state', MedicalViewSet, 'medical-state')
     flat_router.register(r'jokes', JokeViewSet, 'joke')
     flat_router.register(r'news', NewsViewSet, 'news')
     return flat_router

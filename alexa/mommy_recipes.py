@@ -1,5 +1,5 @@
 from model_mommy.recipe import Recipe, foreign_key, seq
-from alexa.models import User, AUser, EngineSession, Song, Circle, CircleMembership, Session
+from alexa.models import User, Song, Circle, CircleMembership
 
 user = Recipe(
     User,
@@ -23,31 +23,6 @@ user2 = Recipe(
     city='TestCity2',
 )
 
-auser = Recipe(
-    AUser,
-    alexa_user_id='TestAlexaUserId1',
-    alexa_device_id='TestAlexaDeviceId1',
-    user=foreign_key(user),
-    engine_schedule='TestEngineSchedule',
-)
-
-auser2 = Recipe(
-    AUser,
-    alexa_user_id='TestAlexaUserId2',
-    alexa_device_id='TestAlexaDeviceId2',
-    user=foreign_key(user2),
-    engine_schedule='TestEngineSchedule',
-)
-
-engine_session = Recipe(
-    EngineSession,
-    user=foreign_key(auser2),
-    name='TestEngine1',
-    state='continue',
-    data={},
-    ttl=600,
-)
-
 song = Recipe(
     Song,
     artist='TestArtist1',
@@ -67,11 +42,4 @@ circle_membership = Recipe(
     isAdmin=False,
     circle_id=foreign_key(circle),
     circle_membership=foreign_key(user)
-)
-
-
-session_recipe = Recipe(
-    Session,
-    alexa_id='TestAlexaId',
-    alexa_user=foreign_key(auser)
 )

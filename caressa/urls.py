@@ -14,7 +14,7 @@ Including another URLconf
 from django.urls import include, path
 from django.conf.urls.static import static
 from django.conf import settings
-from alexa.views import main_view, alexa_io
+from alexa.views import main_view
 from streaming.views import stream_io_wrapper, playlist_replication
 
 from actions.urls import register_nested_routes as register_nested_action_urls, \
@@ -47,7 +47,6 @@ urlpatterns = [
     path('o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     path('flat-api/', include(flat_router.urls)),
     path('admin/', admin.site.urls),
-    path('discussion', alexa_io),
     path('streaming', stream_io_wrapper),
     path('speech-to-text', speech_to_text),
     path('replicate/', playlist_replication),

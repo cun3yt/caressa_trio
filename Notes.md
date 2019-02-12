@@ -1,31 +1,6 @@
 # Learning Notes
 
-## Alexa
-* session attributes are overwritten once you turn it back it on the response.
-* request types:
-    * LaunchRequest
-    * IntentRequest
-    * SessionEndedRequest
-* All requests include at the top level:
-    * version, 
-    * context,
-    * request objects 
-* The session object is included for all standard requests (LaunchRequest, IntentRequest, and SessionEndedRequest), but it is not included for AudioPlayer, VideoApp, or PlaybackController requests.
-* routing must be based on "user state" X "last session state" X "session state" X "request"
-* Context is always available in the request, but session is not guaranteed. This can also be stated as not all requests are sent in the context of a session.
- 
-### Dialog Interface
-* It provides the two-way communication
-* Directives:
-    * Dialog.Delegate
-    * Dialog.ElicitSlot
-    * Dialog.ConfirmSlot
-    * Dialog.ConfirmIntent
-* IntentRequest contains `dialogState`, possible values:
-    * STARTED
-    * IN_PROGRESS
-
-# Scripts
+## Scripts
 * django-extensions provides management command: runscript. Example:
     * scripts/ module on the root.
     * ./manage.py runscript reminder-notification [--script-args arg1 arg2 ...]
@@ -88,7 +63,6 @@ evs[0].start
 evs[0].end
 evs[0].time_left()
 ```
-
 
 # Tried But moved away
 * these two packages don't work well with each other:
