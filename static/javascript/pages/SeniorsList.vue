@@ -57,7 +57,7 @@
                 </div>
             </div>
             <div id="seniors">
-                <form id="search">Search <input name="query" v-model="searchQuery"></form>
+
                 <tabular-data :data="gridData" :columns="gridColumns"
                               :filter-key="searchQuery" :edit-entry="editEntry"
                               :delete-entry="deleteEntry" :on-submit="onSubmit"></tabular-data>
@@ -129,6 +129,10 @@
                         window.location.href = that.api_url('accounts/login/')
                     })
                 })
+
+            bus.$on('searchKey', (searchKey) => {
+                this.searchQuery = searchKey
+            })
         },
         data () {
             return {

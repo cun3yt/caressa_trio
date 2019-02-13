@@ -3,17 +3,19 @@
         <div>Welcome {{user.first_name}} {{user.last_name}}</div>
         <div>
             <label class="switch">
-                <input float type="checkbox" @click="toggleSwitch" v-model="isSwitchOn" checked>
+                <input type="checkbox" @click="toggleSwitch" v-model="isSwitchOn" checked>
                 <span class="slider round"></span>
             </label>
         </div>
+        <form id="search">Search <input name="query" v-model="searchKey"></form>
     </div>
 </template>
 
 <script>
     import PublicAddress from '../components/PublicAddressModal.vue'
+    import bus from '../utils.communication'
     export default {
-        name: "Header.vue",
+        name: "FixedHeader",
         components:{PublicAddress},
         props: {
             user: Object
@@ -25,9 +27,15 @@
         },
         data () {
             return {
-                isSwitchOn : true
+                searchKey: '',
+                isSwitchOn : true,
             }
-        }
+        },
+        watch: {
+            searchKey : function () {
+                bus.$emit('searchKey', this.searchKey)
+            }
+        },
     }
 </script>
 
@@ -48,7 +56,6 @@
 
     /* The switch - the box around the slider */
     .switch {
-        float: left;
         position: relative;
         display: inline-block;
         width: 30px;
