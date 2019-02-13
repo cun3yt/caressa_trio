@@ -100,7 +100,8 @@ class AudioFileModelTestCase(TestCase):
     def setUpTestData(cls):
         signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
                                     sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
-        cls.audio_file1 = mommy.make_recipe('streaming.audio_file_recipe', duration=40)  # type: AudioFile
+        cls.audio_file1 = mommy.make_recipe('streaming.audio_file_recipe', duration=40,
+                                            name='song name')  # type: AudioFile
         cls.audio_file2 = mommy.make_recipe('streaming.audio_file_recipe', duration=100)  # type: AudioFile
 
     def test_url_hyperlink(self):
@@ -132,8 +133,8 @@ class AudioFileModelTestCase(TestCase):
 
         audio_type = 'TestAudioType1'
         url = '{s3}/{bucket_name}/{file_name}'.format(s3='https://s3.amazonaws.com',
-                                                          bucket_name=bucket_name,
-                                                          file_name=file_name)
+                                                      bucket_name=bucket_name,
+                                                      file_name=file_name)
         name = 'TestAudioFile1'
         description = 'TestDescription1'
 
@@ -154,10 +155,7 @@ class AudioFileModelTestCase(TestCase):
 
     def test_string_representation(self):
         actual_string_representation = str(self.audio_file1)
-        expected_string_representation = "({audio_type}) {file_name}".format(audio_type=self.audio_file1.audio_type,
-                                                                             file_name=self.audio_file1.name)
-
-        self.assertEqual(actual_string_representation, expected_string_representation)
+        self.assertEqual(actual_string_representation, "(song) song name")
 
 
 class PlaylistModelTestCase(TestCase):
