@@ -10,6 +10,9 @@ from time import sleep
 import traceback
 
 
+# todo revisit `senior_communication_channel` part, it may need to be `facility_channel` in some cases
+
+
 def audio_worker(publisher, next_queued_job: Messages):
     ios_file_key = next_queued_job.message['key']
     file_key = ios_file_key + '.mp3'
@@ -53,7 +56,7 @@ def audio_worker(publisher, next_queued_job: Messages):
 
     destination = source.circle_set.all()[0].person_of_interest
 
-    pusher_client.trigger(destination.pusher_channel,
+    pusher_client.trigger(destination.senior_communication_channel,
                           mail_type,
                           url)
 
@@ -94,7 +97,7 @@ def text_worker(publisher, next_queued_job: Messages):
     source = User.objects.get(pk=user_id)
 
     destination = source.circle_set.all()[0].person_of_interest
-    pusher_client.trigger(destination.pusher_channel,
+    pusher_client.trigger(destination.senior_communication_channel,
                           mail_type,
                           url)
 
@@ -140,7 +143,7 @@ def personalization_worker(publisher, next_queued_job: Messages):
 
     destination = source.circle_set.all()[0].person_of_interest
 
-    pusher_client.trigger(destination.pusher_channel,
+    pusher_client.trigger(destination.senior_communication_channel,
                           mail_type,
                           url)
 

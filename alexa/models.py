@@ -4,8 +4,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from jsonfield import JSONField
-from model_utils.models import TimeStampedModel, StatusField
-from model_utils import Choices
+from model_utils.models import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField
 from django.apps import apps
 from utilities.logger import log
@@ -17,12 +16,9 @@ from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
 from caressa.settings import HOSTED_ENV
-from datetime import timedelta, datetime
 from django.utils import timezone
 from random import sample
-from icalendar import Calendar
 from django.utils.crypto import get_random_string
-from caressa.hardcodings import HC_HARDWARE_USER_DEVICE_ID_PREFIX
 from senior_living_facility.models import SeniorLivingFacility
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
@@ -54,7 +50,7 @@ class CaressaUserManager(BaseUserManager):
             email,
             password=password,
         )
-        user.is_admin = True
+        user.is_superuser = True
         user.save(using=self._db)
         return user
 
@@ -180,48 +176,40 @@ class User(AbstractCaressaUser, TimeStampedModel):
         circle.add_member(circle_member, False)
         return True
 
+    @classmethod
+    def get_family_circle_channel(cls, circle_id):
+        return 'channel.family.circle.{circle_id}'.format(circle_id=circle_id)
+
+    @classmethod
+    def get_facility_channel(cls, facility_id):
+        return 'channel.slf.{facility_id}'.format(facility_id=facility_id)
+
     @property
-    def pusher_channel(self):
+    def senior_communication_channel(self):  # todo: combine with `self.communication_channels` since serving for the same purpose
         assert self.user_type == self.CARETAKER, (
             "pusher_channel is only available for user_type: senior. "
-            "It is {user_type} for user.id: {user_id}".format(user_type=self.user_user_type,
+            "It is {user_type} for user.id: {user_id}".format(user_type=self.user_type,
                                                               user_id=self.id)
         )
-        return 'family.senior.{id}'.format(id=self.id)
-
-    @staticmethod
-    def create_test_user():
-        test_user = User(password=get_random_string(),
-                         first_name='AnonymousFirstName',
-                         last_name='AnonymousLastName',
-                         is_staff=False,
-                         is_superuser=False,
-                         email='test{}@proxy.caressa.ai'.format(get_random_string(15)),
-                         phone_number='+14153477898',
-                         profile_pic='default_profile_pic',
-                         state='test_state',
-                         city='test_city', )
-        return test_user
+        return self.get_family_circle_channel(circle_id=self.senior_circle.id)
 
     def communication_channels(self):
-        family_circle_channel_str = 'channel.family.circle.{id}'
-        senior_living_facility_channel_str = 'channel.slf.{id}'
-
         if self.is_senior():
-            circle_channel = family_circle_channel_str.format(id=self.senior_circle.id)
-            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
+            circle_channel = self.get_family_circle_channel(circle_id=self.senior_circle.id)
+            slf_channel = self.get_facility_channel(facility_id=self.senior_living_facility.facility_id)
             return [circle_channel, slf_channel, ]
 
         if self.is_family():
-            circle = self.circle_set.all()[0]
-            circle_channel = family_circle_channel_str.format(id=circle.id)
+            circle = self.circle_set.all()[0]       # todo better unified with `senior_circle` somehow
+            circle_channel = self.get_family_circle_channel(circle_id=circle.id)
             return [circle_channel, ]
 
-        if self.is_provider():
-            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
-            return [slf_channel, ]
+        assert self.is_provider(), (
+            "For the code to reach the end point the only possibility is user's being provider"
+        )
 
-        return []
+        slf_channel = self.get_facility_channel(facility_id=self.senior_living_facility.facility_id)
+        return [slf_channel, ]
 
     def __repr__(self):
         return self.first_name.title()
@@ -280,7 +268,7 @@ class CircleMembership(TimeStampedModel):
     def is_member(cls, circle: Circle, member: User) -> bool:
         return cls.objects.filter(circle=circle, member=member).count() > 0
 
-    def __repr__(self):
+    def __repr__(self):     # pragma: no cover
         return 'CircleMembership ({id}): {member} in {circle} with admin: {admin} and POI: {poi}'\
             .format(id=self.id, member=self.member, circle=self.circle, admin=self.is_admin,
                     poi=(self.circle.person_of_interest == self.member))
@@ -373,6 +361,8 @@ class FamilyProspect(TimeStampedModel):
                 'to_phone_number': to_phone_number
             })
             outreach.save()
+
+        return True
 
 
 class FamilyOutreach(TimeStampedModel):
@@ -483,7 +473,7 @@ class Song(TimeStampedModel, FetchRandomMixin):
     def __repr__(self):
         return "Song({id}, {title} by {artist})".format(id=self.id, title=self.title, artist=self.artist)
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         return "test song"
 
 
