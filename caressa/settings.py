@@ -244,10 +244,6 @@ S3_RAW_UPLOAD_BUCKET = 'caressa-upload'
 S3_PRODUCTION_BUCKET = 'caressa-prod'
 S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 
-CONVERSATION_ENGINES = {
-    'ttl': 10*60,
-}
-
 admin.site.empty_value_display = '-empty-'
 
 WEB_CLIENT = {

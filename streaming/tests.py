@@ -2,9 +2,8 @@ from django.test import TestCase
 from mock import patch
 from model_mommy import mommy
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio,\
-    UserPlaylistStatus, TrackingAction
+    UserPlaylistStatus
 # from streaming.views import stream_io
-from alexa.models import AUser, Session
 from django.db.models import signals
 import datetime
 import boto3
@@ -386,44 +385,6 @@ class UserPlaylistStatusModelTestCase(TestCase):
         self.assertEqual(status_object_for_user_2, status_for_user_2)
         self.assertFalse(status_is_created_for_user_1)
         self.assertTrue(status_is_created_for_user_2)
-
-
-class TrackingActionModelTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.tracking_action_1 = mommy.make_recipe('streaming.tracking_action_recipe')
-        cls.auser = AUser.objects.all()[0]
-        cls.session = Session.objects.all()[0]
-        cls.segment = 'TestSegment'
-
-    def test_save_action_partial_segments(self):
-        TrackingAction.save_action(self.auser, self.session, segment0=self.segment)
-        action_count = TrackingAction.objects.all().count()
-        segment0 = TrackingAction.objects.all()[1].segment0
-        segment1 = TrackingAction.objects.all()[1].segment1
-
-        self.assertIsNotNone(segment0)
-        self.assertIsNone(segment1)
-        self.assertEqual(action_count, 2)
-
-    def test_save_action_full_segments(self):
-        TrackingAction.save_action(self.auser,
-                                   self.session,
-                                   segment0=self.segment,
-                                   segment1=self.segment,
-                                   segment2=self.segment,
-                                   segment3=self.segment,)
-        action_count = TrackingAction.objects.all().count()
-        segment0 = TrackingAction.objects.all()[1].segment0
-        segment1 = TrackingAction.objects.all()[1].segment1
-        segment2 = TrackingAction.objects.all()[1].segment2
-        segment3 = TrackingAction.objects.all()[1].segment3
-
-        self.assertIsNotNone(segment0)
-        self.assertIsNotNone(segment1)
-        self.assertIsNotNone(segment2)
-        self.assertEqual(self.segment, segment3)
-        self.assertEqual(action_count, 2)
 
 
 # todo Read and enable tests: https://www.django-rest-framework.org/api-guide/testing/
