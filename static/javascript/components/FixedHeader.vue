@@ -7,6 +7,7 @@
                 <span class="slider round"></span>
             </label>
         </div>
+        <button @click="activatePublicAddressModal">{{broadcastSwitch}}</button>
         <form id="search">Search <input name="query" v-model="searchKey"></form>
     </div>
 </template>
@@ -24,11 +25,20 @@
             toggleSwitch () {
 
             },
+            activatePublicAddressModal () {
+                bus.$emit('broadcast')
+            }
+
         },
         data () {
             return {
                 searchKey: '',
                 isSwitchOn : true,
+            }
+        },
+        computed: {
+            broadcastSwitch: function () {
+                return this.isSwitchOn ? 'Broadcast' : 'Send Message to Selected'
             }
         },
         watch: {

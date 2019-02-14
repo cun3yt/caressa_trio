@@ -37,12 +37,14 @@
                 </div>
             </form>
         </edit-modal>
-
         <div v-if="loading">
             <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
         </div>
         <div v-else>
             <fixed-header :user="user"></fixed-header>
+            <public-address-modal v-if="modalOperationData.publicAddressModal.show"
+                                  @close="modalOperationData.publicAddressModal.show = false">
+            </public-address-modal>
             <a v-on:click="logout()" href="#">Logout</a>
             <div>
                 <div>
@@ -77,12 +79,13 @@
     import TabularData from '../components/TabularData.vue'
     import EditModal from '../components/EditModal.vue'
     import FixedHeader from '../components/FixedHeader.vue'
+    import PublicAddressModal from '../components/PublicAddressModal.vue'
     import bus from '../utils.communication.js'
     import Recorder from '../plugins/recorder.js';
 
     export default {
         name: "SeniorsList",
-        components: {TabularData, EditModal, FixedHeader},
+        components: {TabularData, EditModal, FixedHeader, PublicAddressModal},
         props: {
             clientId: String,
             clientSecret: String,
@@ -133,6 +136,7 @@
             bus.$on('searchKey', (searchKey) => {
                 this.searchQuery = searchKey
             })
+            bus.$on('broadcast', this.newBroadcast)
         },
         data () {
             return {
@@ -158,7 +162,8 @@
                         isContactEditable: false
                     },
                     publicAddressModal:{
-
+                        show: false,
+                        channels: {}
                     }
                 },
                 editForm: {},
@@ -215,6 +220,9 @@
                     bitRate         : this.bitRate,
                     sampleRate      : this.sampleRate
                 })
+            },
+            newBroadcast () {
+                this.modalOperationData.publicAddressModal.show = true
             },
             api_url(path) {
                 return `${this.apiBase}/${path}`

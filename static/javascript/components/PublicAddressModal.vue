@@ -3,13 +3,14 @@
         <div class="modal-mask">
             <div class="modal-wrapper">
                 <div class="modal-container">
-
                     <div class="modal-header">
                         <slot name="header">
                             default header
                         </slot>
                     </div>
+                    <div>
 
+                    </div>
                     <div class="modal-footer">
                         <slot name="footer">
                             <button class="modal-default-button" @click="$emit('close')">
@@ -28,7 +29,7 @@
 
 <script>
     export default {
-        name: 'edit-modal',
+        name: 'public-address-modal',
         props: {
             editSubmit: Function,
             errors: Array
