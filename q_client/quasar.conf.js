@@ -82,7 +82,8 @@ module.exports = function (ctx) {
         'QBtnDropdown',
         'QVideo',
         'QCollapsible',
-        'QPopover'
+        'QPopover',
+        'QUploader',
       ],
       directives: [
         'Ripple',
