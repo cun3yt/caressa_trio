@@ -348,45 +348,6 @@ class UserPlaylistStatus(TimeStampedModel):
         return obj_instance, created
 
 
-class HardwareRegistry(TimeStampedModel):
-    # todo: this model may need to be associated with a specific senior living facility
-    class Meta:
-        db_table = 'hardware_registry'
-        verbose_name_plural = 'Hardware Registries'
-
-    caressa_device_id = models.CharField(max_length=100, blank=False, null=False)   # e.g. CA-AMZ-001
-    device_id = models.TextField()      # Alexa ID  todo: when Alexa User is changed on Alexa device is it updated?
-    notes = models.TextField(default='')
-
-
-class TrackingAction(TimeStampedModel):
-    class Meta:
-        db_table = 'tracking_action'
-        indexes = [
-            models.Index(fields=['segment0', 'segment1', 'segment2', 'segment3', ])
-        ]
-
-    user = models.ForeignKey(to=User, db_index=True, on_delete=models.DO_NOTHING)
-    session = models.ForeignKey(to='alexa.Session', db_index=True, on_delete=models.DO_NOTHING)
-    segment0 = models.CharField(max_length=100, default=None, null=True)
-    segment1 = models.CharField(max_length=100, default=None, null=True)
-    segment2 = models.CharField(max_length=100, default=None, null=True)
-    segment3 = models.CharField(max_length=100, default=None, null=True)
-
-    @staticmethod
-    def save_action(a_user, session, segment0, segment1=None, segment2=None, segment3=None):
-        action = TrackingAction(user=a_user.user,
-                                session=session,
-                                segment0=segment0,
-                                segment1=segment1,
-                                segment2=segment2,
-                                segment3=segment3, )
-        action.save()
-
-
-TrackingAction._meta.get_field('created').db_index = True
-
-
 class Messages(TimeStampedModel):
     class Meta:
         db_table = 'message_queue'
@@ -407,8 +368,10 @@ class Messages(TimeStampedModel):
 
     process_state = models.CharField(max_length=50,
                                      choices=PROCESS_SET,
-                                     default=PROCESS_QUEUED
-                                     )
+                                     default=PROCESS_QUEUED,
+                                     db_index=True, )
+
+Messages._meta.get_field('created').db_index = True
 
 
 class VoiceMessageStatus(TimeStampedModel):

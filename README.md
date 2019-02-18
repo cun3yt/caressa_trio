@@ -1,4 +1,4 @@
-[![Build Status](https://semaphoreci.com/api/v1/projects/feec7071-453b-4a9f-b392-8669d5277617/2118268/badge.svg)](https://semaphoreci.com/caressa/caressa_trio)
+[![Build Status](https://semaphoreci.com/api/v1/projects/feec7071-453b-4a9f-b392-8669d5277617/2504119/badge.svg)](https://semaphoreci.com/caressa/caressa_trio)
 
 # Caressa Main Repository
 
@@ -6,7 +6,7 @@ Welcome to Caressa's code repository. Currently it includes two main repositorie
 
 1. Django codebase including
     * Data (ORM) models
-    * HTTP endpoints for Voice devices (currently only Alexa)
+    * HTTP endpoints for Caressa hardware
     * REST API for mobile clients
 1. Quasar codebase for targeting iOS and Android builds
 
@@ -53,7 +53,7 @@ This setup is written for Mac OS.
     * DATABASE_URL set to the local database instance, e.g.: `export DATABASE_URL='postgres://cuneyt:@localhost:5432/caressa_django'`
     * VIRTUAL_ENV_PATH set to the virtual environment path that is in use, e.g.: `export VIRTUAL_ENV_PATH='/Users/cuneyt/.pyenv/versions/caressa'`
     * PROJECT_ROOT set to the project root, e.g.: `export PROJECT_ROOT='/Users/cuneyt/Work/caressa'`
-    * HOSTED_ENV set to the serveo or which environment you serve your dev server for alexa skill development: `export HOSTED_ENV='https://yourserver.serveo.net/'`
+    * HOSTED_ENV set to the serveo/ngrok or which environment you serve your dev server for external client development (e.g. senior hardware): `export HOSTED_ENV='https://yourserver.serveo.net/'`
     * AWS_ACCESS_KEY_ID set to active AWS access key id.
     * AWS_SECRET_ACCESS_KEY set to active AWS secret access key id.
     * MEDIA_BUCKET set to active s3 bucket on AWS.
@@ -75,6 +75,12 @@ This setup is written for Mac OS.
     * Dataplicity for device connectivity/status check
         * DATAPLICITY_USER: user email address
         * DATAPLICITY_PASSWD: user password
+    * Google Cloud Credentials (based on [this article](https://simpleit.rocks/apis/google-cloud/using-google-cloud-with-heroku/)):
+        * `GOOGLE_APPLICATION_CREDENTIALS_RAW` the content of the JSON file. You can put a line similar to 
+        the one below to your `.envrc`:
+        `export GOOGLE_APPLICATION_CREDENTIALS_RAW="$(< your-google_key-file.json)"`
+        * The credentials can be set as the content of the file on the server, e.g. for Heroku, 
+        `heroku config:set GOOGLE_APPLICATION_CREDENTIALS="$(< credentials.json)"`
 1. Javascript codebase 
     * JS codes are based on VueJS, with application definitions under /static/javascript/pages/
     * You need to setup webpack to compile the Vue files:
@@ -149,22 +155,6 @@ where you are serving your REST globally. Check it out [Serveo](serveo.net). You
 1. Safari Browser : Preferences > Advanced > Enable : Show Develop Menu Bar
 1. Safari Browser : Menu Bar >  Develop >  Your IOS Device > Index is your debugger
 
-# Setting Alexa Skill for Development
-
-In order to do development against an Alexa skill each developer will need one Alexa project initiated on Amazon servers. The steps to get that done:
-
-1. Create an Amazon developer account if you haven't already: https://developer.amazon.com/alexa/console
-1. Create a skill named "caressa-dev" as a custom skill
-1. Open JSON editor on Alexa web dashboard and insert the seed skill info (ask to a coworker if it is not available somewhere yet).
-    * This skill is subject to change and not dynamic for others for now. So if any change done on the skill `alexa-sample.json` needed to be updated so others can implement the changes to their skills.
-1. Alexa skill expects an HTTPS endpoint to reach to the skill. In order to make it work on the local machine you need to create a world-wide accessible HTTP server. There are two alternatives that we have identified so far without going through lots of configurations for firewalls etc:
-    * Install `ngrok` (available on Homebrew as a cask: `brew cask install ngrok`) and run it:
-    @todo ... specs will be here...
-    The free account generates a different URL for each run.
-    * Create reverse SSH for global-local server via service Serveo. Example run is like this: `ssh -R letatio.serveo.net:80:localhost:9900 serveo.net`. The good thing about Serveo is that it tries to stick with the URL based on the IP and it is for free. It is not always available so keep `ngrok` in mind, too.
-1. Once you have worldwide accessible HTTP server you'll need to tell it to the Alexa on its web dashboard, it must be under endpoints.
-1. Open the test tab on Alexa web dashboard and write `open Caressa` to test the connection to your local machine.
-
 ## Setting Pusher For Live Updates on Mobile App
 * Export these environment variables. You can put these in `.envrc` if you are using direnv.
     * PUSHER_APP_ID set to 'some_app_id': `export PUSHER_APP_ID='some_app_id'`
@@ -180,3 +170,8 @@ In order to do development against an Alexa skill each developer will need one A
     * text_worker: This one takes text message from app uses tts_to_s3 function and pushes its URL with pusher to client.
     * personalization_worker: When senior preferences changed it will make the changes and will notify in Caressa Hardware with TTS.
 * You can run the script with this command. `./manage.py runscript  message_queue_process_script` It has infinite loop inside with 2 sec sleep time.
+
+## Tests and Coverage Report
+* Run `coverage run manage.py test` to generate `.coverage` file
+* See the test coverage report (interprets `.coverage` file): `coverage report`
+* See `.coveragerc` for default configuration. You can also use command line arguments to change behavior

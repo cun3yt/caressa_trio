@@ -244,10 +244,6 @@ S3_RAW_UPLOAD_BUCKET = 'caressa-upload'
 S3_PRODUCTION_BUCKET = 'caressa-prod'
 S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 
-CONVERSATION_ENGINES = {
-    'ttl': 10*60,
-}
-
 admin.site.empty_value_display = '-empty-'
 
 WEB_CLIENT = {
@@ -270,3 +266,5 @@ EMAIL_USE_SSL = environ.get('EMAIL_USE_SSL', False)
 TWILIO_ACCOUNT_SID = environ.get('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = environ.get('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER = environ.get('TWILIO_PHONE_NUMBER')
+
+GOOGLE_APPLICATION_CREDENTIALS_RAW = environ.get('GOOGLE_APPLICATION_CREDENTIALS_RAW')

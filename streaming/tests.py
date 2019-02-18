@@ -2,21 +2,23 @@ from django.test import TestCase
 from mock import patch
 from model_mommy import mommy
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio,\
-    UserPlaylistStatus, TrackingAction
-from streaming.views import stream_io
-from alexa.models import AUser, Session
+    UserPlaylistStatus
+# from streaming.views import stream_io
 from django.db.models import signals
 import datetime
 import boto3
 from random import randint
-from streaming.test_helper_functions import request_body_creator_for_next_command, request_body_creator_for_intent, \
-    request_body_creator, request_body_creator_for_audio_player, request_body_creator_for_pause_command
-import botocore
+# from streaming.test_helper_functions import request_body_creator_for_next_command, request_body_creator_for_intent, \
+#     request_body_creator, request_body_creator_for_audio_player, request_body_creator_for_pause_command
+# import botocore
 
 
 class TagModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
+        signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
+                                    sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
+
         tag1 = mommy.make(Tag, name='song-classical')
         cls.user_one = mommy.make_recipe('alexa.user')
         cls.context = {'user': cls.user_one}
@@ -98,7 +100,8 @@ class AudioFileModelTestCase(TestCase):
     def setUpTestData(cls):
         signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
                                     sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
-        cls.audio_file1 = mommy.make_recipe('streaming.audio_file_recipe', duration=40)  # type: AudioFile
+        cls.audio_file1 = mommy.make_recipe('streaming.audio_file_recipe', duration=40,
+                                            name='song name')  # type: AudioFile
         cls.audio_file2 = mommy.make_recipe('streaming.audio_file_recipe', duration=100)  # type: AudioFile
 
     def test_url_hyperlink(self):
@@ -130,8 +133,8 @@ class AudioFileModelTestCase(TestCase):
 
         audio_type = 'TestAudioType1'
         url = '{s3}/{bucket_name}/{file_name}'.format(s3='https://s3.amazonaws.com',
-                                                          bucket_name=bucket_name,
-                                                          file_name=file_name)
+                                                      bucket_name=bucket_name,
+                                                      file_name=file_name)
         name = 'TestAudioFile1'
         description = 'TestDescription1'
 
@@ -152,10 +155,7 @@ class AudioFileModelTestCase(TestCase):
 
     def test_string_representation(self):
         actual_string_representation = str(self.audio_file1)
-        expected_string_representation = "({audio_type}) {file_name}".format(audio_type=self.audio_file1.audio_type,
-                                                                             file_name=self.audio_file1.name)
-
-        self.assertEqual(actual_string_representation, expected_string_representation)
+        self.assertEqual(actual_string_representation, "(song) song name")
 
 
 class PlaylistModelTestCase(TestCase):
@@ -163,6 +163,7 @@ class PlaylistModelTestCase(TestCase):
     def setUpTestData(cls):
         signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
                                     sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
+
         cls.playlist_has_audio = mommy.make_recipe('streaming.playlist_has_audio_recipe')  # type: PlaylistHasAudio
         cls.audio_file_1 = mommy.make_recipe('streaming.audio_file_recipe', duration=40)  # type: AudioFile
 
@@ -220,6 +221,8 @@ class PlaylistHasAudioModelTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
+                                    sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
 
         tag1 = mommy.make(Tag, name='song-classical')
         cls.playlist_has_audio = mommy.make_recipe('streaming.playlist_has_audio_recipe')
@@ -380,44 +383,6 @@ class UserPlaylistStatusModelTestCase(TestCase):
         self.assertEqual(status_object_for_user_2, status_for_user_2)
         self.assertFalse(status_is_created_for_user_1)
         self.assertTrue(status_is_created_for_user_2)
-
-
-class TrackingActionModelTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.tracking_action_1 = mommy.make_recipe('streaming.tracking_action_recipe')
-        cls.auser = AUser.objects.all()[0]
-        cls.session = Session.objects.all()[0]
-        cls.segment = 'TestSegment'
-
-    def test_save_action_partial_segments(self):
-        TrackingAction.save_action(self.auser, self.session, segment0=self.segment)
-        action_count = TrackingAction.objects.all().count()
-        segment0 = TrackingAction.objects.all()[1].segment0
-        segment1 = TrackingAction.objects.all()[1].segment1
-
-        self.assertIsNotNone(segment0)
-        self.assertIsNone(segment1)
-        self.assertEqual(action_count, 2)
-
-    def test_save_action_full_segments(self):
-        TrackingAction.save_action(self.auser,
-                                   self.session,
-                                   segment0=self.segment,
-                                   segment1=self.segment,
-                                   segment2=self.segment,
-                                   segment3=self.segment,)
-        action_count = TrackingAction.objects.all().count()
-        segment0 = TrackingAction.objects.all()[1].segment0
-        segment1 = TrackingAction.objects.all()[1].segment1
-        segment2 = TrackingAction.objects.all()[1].segment2
-        segment3 = TrackingAction.objects.all()[1].segment3
-
-        self.assertIsNotNone(segment0)
-        self.assertIsNotNone(segment1)
-        self.assertIsNotNone(segment2)
-        self.assertEqual(self.segment, segment3)
-        self.assertEqual(action_count, 2)
 
 
 # todo Read and enable tests: https://www.django-rest-framework.org/api-guide/testing/

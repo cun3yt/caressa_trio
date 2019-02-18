@@ -2,9 +2,9 @@ from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from utilities.views.mixins import SerializerRequestViewSetMixin
-from alexa.api.serializers import UserSerializer, SeniorSerializer, MedicalStateSerializer, JokeSerializer, \
+from alexa.api.serializers import UserSerializer, SeniorSerializer, JokeSerializer, \
     NewsSerializer, ChannelSerializer, CircleSerializer
-from alexa.models import AUserMedicalState, Joke, News, User, Circle
+from alexa.models import Joke, News, User, Circle
 from alexa.api.permissions import IsSameUser, IsFacilityMember, IsInCircle
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from rest_framework.pagination import PageNumberPagination
@@ -65,18 +65,6 @@ class SeniorListViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixin
                                        senior_living_facility=user.senior_living_facility,
                                        is_active=True).all()
         return queryset     # todo page size needs to be adjusted...
-
-
-class MedicalViewSet(viewsets.ModelViewSet):
-    authentication_classes = (OAuth2Authentication, )
-    permission_classes = (IsAuthenticated, )
-    serializer_class = MedicalStateSerializer
-
-    def get_queryset(self):
-        measurement_type = self.request.query_params.get('m-type')
-        senior = self.request.user.circle_set.all()[0].person_of_interest
-        return AUserMedicalState.objects.filter(user=senior,
-                                                measurement__exact=measurement_type).order_by('created').all()
 
 
 class JokeViewSet(SerializerRequestViewSetMixin, viewsets.ReadOnlyModelViewSet):

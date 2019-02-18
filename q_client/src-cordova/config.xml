@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.caressa.mobile.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>Caressa</name>
+    <description>Senior Companion Application</description>
+    <author email="dev@cordova.apache.org" href="http://cordova.io">
+        Apache Cordova Team
+    </author>
+    <content src="index.html" />
+    <plugin name="cordova-plugin-whitelist" spec="1" />
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="geo:*" />
+    <platform name="android">
+        <allow-intent href="market:*" />
+    </platform>
+    <platform name="ios">
+        <allow-intent href="itms:*" />
+        <allow-intent href="itms-apps:*" />
+    </platform>
+    <plugin name="cordova-plugin-media-capture" spec="^3.0.2" />
+    <edit-config file="*-Info.plist" mode="merge" platform="ios" target="NSMicrophoneUsageDescription">
+        <string>Need microphone access to record sounds</string>
+    </edit-config>
+    <plugin name="cordova-plugin-media" spec="^5.0.2">
+        <variable name="KEEP_AVAUDIOSESSION_ALWAYS_ACTIVE" value="NO" />
+    </plugin>
+    <plugin name="cordova-plugin-file" spec="^6.0.1" />
+    <plugin name="cordova-plugin-file-transfer" spec="^1.7.1" />
+    <plugin name="cordova-plugin-add-swift-support" spec="^1.7.2" />
+    <plugin name="cordova-plugin-photo-library" spec="^2.2.1">
+        <variable name="PHOTO_LIBRARY_USAGE_DESCRIPTION" value="To choose photos" />
+    </plugin>
+    <engine name="android" spec="^7.0.0" />
+    <engine name="ios" spec="^4.5.5" />
+</widget>

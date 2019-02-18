@@ -4,11 +4,9 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from jsonfield import JSONField
-from model_utils.models import TimeStampedModel, StatusField
-from model_utils import Choices
+from model_utils.models import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField
 from django.apps import apps
-from utilities.dictionaries import deep_get, deep_set
 from utilities.logger import log
 from django.db.models import signals
 from actstream import action
@@ -17,13 +15,10 @@ from actstream.models import Action
 from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
-from caressa.settings import CONVERSATION_ENGINES, HOSTED_ENV
-from datetime import timedelta, datetime
+from caressa.settings import HOSTED_ENV
 from django.utils import timezone
 from random import sample
-from icalendar import Calendar
 from django.utils.crypto import get_random_string
-from caressa.hardcodings import HC_HARDWARE_USER_DEVICE_ID_PREFIX
 from senior_living_facility.models import SeniorLivingFacility
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
@@ -55,7 +50,7 @@ class CaressaUserManager(BaseUserManager):
             email,
             password=password,
         )
-        user.is_admin = True
+        user.is_superuser = True
         user.save(using=self._db)
         return user
 
@@ -140,11 +135,6 @@ class User(AbstractCaressaUser, TimeStampedModel):
                                default='',
                                blank=True,
                                help_text="The room number of the senior. It is only meaningful for the senior", )
-    hardware = models.ForeignKey(to='streaming.HardwareRegistry',
-                                 null=True,
-                                 default=None,
-                                 help_text="The hardware in senior's room",
-                                 on_delete=models.DO_NOTHING, )
     is_anonymous_user = models.BooleanField(default=True,
                                             help_text='Having this field anonymous means that the content will '
                                                       'not be optimized on the personal level, e.g. calling by '
@@ -186,48 +176,40 @@ class User(AbstractCaressaUser, TimeStampedModel):
         circle.add_member(circle_member, False)
         return True
 
+    @classmethod
+    def get_family_circle_channel(cls, circle_id):
+        return 'channel.family.circle.{circle_id}'.format(circle_id=circle_id)
+
+    @classmethod
+    def get_facility_channel(cls, facility_id):
+        return 'channel.slf.{facility_id}'.format(facility_id=facility_id)
+
     @property
-    def pusher_channel(self):
+    def senior_communication_channel(self):  # todo: combine with `self.communication_channels` since serving for the same purpose
         assert self.user_type == self.CARETAKER, (
             "pusher_channel is only available for user_type: senior. "
-            "It is {user_type} for user.id: {user_id}".format(user_type=self.user_user_type,
+            "It is {user_type} for user.id: {user_id}".format(user_type=self.user_type,
                                                               user_id=self.id)
         )
-        return 'family.senior.{id}'.format(id=self.id)
-
-    @staticmethod
-    def create_test_user():
-        test_user = User(password=get_random_string(),
-                         first_name='AnonymousFirstName',
-                         last_name='AnonymousLastName',
-                         is_staff=False,
-                         is_superuser=False,
-                         email='test{}@proxy.caressa.ai'.format(get_random_string(15)),
-                         phone_number='+14153477898',
-                         profile_pic='default_profile_pic',
-                         state='test_state',
-                         city='test_city', )
-        return test_user
+        return self.get_family_circle_channel(circle_id=self.senior_circle.id)
 
     def communication_channels(self):
-        family_circle_channel_str = 'channel.family.circle.{id}'
-        senior_living_facility_channel_str = 'channel.slf.{id}'
-
         if self.is_senior():
-            circle_channel = family_circle_channel_str.format(id=self.senior_circle.id)
-            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
+            circle_channel = self.get_family_circle_channel(circle_id=self.senior_circle.id)
+            slf_channel = self.get_facility_channel(facility_id=self.senior_living_facility.facility_id)
             return [circle_channel, slf_channel, ]
 
         if self.is_family():
-            circle = self.circle_set.all()[0]
-            circle_channel = family_circle_channel_str.format(id=circle.id)
+            circle = self.circle_set.all()[0]       # todo better unified with `senior_circle` somehow
+            circle_channel = self.get_family_circle_channel(circle_id=circle.id)
             return [circle_channel, ]
 
-        if self.is_provider():
-            slf_channel = senior_living_facility_channel_str.format(id=self.senior_living_facility.facility_id)
-            return [slf_channel, ]
+        assert self.is_provider(), (
+            "For the code to reach the end point the only possibility is user's being provider"
+        )
 
-        return []
+        slf_channel = self.get_facility_channel(facility_id=self.senior_living_facility.facility_id)
+        return [slf_channel, ]
 
     def __repr__(self):
         return self.first_name.title()
@@ -286,7 +268,7 @@ class CircleMembership(TimeStampedModel):
     def is_member(cls, circle: Circle, member: User) -> bool:
         return cls.objects.filter(circle=circle, member=member).count() > 0
 
-    def __repr__(self):
+    def __repr__(self):     # pragma: no cover
         return 'CircleMembership ({id}): {member} in {circle} with admin: {admin} and POI: {poi}'\
             .format(id=self.id, member=self.member, circle=self.circle, admin=self.is_admin,
                     poi=(self.circle.person_of_interest == self.member))
@@ -380,6 +362,8 @@ class FamilyProspect(TimeStampedModel):
             })
             outreach.save()
 
+        return True
+
 
 class FamilyOutreach(TimeStampedModel):
     class Meta:
@@ -406,238 +390,6 @@ class FamilyOutreach(TimeStampedModel):
         return '{base_url}{url}?invitation_code={code}'.format(base_url=WEB_BASE_URL,
                                                                url=reverse('family-prospect-invitation-code'),
                                                                code=self.tracking_code)
-
-
-class AUser(TimeStampedModel):
-    class Meta:
-        db_table = 'a_user'
-        indexes = [
-            models.Index(fields=['alexa_device_id', 'alexa_user_id'])
-        ]
-
-    alexa_user_id = models.TextField(editable=False)
-    alexa_device_id = models.TextField(editable=False)
-    user = models.ForeignKey(to=User, null=True, on_delete=models.DO_NOTHING, related_name='a_users')
-    engine_schedule = models.TextField(null=False, blank=True, default="")
-    profile = JSONField(default={})
-
-    def last_engine_session(self, state=None) -> 'EngineSession':
-        if not state:
-            return self.engine_sessions.order_by('modified').last()
-        return self.engine_sessions.filter(state=state).order_by('modified').last()
-
-    def set_emotion(self, emotion, value):
-        state = AUserEmotionalState(user=self, attribute=emotion, value=value)
-        state.save()
-        return state
-
-    def update_emotion(self, emotion, increment=None, percentage=None, max_value=100, min_value=0):
-        state = self.emotional_states.filter(attribute=emotion).last()
-        value = float(state.value if state else AUserEmotionalState.EMOTION_DEFAULTS[emotion])
-
-        if increment and 0 <= increment:
-            new_value = value + increment
-            new_value = new_value if new_value < max_value else max_value
-        elif increment and increment < 0:
-            new_value = value + increment
-            new_value = new_value if min_value < new_value else min_value
-        elif percentage and 0 <= percentage:
-            new_value = value * (1+percentage/100)
-            new_value = new_value if new_value < max_value else max_value
-        elif percentage and percentage < 0:
-            new_value = value * (1+percentage/100)
-            new_value = new_value if min_value < new_value else min_value
-        else:
-            raise Exception("Problem with increment/percentage in emotion value update")
-
-        new_state = AUserEmotionalState(user=self, attribute=emotion, value=new_value)
-        new_state.save()
-        return new_state
-
-    def set_medical_state(self, measurement, data):
-        state = AUserMedicalState(user=self, measurement=measurement, data=data)
-        state.save()
-        return state
-
-    def profile_get(self, key):
-        return deep_get(self.profile, key, None)
-
-    def profile_set(self, key, value):
-        deep_set(self.profile, key, value)
-        self.save()
-
-    def create_initial_engine_scheduler(self):
-        if not self.engine_schedule == '':
-            return False
-        auser_id = self.id
-        user = AUser.objects.get(id=auser_id)
-        cal = Calendar()
-        cal.add('dtstart', datetime.now())
-        cal.add('summary', 'schedule of user:{}'.format(auser_id))
-
-        user.engine_schedule = cal.to_ical().decode(encoding='UTF-8')
-        user.save()
-        return True
-
-    def is_hardware_user(self) -> bool:
-        prefix = HC_HARDWARE_USER_DEVICE_ID_PREFIX
-        return self.alexa_device_id.startswith(prefix)
-
-    @staticmethod
-    def get_or_create_by(alexa_device_id, alexa_user_id):
-        """
-        For given device ID and user ID, it creates and saves an AUser instance if not found.
-        If alexa user is created, it also creates a User instance and saves it as a side effect.
-
-        :param alexa_device_id: string
-        :param alexa_user_id: int
-        :return: (AUser, bool)
-        """
-
-        alexa_user, is_created = AUser.objects.get_or_create(alexa_device_id=alexa_device_id,
-                                                             alexa_user_id=alexa_user_id, )
-
-        if is_created:
-            test_user = User.create_test_user()
-            test_user.save()
-            alexa_user.user = test_user
-            alexa_user.save()
-
-        return alexa_user, is_created
-
-
-class AUserEmotionalState(TimeStampedModel):
-    class Meta:
-        db_table = 'a_user_emotional_state'
-        ordering = ('-created',)
-
-    EMOTIONS = Choices('happiness', 'anxiety', 'delusional', 'loneliness')
-    EMOTION_DEFAULTS = {
-        'happiness': 50.0,
-        'anxiety': 50.0,
-        'delusional': 50.0,
-        'loneliness': 50.0,
-    }
-
-    user = models.ForeignKey(to=AUser, null=False, related_name='emotional_states', on_delete=models.DO_NOTHING)
-    attribute = StatusField(choices_name='EMOTIONS', db_index=True)
-    value = models.DecimalField(max_digits=5, decimal_places=2)
-
-
-AUserEmotionalState._meta.get_field('created').db_index = True
-
-
-class AUserMedicalState(TimeStampedModel):
-    class Meta:
-        db_table = 'a_user_medical_state'
-
-    MEASUREMENTS = Choices('blood_pressure')
-
-    user = models.ForeignKey(to=AUser, null=False, related_name='medical_state', on_delete=models.DO_NOTHING)
-    measurement = StatusField(choices_name='MEASUREMENTS', db_index=True)
-    data = JSONField(default={})
-
-
-AUserMedicalState._meta.get_field('created').db_index = True
-
-
-class Request(TimeStampedModel):
-    class Meta:
-        db_table = 'a_request'
-
-    user = models.ForeignKey(AUser, null=False, related_name='requests', on_delete=models.DO_NOTHING)
-    handler_engine = models.TextField(blank=True, null=False, default='')
-
-
-Request._meta.get_field('created').db_index = True
-
-
-class Session(TimeStampedModel):
-    class Meta:
-        db_table = 'a_session'
-
-    alexa_id = models.TextField(db_index=True, editable=False)
-    alexa_user = models.ForeignKey(to='AUser', on_delete=models.CASCADE, related_name='sessions')
-
-
-Session._meta.get_field('created').db_index = True
-
-
-class EngineSession(TimeStampedModel):
-    class Meta:
-        db_table = 'a_engine_session'
-
-    user = models.ForeignKey(AUser, null=False, related_name='engine_sessions', on_delete=models.DO_NOTHING)
-    name = models.TextField(null=False, blank=False)
-    state = models.TextField(blank=True, db_index=True)
-    # Possible `state`s: continue, done, expired
-    data = JSONField(default={})
-    ttl = models.PositiveIntegerField(default=CONVERSATION_ENGINES['ttl'])
-
-    @property
-    def is_continuing(self):
-        self._expire_if_ttl_past()
-        return self.state == 'continue'
-
-    @property
-    def is_ttl_past(self):
-        return (self.modified + timedelta(seconds=self.ttl)) < timezone.now()
-
-    def _expire_if_ttl_past(self):
-        if self.state != 'continue':
-            return
-        if self.is_ttl_past:
-            self.state = 'expired'
-            self.save()
-
-    def set_state_continue(self, additional_level=None, start_level=None, asked_question=None):
-        self._set_state('continue',
-                        additional_level=additional_level,
-                        start_level=start_level,
-                        asked_question=asked_question)
-
-    def set_state_done(self, additional_level=None, start_level=None, asked_question=None):
-        self._set_state('done',
-                        additional_level=additional_level,
-                        start_level=start_level,
-                        asked_question=asked_question)
-
-    def set_target_object_id(self, id):
-        self.data['target_object_id'] = id
-
-    def get_target_object_id(self):
-        return self.data.get('target_object_id', None)
-
-    def set_data(self, key, value):     # todo make other related functions use this one
-        self.data[key] = value
-
-    def get_data(self, key):    # todo make other related functions use this one
-        return self.data.get(key, None)
-
-    def _add_asked_question(self, question):
-        self.data['asked_questions'].append(question)
-
-    def _set_state(self, state, additional_level=None, start_level=None, asked_question=None):
-        if additional_level is not None:
-            self._add_level(additional_level)
-        elif start_level is not None:
-            self._set_level(start_level)
-
-        if asked_question is not None:
-            self._add_asked_question(asked_question)
-
-        self.state = state
-
-    def _set_level(self, level):
-        self.data['level'] = level
-
-    def _add_level(self, additional_level):
-        self.data['level'] = '{current_level}.{additional_level}'.format(current_level=self.data['level'],
-                                                                         additional_level=additional_level)
-
-
-Request._meta.get_field('created').db_index = True
-Request._meta.get_field('modified').db_index = True
 
 
 class Joke(TimeStampedModel, FetchRandomMixin):
@@ -721,7 +473,7 @@ class Song(TimeStampedModel, FetchRandomMixin):
     def __repr__(self):
         return "Song({id}, {title} by {artist})".format(id=self.id, title=self.title, artist=self.artist)
 
-    def __str__(self):
+    def __str__(self):  # pragma: no cover
         return "test song"
 
 
@@ -759,17 +511,10 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
     pusher_client.trigger(channel_name, 'feeds', json)
 
 
-def set_init_engine_scheduler_for_auser(sender, instance, created, **kwargs):
-    auser = instance    # type: AUser
-    auser.create_initial_engine_scheduler()
-
-
 def create_circle_for_user(sender, instance, created, **kwargs):
     user = instance     # type: User
     user.create_initial_circle()
 
 
 signals.post_save.connect(receiver=create_circle_for_user, sender=User, dispatch_uid='create_circle_for_user')
-signals.post_save.connect(receiver=set_init_engine_scheduler_for_auser, sender=AUser,
-                          dispatch_uid='set_init_engine_scheduler_for_auser')
 signals.post_save.connect(user_act_on_content_activity_save, sender=UserActOnContent)

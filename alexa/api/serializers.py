@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import AUserMedicalState, Joke, News, User, FamilyProspect, Circle
+from alexa.models import Joke, News, User, FamilyProspect, Circle
 from actions.models import UserAction
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
@@ -181,14 +181,6 @@ class SeniorSerializer(serializers.ModelSerializer):
         })
 
         return senior
-
-
-class MedicalStateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AUserMedicalState
-        fields = ('user', 'measurement', 'data', 'created', )
-
-    data = serializers.JSONField()
 
 
 class JokeSerializer(serializers.ModelSerializer):

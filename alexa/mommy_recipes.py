@@ -1,5 +1,6 @@
 from model_mommy.recipe import Recipe, foreign_key, seq
-from alexa.models import User, AUser, EngineSession, Song, Circle, CircleMembership, Session
+from alexa.models import User, Song, Circle, CircleMembership
+from senior_living_facility.mommy_recipes import senior_living_facility_recipe
 
 user = Recipe(
     User,
@@ -10,6 +11,7 @@ user = Recipe(
     profile_pic='TestProfilePic1',
     state='TestState1',
     city='TestCity1',
+    senior_living_facility=foreign_key(senior_living_facility_recipe),  # todo: make sure this is used for either senior or facility member
 )
 
 user2 = Recipe(
@@ -23,29 +25,16 @@ user2 = Recipe(
     city='TestCity2',
 )
 
-auser = Recipe(
-    AUser,
-    alexa_user_id='TestAlexaUserId1',
-    alexa_device_id='TestAlexaDeviceId1',
-    user=foreign_key(user),
-    engine_schedule='TestEngineSchedule',
-)
-
-auser2 = Recipe(
-    AUser,
-    alexa_user_id='TestAlexaUserId2',
-    alexa_device_id='TestAlexaDeviceId2',
-    user=foreign_key(user2),
-    engine_schedule='TestEngineSchedule',
-)
-
-engine_session = Recipe(
-    EngineSession,
-    user=foreign_key(auser2),
-    name='TestEngine1',
-    state='continue',
-    data={},
-    ttl=600,
+family_user = Recipe(
+    User,
+    user_type=User.FAMILY,
+    first_name='Family',
+    last_name='User',
+    email=seq('family_user@example.com'),
+    phone_number='+4155554433',
+    profile_pic='family_guy.jpg',
+    state='Arkansas',
+    city='Little Rock',
 )
 
 song = Recipe(
@@ -59,7 +48,7 @@ song = Recipe(
 
 circle = Recipe(
     Circle,
-    person_of_interest_id=foreign_key(user)
+    person_of_interest=foreign_key(user)
 )
 
 circle_membership = Recipe(
@@ -67,11 +56,4 @@ circle_membership = Recipe(
     isAdmin=False,
     circle_id=foreign_key(circle),
     circle_membership=foreign_key(user)
-)
-
-
-session_recipe = Recipe(
-    Session,
-    alexa_id='TestAlexaId',
-    alexa_user=foreign_key(auser)
 )

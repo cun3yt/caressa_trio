@@ -5,7 +5,7 @@ from utilities.logger import log
 from alexa.models import User
 from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.db import transaction
-from streaming.models import PlaylistHasAudio, UserPlaylistStatus, TrackingAction, Playlist, AudioFile
+from streaming.models import PlaylistHasAudio, UserPlaylistStatus, AudioFile
 from scripts import replicate_playlist
 from streaming.exceptions import PlaylistAlreadyExistException
 from oauth2_provider.decorators import protected_resource
@@ -20,7 +20,6 @@ def stream_io_wrapper(request):
 
 
 def stream_io(req_body, request):
-    # todo get TrackingAction back in a new form to keep track of users' actions
     log(req_body)
     user = request.user
 

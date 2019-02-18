@@ -1,10 +1,9 @@
 .envrc
+.coverage
 .idea/
 *.pyc
 *.iml
 .DS_Store
-q_client/cordova
-q_client/build
 caressa/sensitive/
 caressa/uploads/
 node_modules/
