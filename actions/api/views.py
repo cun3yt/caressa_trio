@@ -14,6 +14,8 @@ from caressa import settings
 from utilities.views.mixins import SerializerRequestViewSetMixin
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from alexa.api.permissions import IsSameUser, IsInCircle, CommentAccessible
+from PIL import Image
+import hashlib
 
 
 class ActionViewSet(SerializerRequestViewSetMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
@@ -236,5 +238,22 @@ def new_job_for_message_queue(request):
     }
     new_message = Messages(message=message)
     new_message.save()
+
+    return Response({'message': 'Saved...'})
+
+
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
+@api_view(['POST'])
+def new_profile_picture(request):
+    user = request.user
+    file_name = request.data.get('file_name')
+    s3 = boto3.resource('s3')
+    s3.Bucket(settings.S3_RAW_UPLOAD_BUCKET).download_file(file_name, '/tmp/{}'.format(file_name))
+    img = Image.open('/tmp/{}'.format(file_name))
+    new_img = img.resize((250, 250))
+
+    new_img.save("car_resized.jpg", "JPEG", optimize=True)
+
 
     return Response({'message': 'Saved...'})
