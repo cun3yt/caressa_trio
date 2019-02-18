@@ -6,7 +6,7 @@ export default ({ app, router, Vue }) => {
   Vue.use(VueResource)
 
   app.hosts = {
-    rest: vars.API_HOST // todo this line needed change when debugging in ios build
+    rest: vars.API_HOST
   }
 
   app.user = {
