@@ -134,7 +134,7 @@ export default {
       this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'type': 'family_ios_text',
         'key': key,
-        'content': this.textMessageObj
+        'content': this.messageText
       }).then(response => {
         console.log('Response : ', response)
         this.messageText = ''

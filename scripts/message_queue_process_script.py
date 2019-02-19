@@ -2,7 +2,7 @@ from streaming.models import Messages, AudioFile, Tag, VoiceMessageStatus
 from alexa.models import User
 from caressa.settings import S3_RAW_UPLOAD_BUCKET, S3_REGION, S3_PRODUCTION_BUCKET
 import boto3
-from utilities.logger import log
+from utilities.logger import log, log_error
 from pydub import AudioSegment
 from caressa.settings import pusher_client
 from voice_service.google import tts
@@ -199,6 +199,7 @@ def run():
             globals()[consumer](publisher, next_queued_job)
         except Exception:
             error_message = traceback.format_exc()
+            log_error(error_message)
             next_queued_job.message['error'] = error_message
             next_queued_job.process_state = Messages.PROCESS_FAILED
             next_queued_job.save()
