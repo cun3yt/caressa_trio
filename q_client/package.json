@@ -1,9 +1,9 @@
 {
   "name": "caressa",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Senior Companion Application",
   "productName": "Caressa",
-  "cordovaId": "com.caressa.mobile.app",
+  "cordovaId": "com.caressa.mobile.app.dev",
   "author": "Cuneyt Mertayak <cuneyt@ceng.metu.edu.tr>",
   "private": true,
   "scripts": {

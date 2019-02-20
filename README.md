@@ -163,6 +163,24 @@ where you are serving your REST globally. Check it out [Serveo](serveo.net). You
     * PUSHER_CLUSTER set to 'us2': `export PUSHER_CLUSTER='us2'`
     * Don't forget to add these environment variables into pycharm if you are using it.
 
+## Testflight Testing & iOS App Store publish
+* Uploading app for testing is can be done with XCODE:
+    * Before everything you need to increment at least build number. Version number can stay same. 
+    * XCODE > Product > Archive > Click
+    * After clicking it will build the app and menu will show up.
+    * Click latest build and click Distribtue App button on the right.
+    * Select iOS App Store > Upload > Select Both and Next > Automatically Manage Signing > Last Checks
+    * Upload button will show up if everything is correct.
+    * Click Upload.
+* Open Your Developer Account at apple.com:
+    * It takes a little bit time to show up on developer panel even everything goes smoothly.
+    * Your app panel is at https://appstoreconnect.apple.com > My Apps
+    * After selecting your recently built app click Testflight Tab
+    * To publishing new version to test users click App Store Connect Users on left panel.
+    * Click Builds Tab > If there is any warnings click and solve it. 
+    * Finally app will become available to test
+    * Internal testing is limited to 25 person.
+
 ## How Message Queue Process Script Works
 * Relative location of the script : scripts/message_queue_process_script.py
 * Script has 3 worker function inside, these are:
