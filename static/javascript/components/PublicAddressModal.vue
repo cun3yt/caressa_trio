@@ -5,18 +5,28 @@
                 <div class="modal-container">
                     <div class="modal-header">
                         <slot name="header">
-                            default header
+                            Start Your Anouncement
                         </slot>
                     </div>
                     <div>
-
+                        <div>
+                            <i id="play" :class="playerIcon"
+                               @click="playback"
+                               style="font-size:26px; color:royalblue; cursor: pointer;"
+                            />
+                            <i :class="isRecording ? 'fas fa-stop-circle' : 'fas fa-microphone'"
+                               v-on:click="toggleRecorder"
+                               style="font-size:26px; color:royalblue; cursor: pointer;"/>
+                            {{audioSource.url}}{{user}}
+                            <audio ref="player" id="player" :src="audioSource && audioSource.url"/>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <slot name="footer">
                             <button class="modal-default-button" @click="$emit('close')">
                                 Cancel
                             </button>
-                            <button class="modal-default-button" @click="editSubmit()">
+                            <button class="modal-default-button" @click="submitRecord">
                                 Submit
                             </button>
                         </slot>
@@ -28,11 +38,173 @@
 </template>
 
 <script>
+    import Recorder from '../plugins/recorder.js'
+
     export default {
         name: 'public-address-modal',
         props: {
+            accessToken: String,
+            apiBase: String,
+            user: Object,
             editSubmit: Function,
             errors: Array
+        },
+        mounted() {
+            this.setupPlayer()
+        },
+        data (){
+            return {
+                audio: {
+                    isUploading   : false,
+                    recorder      : this._initRecorder(),
+                    recordList    : [],
+                    selected      : {},
+                    uploadStatus  : null,
+                    isPlaying: false,
+                    player: null,
+                    lastRecordKey: ''
+                }
+            }
+        },
+        methods: {
+            /*
+            url: res.url,
+            type: 'PUT',
+            data: file,
+            processData: false,
+            contentType: file.type
+            */
+            uploadFile (uploadUrl) {
+                const recorderLength = this.audio.recorder.records.length
+                const data = this.audio.recorder.records[recorderLength - 1]   // data.url
+                console.log('Local blob', data)
+                console.log('aws URL', uploadUrl)
+                console.log('File Key', this.audio.lastRecordKey)
+                console.log(`curl -X PUT -H "processData: false" ${uploadUrl} -d `)
+                let file = new File([data], this.audio.lastRecordKey, {
+                    type: 'audio/mp3'
+                })
+                console.log(file)
+                this.$http.put(uploadUrl, file, {
+                    headers: {
+                        contentType: 'audio/mp3',
+                    }
+                }).then(response => {
+                    console.log('UploadFn : ',response)
+                }).catch(err => {
+                    console.log(err)
+                })
+            },
+            api_url(path) {
+                return `${this.apiBase}/${path}`
+            },
+            setupPlayer () {
+                this.audio.player = this.$refs.player
+                this.audio.player.addEventListener('ended', () => {
+                    this.audio.isPlaying = false
+                })
+            },
+            toggleRecorder () {
+                if (!this.isRecording || (this.isRecording && this.isPause)) {
+                    this.audio.recorder.start()
+                } else {
+                    this.audio.recorder.stop()
+                    this.audio.lastRecordKey = this.audioRecordKeyGenerator()
+                }
+            },
+            stopRecorder () {
+                if (!this.isRecording) {
+                    return
+                }
+                this.audio.recorder.stop()
+                this.audio.recordList = this.audio.recorder.recordList()
+            },
+            _initRecorder () {
+                return new Recorder({
+                    beforeRecording : (val) => { console.log(`beforeRecording ${val}`) },
+                    afterRecording  : (val) => { console.log(`afterRecording: ${val}`) },
+                    pauseRecording  : (val) => { console.log(`pauseRecording: ${val}`) },
+                    micFailed       : (val) => {console.log(`micFailed: ${val}`)},
+                    bitRate         : this.bitRate,
+                    sampleRate      : this.sampleRate
+                })
+            },
+            playback () {
+                if (!this.audioSource) {
+                    return
+                }
+                if (this.audio.isPlaying) {
+                    this.audio.player.pause()
+                } else {
+                    setTimeout(() => { this.audio.player.play() }, 0)
+                }
+                this.audio.isPlaying = !this.audio.isPlaying
+            },
+            audioRecordKeyGenerator () {
+                let today = new Date()
+                let dd = today.getDate()
+                let mm = today.getMonth() + 1
+                let yyyy = today.getFullYear()
+                let hour = today.getHours()
+                let min = today.getMinutes()
+                let sec = today.getSeconds()
+                if (hour < 10) {
+                    hour = '0' + hour
+                }
+                if (min < 10) {
+                    min = '0' + min
+                }
+                if (sec < 10) {
+                    sec = '0' + sec
+                }
+                if (dd < 10) {
+                    dd = '0' + dd
+                }
+                if (mm < 10) {
+                    mm = '0' + mm
+                }
+                return `${this.user.pk}-${hour}-${min}-${sec}-${mm}-${dd}-${yyyy}.mp3`
+            },
+            generateSignedUrl () {
+                console.log(this.audio.lastRecordKey)
+                return this.$http({
+                    method: 'POST',
+                    url: this.api_url('generate_signed_url/'),
+                    emulateJSON: true,
+                    body: {
+                        'key': this.audio.lastRecordKey,
+                        'content-type': 'audio/mp3',
+                        'client-method': 'put_object',
+                        'request-type': 'PUT'
+                    },
+                    headers: {
+                        Authorization: 'Bearer ' + this.accessToken
+                    }
+                })
+            },
+            submitRecord () {
+                this.generateSignedUrl().then(res => {
+                    this.uploadFile(res.body)
+                })
+            }
+
+        },
+        computed: {
+            playerIcon () {
+                return this.audio.isPlaying ? 'fas fa-pause' : 'fas fa-play'
+            },
+            isRecording () {
+                return this.audio.recorder.isRecording
+            },
+            audioSource () {
+                const recorderLength = this.audio.recorder.records.length
+                const url = this.audio.recorder.records[recorderLength - 1]
+                if (url) {
+                    return url
+                } else {
+                    return false
+                }
+            }
         }
     }
 </script>

@@ -41,23 +41,13 @@
             <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
         </div>
         <div v-else>
-            <fixed-header :user="user"></fixed-header>
+            <fixed-header :user="user" :logout="logout"></fixed-header>
             <public-address-modal v-if="modalOperationData.publicAddressModal.show"
-                                  @close="modalOperationData.publicAddressModal.show = false">
+                                  @close="modalOperationData.publicAddressModal.show = false"
+                                  :user="user"
+                                  :access-token="this.accessToken"
+                                  :api-base="apiBase">
             </public-address-modal>
-            <a v-on:click="logout()" href="#">Logout</a>
-            <div>
-                <div>
-                    <i id="play" :class="playerIcon"
-                       @click="playback"
-                       style="font-size:26px; color:royalblue; cursor: pointer;"
-                    />
-                    <i :class="isRecording ? 'fas fa-stop-circle' : 'fas fa-microphone'"
-                       v-on:click="toggleRecorder"
-                       style="font-size:26px; color:royalblue; cursor: pointer;"/>
-                    <audio ref="player" id="player" :src="audioSource && audioSource.url"/>
-                </div>
-            </div>
             <div id="seniors">
 
                 <tabular-data :data="gridData" :columns="gridColumns"
@@ -81,7 +71,6 @@
     import FixedHeader from '../components/FixedHeader.vue'
     import PublicAddressModal from '../components/PublicAddressModal.vue'
     import bus from '../utils.communication.js'
-    import Recorder from '../plugins/recorder.js';
 
     export default {
         name: "SeniorsList",
@@ -99,7 +88,6 @@
             if (!this.accessToken) {
                 window.location.href = this.api_url('accounts/login/');
             }
-
             // Get User Detail
             let that = this
             let promise = this.getAdminData()
@@ -108,7 +96,7 @@
                     this.user = response.data
                     this.list()
                     this.loading = false
-                    Vue.nextTick().then(() => {this.setupPlayer()})
+                    // Vue.nextTick().then(() => {this.setupPlayer()})
                     // this.setupPlayer()
                     // setTimeout(() => {this.setupPlayer()}, 500)
                 }, function(error) {
@@ -168,59 +156,9 @@
                 },
                 editForm: {},
                 editErrors: [],
-                audio: {
-                    isUploading   : false,
-                    recorder      : this._initRecorder(),
-                    recordList    : [],
-                    selected      : {},
-                    uploadStatus  : null,
-                    isPlaying: false,
-                    player: null,
-                }
             }
         },
         methods: {
-            setupPlayer () {
-                this.audio.player = this.$refs.player
-                this.audio.player.addEventListener('ended', () => {
-                    this.audio.isPlaying = false
-                })
-            },
-            playback () {
-                if (!this.audioSource) {
-                    return
-                }
-                if (this.audio.isPlaying) {
-                    this.audio.player.pause()
-                } else {
-                    setTimeout(() => { this.audio.player.play() }, 0)
-                }
-                this.audio.isPlaying = !this.audio.isPlaying
-            },
-            toggleRecorder () {
-                if (!this.isRecording || (this.isRecording && this.isPause)) {
-                    this.audio.recorder.start()
-                } else {
-                    this.audio.recorder.stop()
-                }
-            },
-            stopRecorder () {
-                if (!this.isRecording) {
-                    return
-                }
-                this.audio.recorder.stop()
-                this.audio.recordList = this.audio.recorder.recordList()
-            },
-            _initRecorder () {
-                return new Recorder({
-                    beforeRecording : (val) => { console.log(`beforeRecording ${val}`) },
-                    afterRecording  : (val) => { console.log(`afterRecording: ${val}`) },
-                    pauseRecording  : (val) => { console.log(`pauseRecording: ${val}`) },
-                    micFailed       : (val) => {console.log(`micFailed: ${val}`)},
-                    bitRate         : this.bitRate,
-                    sampleRate      : this.sampleRate
-                })
-            },
             newBroadcast () {
                 this.modalOperationData.publicAddressModal.show = true
             },
@@ -405,23 +343,6 @@
                 })
             }
         },
-        computed: {
-            playerIcon () {
-                return this.audio.isPlaying ? 'fas fa-pause' : 'fas fa-play'
-            },
-            isRecording () {
-                return this.audio.recorder.isRecording
-            },
-            audioSource () {
-                const recorderLength = this.audio.recorder.records.length
-                const url = this.audio.recorder.records[recorderLength - 1]
-                if (url) {
-                    return url
-                } else {
-                    return false
-                }
-            }
-        }
     }
 </script>
 

@@ -146,13 +146,25 @@ export default {
         let dd = today.getDate()
         let mm = today.getMonth() + 1
         let yyyy = today.getFullYear()
+        let hour = today.getHours()
+        let min = today.getMinutes()
+        let sec = today.getSeconds()
+        if (hour < 10) {
+          hour = '0' + hour
+        }
+      if (min < 10) {
+        min = '0' + min
+      }
+        if (sec < 10) {
+          sec = '0' + sec
+        }
         if (dd < 10) {
           dd = '0' + dd
         }
         if (mm < 10) {
           mm = '0' + mm
         }
-        today = mm + '-' + dd + '-' + yyyy
+        today = hour + ':' + min + ':' + sec + '/' + mm + '-' + dd + '-' + yyyy
         let randomInt = Math.floor(Math.random() * Math.floor(99999999))
         let key = today + '-' + randomInt
         this.audioMessageObj.key = key
@@ -198,9 +210,6 @@ export default {
     },
     uploadRecord: function () {
       this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
-        'userId': this.$root.$options.user.id,
-        'audio': 'audio',
-        'job-type': '1',
         'key': this.audioMessageObj.key,
         'content-type': 'audio/wav',
         'client-method': 'put_object',
@@ -223,6 +232,7 @@ export default {
           console.log('got main dir', dir)
           dir.getFile(vm.audioMessageObj.key + '.wav', {create: true}, function (file) {
             console.log('file itself', file)
+
             ft.upload(file.nativeURL, response.body,
               function (response) {
                 console.log(response)
@@ -243,12 +253,11 @@ export default {
                 })
               },
               function (error) {
-                debugger
                 console.log(error)
               },
               options)
+
             console.log('got the file')
-            // console.log(audioFormData)
           }, function (err) { console.log(err) })
         })
       })

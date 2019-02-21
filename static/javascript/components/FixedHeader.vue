@@ -1,6 +1,7 @@
 <template>
     <div class="header sticky" id="myHeader">
         <div>Welcome {{user.first_name}} {{user.last_name}}</div>
+        <button @click="logout()" href="#">Logout</button>
         <div>
             <label class="switch">
                 <input type="checkbox" @click="toggleSwitch" v-model="isSwitchOn" checked>
@@ -19,7 +20,8 @@
         name: "FixedHeader",
         components:{PublicAddress},
         props: {
-            user: Object
+            user: Object,
+            logout: Function
         },
         methods: {
             toggleSwitch () {
@@ -28,7 +30,6 @@
             activatePublicAddressModal () {
                 bus.$emit('broadcast')
             }
-
         },
         data () {
             return {
