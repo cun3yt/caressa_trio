@@ -48,7 +48,7 @@
                                   :access-token="this.accessToken"
                                   :api-base="apiBase">
             </public-address-modal>
-            <div id="seniors">
+            <div class="senior-list" id="seniors">
 
                 <tabular-data :data="gridData" :columns="gridColumns"
                               :filter-key="searchQuery" :edit-entry="editEntry"
@@ -349,5 +349,8 @@
 <style scoped>
     .errors {
         border: dashed indianred 4px;
+    }
+    .senior-list {
+        margin-top: 8em;
     }
 </style>

@@ -146,25 +146,13 @@ export default {
         let dd = today.getDate()
         let mm = today.getMonth() + 1
         let yyyy = today.getFullYear()
-        let hour = today.getHours()
-        let min = today.getMinutes()
-        let sec = today.getSeconds()
-        if (hour < 10) {
-          hour = '0' + hour
-        }
-      if (min < 10) {
-        min = '0' + min
-      }
-        if (sec < 10) {
-          sec = '0' + sec
-        }
         if (dd < 10) {
           dd = '0' + dd
         }
         if (mm < 10) {
           mm = '0' + mm
         }
-        today = hour + ':' + min + ':' + sec + '/' + mm + '-' + dd + '-' + yyyy
+        today = mm + '-' + dd + '-' + yyyy
         let randomInt = Math.floor(Math.random() * Math.floor(99999999))
         let key = today + '-' + randomInt
         this.audioMessageObj.key = key
