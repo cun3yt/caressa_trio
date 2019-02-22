@@ -96,9 +96,6 @@
                     this.user = response.data
                     this.list()
                     this.loading = false
-                    // Vue.nextTick().then(() => {this.setupPlayer()})
-                    // this.setupPlayer()
-                    // setTimeout(() => {this.setupPlayer()}, 500)
                 }, function(error) {
                     let pro = that.useRefreshToken()
                     pro.then(function(response) {

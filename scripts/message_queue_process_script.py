@@ -12,6 +12,29 @@ import traceback
 
 # todo revisit `senior_communication_channel` part, it may need to be `facility_channel` in some cases
 
+def _move_file_from_upload_to_prod_bucket(file_key):
+    s3 = boto3.resource('s3')
+    copy_source = {
+        'Bucket': S3_RAW_UPLOAD_BUCKET,
+        'Key': file_key
+    }
+    bucket = s3.Bucket(S3_PRODUCTION_BUCKET)
+    bucket.copy(copy_source, file_key)
+
+
+def _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key):
+    s3 = boto3.resource('s3')
+    file_key = ios_file_key + '.mp3'
+    s3.Bucket(S3_RAW_UPLOAD_BUCKET).download_file(ios_file_key, '/tmp/{}'.format(ios_file_key))
+    webm_audio = AudioSegment.from_file('/tmp/{}'.format(ios_file_key), format='wav')
+    webm_audio.export('/tmp/{}'.format(file_key), format='mp3')
+    s3_client = boto3.client('s3')
+    s3_client.upload_file('/tmp/{}'.format(file_key),
+                          S3_PRODUCTION_BUCKET,
+                          '{file_key}'.format(file_key=file_key),
+                          ExtraArgs={'ACL': 'public-read', 'ContentType': 'audio/mp3'})
+    return file_key
+
 
 def audio_worker(publisher, next_queued_job: Messages):
     next_queued_job.process_state = Messages.PROCESS_RUNNING
@@ -24,27 +47,12 @@ def audio_worker(publisher, next_queued_job: Messages):
         mail_type = 'urgent_mail'
 
     ios_file_key = next_queued_job.message['key']
-    file_key = ios_file_key
-
-    s3 = boto3.resource('s3')
 
     if not next_queued_job.message['key'].endswith('.mp3'):
-        file_key = ios_file_key + '.mp3'
-        s3.Bucket(S3_RAW_UPLOAD_BUCKET).download_file(ios_file_key, '/tmp/{}'.format(ios_file_key))
-        webm_audio = AudioSegment.from_file('/tmp/{}'.format(ios_file_key), format='wav')
-        webm_audio.export('/tmp/{}'.format(file_key), format='mp3')
-        s3_client = boto3.client('s3')
-        s3_client.upload_file('/tmp/{}'.format(file_key),
-                              S3_PRODUCTION_BUCKET,
-                              '{file_key}'.format(file_key=file_key),
-                              ExtraArgs={'ACL': 'public-read', 'ContentType': 'audio/mp3'})
+        file_key = _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key)
     else:
-        copy_source = {
-            'Bucket': S3_RAW_UPLOAD_BUCKET,
-            'Key': file_key
-        }
-        bucket = s3.Bucket(S3_PRODUCTION_BUCKET)
-        bucket.copy(copy_source, file_key)
+        file_key = ios_file_key
+        _move_file_from_upload_to_prod_bucket(ios_file_key)
 
     audio_type = '{publisher}_voice_record'.format(publisher=publisher)
     description = 'Audio Record from {publisher}'.format(publisher=publisher)
