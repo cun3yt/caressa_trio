@@ -392,8 +392,8 @@ class VoiceMessageStatus(TimeStampedModel):
                                related_name='voice_source_user'
                                )
     destination = models.ForeignKey(to=User,
-                                    null=False,
-                                    help_text='Voice Destination User',
+                                    null=True,
+                                    help_text='Voice Destination User (None means facility-wide message)',
                                     on_delete=models.DO_NOTHING,
                                     related_name='voice_destination_user'
                                     )

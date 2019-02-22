@@ -17,13 +17,12 @@
                             <i :class="isRecording ? 'fas fa-stop-circle' : 'fas fa-microphone'"
                                v-on:click="toggleRecorder"
                                style="font-size:26px; color:royalblue; cursor: pointer;"/>
-                            {{audioSource.url}}{{user}}
                             <audio ref="player" id="player" :src="audioSource && audioSource.url"/>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <slot name="footer">
-                            <button class="modal-default-button" @click="$emit('close')">
+                            <button class="modal-default-button" @click="closeModal">
                                 Cancel
                             </button>
                             <button class="modal-default-button" @click="submitRecord">
@@ -67,32 +66,38 @@
             }
         },
         methods: {
-            /*
-            url: res.url,
-            type: 'PUT',
-            data: file,
-            processData: false,
-            contentType: file.type
-            */
-            uploadFile (uploadUrl) {
+            closeModal: function (){
+                this.$emit('close')
+            },
+            uploadFile: function (uploadUrl) {
                 const recorderLength = this.audio.recorder.records.length
-                const data = this.audio.recorder.records[recorderLength - 1]   // data.url
-                console.log('Local blob', data)
-                console.log('aws URL', uploadUrl)
-                console.log('File Key', this.audio.lastRecordKey)
-                console.log(`curl -X PUT -H "processData: false" ${uploadUrl} -d `)
-                let file = new File([data], this.audio.lastRecordKey, {
-                    type: 'audio/mp3'
-                })
-                console.log(file)
-                this.$http.put(uploadUrl, file, {
+                const data = this.audio.recorder.records[recorderLength - 1]
+                let file = new File([data.blob], this.audio.lastRecordKey)
+
+                this.$http({
+                    method: 'PUT',
+                    url: uploadUrl,
+                    body: file,
                     headers: {
-                        contentType: 'audio/mp3',
+                        'Content-Type': 'audio/mp3',
                     }
                 }).then(response => {
-                    console.log('UploadFn : ',response)
+                    this.queueUpNewMessage().then(response => this.closeModal())
                 }).catch(err => {
                     console.log(err)
+                })
+            },
+            queueUpNewMessage: function () {
+                return this.$http({
+                    method: 'POST',
+                    url: this.api_url('new_message/'),
+                    body: {
+                       type: 'facility_web_audio',
+                        key: this.audio.lastRecordKey,
+                    },
+                    headers:{
+                        Authorization: 'Bearer ' + this.accessToken
+                    }
                 })
             },
             api_url(path) {
@@ -166,7 +171,6 @@
                 return `${this.user.pk}-${hour}-${min}-${sec}-${mm}-${dd}-${yyyy}.mp3`
             },
             generateSignedUrl () {
-                console.log(this.audio.lastRecordKey)
                 return this.$http({
                     method: 'POST',
                     url: this.api_url('generate_signed_url/'),
