@@ -5,6 +5,7 @@
   "main": "static/javascript/index.js",
   "private": true,
   "dependencies": {
+    "lamejs": "^1.2.0",
     "lodash": "^4.17.11",
     "vue": "^2.5.22",
     "vue-cookies": "^1.5.12",

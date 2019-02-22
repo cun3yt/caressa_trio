@@ -198,9 +198,6 @@ export default {
     },
     uploadRecord: function () {
       this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
-        'userId': this.$root.$options.user.id,
-        'audio': 'audio',
-        'job-type': '1',
         'key': this.audioMessageObj.key,
         'content-type': 'audio/wav',
         'client-method': 'put_object',
@@ -223,6 +220,7 @@ export default {
           console.log('got main dir', dir)
           dir.getFile(vm.audioMessageObj.key + '.wav', {create: true}, function (file) {
             console.log('file itself', file)
+
             ft.upload(file.nativeURL, response.body,
               function (response) {
                 console.log(response)
@@ -243,12 +241,11 @@ export default {
                 })
               },
               function (error) {
-                debugger
                 console.log(error)
               },
               options)
+
             console.log('got the file')
-            // console.log(audioFormData)
           }, function (err) { console.log(err) })
         })
       })
