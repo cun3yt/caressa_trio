@@ -12,6 +12,13 @@ import traceback
 
 # todo revisit `senior_communication_channel` part, it may need to be `facility_channel` in some cases
 
+def _realtime_message(channel, event_name, data):
+    log("Sending realtime message, channel: {channel}\n "
+        "event_name: {event_name},\n "
+        "data: {data}".format(channel=channel, event_name=event_name, data=data))
+    pusher_client.trigger(channel, event_name, data)
+
+
 def _move_file_from_upload_to_prod_bucket(file_key):
     s3 = boto3.resource('s3')
     copy_source = {
@@ -77,16 +84,14 @@ def audio_worker(publisher, next_queued_job: Messages):
     if source.is_provider():
         channels = source.communication_channels()
         assert len(channels) == 1, "Provider is supposed to have only one channel, which is a SLF channel"
-        pusher_client.trigger(channels[0], mail_type, url)
+        _realtime_message(channels[0], mail_type, url)
         destination = None
     else:
         assert source.is_family(), (
             "Source must be family if not a provider since senior cannot trigger a message (at the moment)"
         )
         destination = source.circle_set.all()[0].person_of_interest
-        pusher_client.trigger(destination.senior_communication_channel,
-                              mail_type,
-                              url)
+        _realtime_message(destination.senior_communication_channel, mail_type, url)
 
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
@@ -125,9 +130,7 @@ def text_worker(publisher, next_queued_job: Messages):
     source = User.objects.get(pk=user_id)
 
     destination = source.circle_set.all()[0].person_of_interest
-    pusher_client.trigger(destination.senior_communication_channel,
-                          mail_type,
-                          url)
+    _realtime_message(destination.senior_communication_channel, mail_type, url)
 
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
@@ -171,9 +174,7 @@ def personalization_worker(publisher, next_queued_job: Messages):
 
     destination = source.circle_set.all()[0].person_of_interest
 
-    pusher_client.trigger(destination.senior_communication_channel,
-                          mail_type,
-                          url)
+    _realtime_message(destination.senior_communication_channel, mail_type, url)
 
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
