@@ -268,6 +268,7 @@
           <div>
             <!--<q-btn @click="getPresignedUrl" style="color:#2FCD8C" v-close-overlay label="Upload" />-->
             <q-uploader
+              ref="vueRef"
               url=""
               method="PUT"
               :name="profilePictureData.fileName"
@@ -279,6 +280,8 @@
               :filter="filterFiles"
               :multiple="false"
               :readonly="true"
+              @uploaded="successfulImageUpload"
+              @add="newFileAdded"
             />
           </div>
           <q-btn color="red" v-close-overlay label="Close" />
@@ -302,8 +305,8 @@ export default {
       profilePictureData: {
         updateProfilePictureModal: false,
         generatadPreSignedUrl: '',
-        fileName: `new_file_name_${String(this.randomInt())}.png`,
-        fileType: 'image/png'
+        fileName: this.randomFileName(),
+        fileType: ''
       },
       user: 'Maggy',
       genres: [
@@ -364,8 +367,16 @@ export default {
     }
   },
   methods: {
-    randomInt () {
-      return Math.floor(Math.random() * Math.floor(99999999))
+    newFileAdded (file) {
+      this.profilePictureData.fileType = file[0].type
+    },
+    successfulImageUpload (file, request) {
+      console.log(file)
+      this.$refs.vueRef.reset()
+    },
+    randomFileName () {
+      const randomInt = Math.random().toString(36).substring(2, 15)
+      return `new_profile_pic_${randomInt}`
     },
     filterFiles (files) {
       const MAX_FILE_SIZE = 1024 /* =3M */
@@ -405,13 +416,15 @@ export default {
     },
     getPresignedUrl (fileName, contentType) {
       return this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
-        'userId': this.$root.$options.user.id,
-        'image': 'image',
-        'job-type': '1',
         'key': fileName,
         'content-type': contentType,
         'client-method': 'put_object',
         'request-type': 'PUT'
+      })
+    },
+    newProfilePicture () {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
+        'file_name' : this.profilePictureData.fileName,
       })
     }
   }
