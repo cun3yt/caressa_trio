@@ -373,6 +373,7 @@ export default {
     successfulImageUpload (file, request) {
       console.log(file)
       this.$refs.vueRef.reset()
+      this.newProfilePicture()
     },
     randomFileName () {
       const randomInt = Math.random().toString(36).substring(2, 15)
@@ -424,7 +425,7 @@ export default {
     },
     newProfilePicture () {
       this.$auth.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
-        'file_name' : this.profilePictureData.fileName,
+        'file_name': this.profilePictureData.fileName
       })
     }
   }
