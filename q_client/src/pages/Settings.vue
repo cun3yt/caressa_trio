@@ -266,25 +266,9 @@
         <div style="padding: 50px">
           <div class="q-display-1 q-mb-md">Minimized</div>
           <div>
-            <input type="file" label="uplod pic">
+            <input type="file" v-on:change="newFileFromInput" accept="image/*">
               <q-icon name="fa fa-times" @click="clearImage"/>
             <q-btn label="Upload" @click="uploadPicture"/>
-            <q-uploader
-              ref="vueRef"
-              url=""
-              method="PUT"
-              :name="profilePictureData.fileName"
-              :headers="{'content-type': profilePictureData.fileType }"
-              :url-factory="getSignedUrl"
-              :send-raw="true"
-              :auto-expand="true"
-              extensions=".jpg,.jpeg,.png"
-              :filter="filterFiles"
-              :multiple="false"
-              :readonly="true"
-              @uploaded="successfulImageUpload"
-              @add="newFileAdded"
-            />
           </div>
           <q-btn color="red" v-close-overlay label="Close" />
         </div>
@@ -307,8 +291,10 @@ export default {
       profilePictureData: {
         updateProfilePictureModal: false,
         generatadPreSignedUrl: '',
-        fileName: this.randomFileName(),
-        fileType: ''
+        fileName: '',
+        fileType: '',
+        file: null,
+        signedUrl: null
       },
       user: 'Maggy',
       genres: [
@@ -370,35 +356,38 @@ export default {
   },
   methods: {
     uploadPicture () {
-      // todo implement
+      this.$http({
+        method: 'PUT',
+        url: this.profilePictureData.signedUrl,
+        body: this.profilePictureData.file,
+        headers: {
+          'Content-Type': this.profilePictureData.file.type
+        }
+      }).then(response => {
+        console.log(response)
+        this.newProfilePicture()
+      }).catch(err => {
+        console.log(err)
+      })
     },
     clearImage () {
       // todo implement
     },
-    newFileAdded (file) {
-      this.profilePictureData.fileType = file[0].type
-    },
-    successfulImageUpload (file, request) {
-      console.log(file)
-      this.$refs.vueRef.reset()
-      this.newProfilePicture()
+    newFileFromInput (inputFile) {
+      const files = inputFile.target.files || inputFile.dataTransfer.files
+      this.profilePictureData.file = files[0]
+      this.profilePictureData.fileName = this.randomFileName()
+      this.getSignedUrl(this.profilePictureData.file)
     },
     randomFileName () {
       const randomInt = Math.random().toString(36).substring(2, 15)
       return `new_profile_pic_${randomInt}`
     },
-    filterFiles (files) {
-      const MAX_FILE_SIZE = 1024 /* =3M */
-      // returns an Array containing allowed files
-      return files.filter((file) => {
-        return file.size <= MAX_FILE_SIZE
-      })
-    },
     async getSignedUrl (file) {
       const contentType = file.type // To send the correct Content-Type
       const fileName = this.profilePictureData.fileName // If you want to use this value to calculate the S3 Key.
       const response = await this.getPresignedUrl(fileName, contentType) // Your api call to a sever that calculates the signed url.
-      return response.body
+      this.profilePictureData.signedUrl = response.body
     },
     newPage (link) {
       const baseUrl = 'https://www.caressa.ai/'
