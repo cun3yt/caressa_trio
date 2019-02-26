@@ -266,7 +266,9 @@
         <div style="padding: 50px">
           <div class="q-display-1 q-mb-md">Minimized</div>
           <div>
-            <!--<q-btn @click="getPresignedUrl" style="color:#2FCD8C" v-close-overlay label="Upload" />-->
+            <input type="file" label="uplod pic">
+              <q-icon name="fa fa-times" @click="clearImage"/>
+            <q-btn label="Upload" @click="uploadPicture"/>
             <q-uploader
               ref="vueRef"
               url=""
@@ -367,6 +369,12 @@ export default {
     }
   },
   methods: {
+    uploadPicture () {
+      // todo implement
+    },
+    clearImage () {
+      // todo implement
+    },
     newFileAdded (file) {
       this.profilePictureData.fileType = file[0].type
     },

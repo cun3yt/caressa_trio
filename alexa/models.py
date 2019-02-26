@@ -27,7 +27,7 @@ from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
 from uuid import uuid4
 from django.urls import reverse
-from caressa.settings import WEB_BASE_URL
+from caressa.settings import WEB_BASE_URL, S3_PRODUCTION_BUCKET, S3_REGION
 from utilities.email import send_email
 from utilities.sms import send_sms
 
@@ -143,8 +143,31 @@ class User(AbstractCaressaUser, TimeStampedModel):
 
     objects = CaressaUserManager()
 
+    @staticmethod
+    def get_profile_picture_url(user_id, profile_picture, dimensions):
+        return '{region}/{bucket}/images/{user_id}/{profile_picture}_{dimensions}.png'.format(region=S3_REGION,
+                                                                                              bucket=S3_PRODUCTION_BUCKET,
+                                                                                              profile_picture=profile_picture,
+                                                                                              user_id=user_id,
+                                                                                              dimensions=dimensions)
+
     def get_profile_pic(self):
-        return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None
+        if self.profile_pic:
+            return self.get_profile_picture_url(self.id, self.profile_pic, 'w_250')
+
+        return self.get_profile_picture_url('no_user', 'default_profile_pic')
+
+    def get_thumbnail_profile_pic(self):
+        if self.profile_pic:
+            return self.get_profile_picture_url(self.id, self.profile_pic, 'w_25')
+
+        return self.get_profile_picture_url('no_user', 'default_profile_pic', 'w_25')
+
+    def get_raw_profile_pic(self):
+        if self.profile_pic:
+            return self.get_profile_picture_url(self.id, self.profile_pic, 'raw')
+
+        return self.get_profile_picture_url('no_user', 'default_profile_pic', 'raw')
 
     def is_senior(self):
         return self.user_type == self.CARETAKER

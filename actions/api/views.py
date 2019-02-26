@@ -16,8 +16,7 @@ from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from alexa.api.permissions import IsSameUser, IsInCircle, CommentAccessible
 from PIL import Image
 from uuid import uuid4
-import hashlib
-
+from utilities.file_operations import download_to_tmp_from_s3, profile_picture_resizing_wrapper, upload_to_s3_from_tmp
 
 class ActionViewSet(SerializerRequestViewSetMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = ActionSerializer
@@ -251,37 +250,26 @@ def new_profile_picture(request):
     file_name = request.data.get('file_name')
 
     current_user_profile_pic = user.profile_pic
-    current_profile_picture_version = current_user_profile_pic.rsplit('_')[-1]
 
     uuid = str(uuid4())[:8]
 
     save_picture_format = 'png'
 
-    if not current_profile_picture_version.startswith('v'):
-        new_profile_picture_name = '{hash}_v0.{picture_format}'.format(hash=uuid, picture_format=save_picture_format)
+    if not current_user_profile_pic:
+        new_profile_pic_hash_version = '{hash}_v0'.format(hash=uuid)
     else:
+        current_profile_picture_version = current_user_profile_pic.rsplit('_')[1]
         increment_version = int(current_profile_picture_version[1:]) + 1
-        new_profile_picture_name = '{hash}_v{version}.{picture_format}'.format(hash=str(uuid4())[:8],
-                                                                               version=increment_version,
-                                                                               picture_format=save_picture_format)
+        new_profile_pic_hash_version = '{hash}_v{version}'.format(hash=str(uuid4())[:8],
+                                                                  version=increment_version,)
 
-    s3 = boto3.resource('s3')
-    s3.Bucket(settings.S3_RAW_UPLOAD_BUCKET).download_file(file_name, '/tmp/{}'.format(file_name))
+    download_to_tmp_from_s3(file_name, settings.S3_RAW_UPLOAD_BUCKET)
 
-    img = Image.open('/tmp/{}'.format(file_name))
-    new_img = img.resize((250, 250))
-    new_img.save(new_profile_picture_name,
-                 save_picture_format,
-                 optimize=True)
+    picture_set = profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version, save_picture_format)
 
-    s3_client = boto3.client('s3')
-    s3_client.upload_file(new_profile_picture_name,
-                          settings.S3_PRODUCTION_BUCKET,
-                          new_profile_picture_name,
-                          ExtraArgs={'ACL': 'public-read', 'ContentType': 'image/png'})
+    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
 
-    user.profile_pic = new_profile_picture_name.rsplit('.')[0]
+    user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     user.save()
-
 
     return Response({'message': 'Profile Picture Updated'})
