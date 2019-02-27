@@ -263,14 +263,31 @@
     </div>
     <q-page-container>
       <q-modal v-model="profilePictureData.updateProfilePictureModal " minimized>
-        <div style="padding: 50px">
-          <div class="q-display-1 q-mb-md">Minimized</div>
-          <div>
-            <input type="file" v-on:change="newFileFromInput" accept="image/*">
-              <q-icon name="fa fa-times" @click="clearImage"/>
-            <q-btn label="Upload" @click="uploadPicture"/>
+        <div style="padding: 10px">
+          <div class="q-display-1 q-mb-md">New Profile Picture</div>
+          <div v-if="profilePictureData.croppingState">
+            <div class="cut">
+              <vue-cropper ref="cropper" :img="profilePictureData.option.img" :output-size="profilePictureData.option.size"
+                           :output-type="profilePictureData.option.outputType"
+                           :info="true" :full="profilePictureData.option.full" :can-move="profilePictureData.option.canMove"
+                           :can-move-box="profilePictureData.option.canMoveBox"
+                           :fixed-box="profilePictureData.option.fixedBox" :original="profilePictureData.option.original"
+                           :auto-crop="profilePictureData.option.autoCrop"
+                           :auto-crop-width="profilePictureData.option.autoCropWidth"
+                           :auto-crop-height="profilePictureData.option.autoCropHeight"
+                           :center-box="profilePictureData.option.centerBox" @real-time="realTime"
+                           :high="profilePictureData.option.high" @img-load="imgLoad" >
+              </vue-cropper>
+            </div>
           </div>
-          <q-btn color="red" v-close-overlay label="Close" />
+          <img v-if="profilePictureData.croppedImage" :src="profilePictureData.croppedImage">
+            <div>
+              <input id="file" class="inputfile" type="file" v-on:change="newFileFromInput" accept="image/*">
+              <label for="file"><strong>Choose a file</strong></label>
+              <q-btn label="Looks Good" @click="getCroppedFile"/>
+              <q-btn label="Change Picture" @click="uploadPicture"/>
+            </div>
+            <q-btn color="red" v-close-overlay label="Close" />
         </div>
       </q-modal>
     </q-page-container>
@@ -278,8 +295,10 @@
 </template>
 
 <script>
+import { VueCropper } from 'vue-cropper'
 export default {
   name: 'settings',
+  components: {VueCropper},
   props: ['setupContent', 'logOut'],
   created () {
     this.setupContent({
@@ -289,6 +308,28 @@ export default {
   data () {
     return {
       profilePictureData: {
+        croppingState: false,
+        option: {
+          img: '',
+          size: 1,
+          full: false,
+          outputType: 'jpg',
+          canMove: true,
+          fixedBox: false,
+          original: false,
+          canMoveBox: true,
+          autoCrop: true,
+          autoCropWidth: 150,
+          autoCropHeight: 150,
+          centerBox: false,
+          high: true
+        },
+        previews: {},
+        cropperLabels: {
+          submit: 'Looks Good!',
+          cancel: 'Cancel'
+        },
+        croppedImage: null,
         updateProfilePictureModal: false,
         generatadPreSignedUrl: '',
         fileName: '',
@@ -355,6 +396,27 @@ export default {
     }
   },
   methods: {
+    getCroppedFile () {
+      let vm = this
+      let file
+      this.$refs.cropper.getCropBlob((data) => {
+        file = new File([data], vm.profilePictureData.fileName, {type: data.type})
+        vm.getSignedUrl(file)
+        vm.profilePictureData.file = file
+        vm.profilePictureData.croppingState = false
+      })
+    },
+    realTime (data) {
+      this.profilePictureData.previews = data
+      console.log(data)
+    },
+    imgLoad (msg) {
+      console.log(msg)
+    },
+    cropSubmit () {
+      console.log(this.profilePictureData)
+      this.profilePictureData.croppedImage = this.profilePictureData.file
+    },
     uploadPicture () {
       this.$http({
         method: 'PUT',
@@ -375,9 +437,10 @@ export default {
     },
     newFileFromInput (inputFile) {
       const files = inputFile.target.files || inputFile.dataTransfer.files
-      this.profilePictureData.file = files[0]
+      console.log(files[0])
+      this.profilePictureData.option.img = window.URL.createObjectURL(files[0])
       this.profilePictureData.fileName = this.randomFileName()
-      this.getSignedUrl(this.profilePictureData.file)
+      this.profilePictureData.croppingState = true
     },
     randomFileName () {
       const randomInt = Math.random().toString(36).substring(2, 15)
@@ -429,9 +492,42 @@ export default {
 }
 </script>
 
-<style lang="stylus">
+<style scoped lang="stylus">
 .main-content {
   width: 500px;
   max-width: 90vw;
+}
+
+.cut {
+  width: 225px;
+  height: 225px;
+  margin: 5px auto;
+}
+
+.inputfile {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+.inputfile + label {
+  background: #f15d22;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: 'Poppins', sans-serif;
+  font-size: inherit;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  outline: none;
+  padding: 1rem 50px;
+  position: relative;
+  transition: all 0.3s;
+  vertical-align: middle;
 }
 </style>
