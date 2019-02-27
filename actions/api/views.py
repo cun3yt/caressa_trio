@@ -226,7 +226,7 @@ def new_job_for_message_queue(request):
     content_str = 'content'
 
     if content_str in request.data:
-        content = request.data['content']['text'][0]
+        content = request.data['content']
     else:
         content = ''
 

@@ -1,7 +1,7 @@
 <template>
     <div>
-        <edit-modal v-if="modalOperationData.show" :errors="editErrors" :edit-submit="editSubmit"
-                    @close="modalOperationData.show = false">
+        <edit-modal v-if="modalOperationData.editModal.show" :errors="editErrors" :edit-submit="editSubmit"
+                    @close="modalOperationData.editModal.show = false">
             <form slot="header">
                 <h3>Senior Personal Information</h3>
                 <div>
@@ -17,38 +17,39 @@
                     <input name="room_no" v-model="editForm.room_no">
                 </div>
                 <hr>
-                <div :class="{disabled : !modalOperationData.isContactEditable}">
-                    <h3>Primary Contact <span v-if="!modalOperationData.isContactEditable">(Verified)</span></h3>
+                <div :class="{disabled : !modalOperationData.editModal.isContactEditable}">
+                    <h3>Primary Contact <span v-if="!modalOperationData.editModal.isContactEditable">(Verified)</span></h3>
                     <div>
                         <label>Name:</label>
-                        <input :disabled="!modalOperationData.isContactEditable"
+                        <input :disabled="!modalOperationData.editModal.isContactEditable"
                                v-model="editForm['contact.name']">
                     </div>
                     <div>
                         <label>Email:</label>
-                        <input :disabled="!modalOperationData.isContactEditable"
+                        <input :disabled="!modalOperationData.editModal.isContactEditable"
                                v-model="editForm['contact.email']">
                     </div>
                     <div>
                         <label>Phone Number:</label>
-                        <input :disabled="!modalOperationData.isContactEditable"
+                        <input :disabled="!modalOperationData.editModal.isContactEditable"
                                v-model="editForm['contact.phone_number']">
                     </div>
                 </div>
             </form>
         </edit-modal>
-
         <div v-if="loading">
             <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
         </div>
-
         <div v-else>
-            <div>Welcome {{user.first_name}} {{user.last_name}}</div>
+            <fixed-header :user="user" :logout="logout"></fixed-header>
+            <public-address-modal v-if="modalOperationData.publicAddressModal.show"
+                                  @close="modalOperationData.publicAddressModal.show = false"
+                                  :user="user"
+                                  :access-token="this.accessToken"
+                                  :api-base="apiBase">
+            </public-address-modal>
+            <div class="senior-list" id="seniors">
 
-            <a v-on:click="logout()" href="#">Logout</a>
-
-            <div id="seniors">
-                <form id="search">Search <input name="query" v-model="searchQuery"></form>
                 <tabular-data :data="gridData" :columns="gridColumns"
                               :filter-key="searchQuery" :edit-entry="editEntry"
                               :delete-entry="deleteEntry" :on-submit="onSubmit"></tabular-data>
@@ -64,13 +65,16 @@
 </template>
 
 <script>
+    import Vue from 'vue'
     import TabularData from '../components/TabularData.vue'
     import EditModal from '../components/EditModal.vue'
+    import FixedHeader from '../components/FixedHeader.vue'
+    import PublicAddressModal from '../components/PublicAddressModal.vue'
     import bus from '../utils.communication.js'
 
     export default {
         name: "SeniorsList",
-        components: {TabularData, EditModal},
+        components: {TabularData, EditModal, FixedHeader, PublicAddressModal},
         props: {
             clientId: String,
             clientSecret: String,
@@ -84,7 +88,6 @@
             if (!this.accessToken) {
                 window.location.href = this.api_url('accounts/login/');
             }
-
             // Get User Detail
             let that = this
             let promise = this.getAdminData()
@@ -114,6 +117,11 @@
                         window.location.href = that.api_url('accounts/login/')
                     })
                 })
+
+            bus.$on('searchKey', (searchKey) => {
+                this.searchQuery = searchKey
+            })
+            bus.$on('broadcast', this.newBroadcast)
         },
         data () {
             return {
@@ -128,20 +136,29 @@
                     {field: 'last_name', label: 'Last Name', sortable: true},
                     {field: 'room_no', label: 'Room Number', sortable: true},
                     {field: 'device_status', label: 'Device Status', sortable: false},
-                    {field: 'primary_contact', label: 'Primary Contact', sortable: false}
+                    {field: 'primary_contact', label: 'Primary Contact', sortable: false},
                 ],
                 gridData: [],
                 errors: [],
                 modalOperationData: {
-                    show: false,
-                    pk: null,
-                    isContactEditable: false
+                    editModal:{
+                        show: false,
+                        pk: null,
+                        isContactEditable: false
+                    },
+                    publicAddressModal:{
+                        show: false,
+                        channels: {}
+                    }
                 },
                 editForm: {},
-                editErrors: []
+                editErrors: [],
             }
         },
         methods: {
+            newBroadcast () {
+                this.modalOperationData.publicAddressModal.show = true
+            },
             api_url(path) {
                 return `${this.apiBase}/${path}`
             },
@@ -252,9 +269,9 @@
                 })
             },
             editEntry: function (senior) {
-                this.modalOperationData.show = true
-                this.modalOperationData.pk = senior.pk
-                this.modalOperationData.isContactEditable = senior.is_contact_editable
+                this.modalOperationData.editModal.show = true
+                this.modalOperationData.editModal.pk = senior.pk
+                this.modalOperationData.editModal.isContactEditable = senior.is_contact_editable
 
                 let contact = {
                     name: (senior.primary_contact.length > 0 && senior.primary_contact[0].value) || '',
@@ -310,24 +327,27 @@
 
                 this.$http({
                     method: 'PUT',
-                    url: this.api_url(`api/seniors/${this.modalOperationData.pk}/`),
+                    url: this.api_url(`api/seniors/${this.modalOperationData.editModal.pk}/`),
                     headers: {
                         Authorization: `Bearer ${this.accessToken}`
                     },
                     body: this.editForm
                 }).then(function(response){
-                    that.modalOperationData.show = false
+                    that.modalOperationData.editModal.show = false
                     that.list()
                 }, function(error) {
                     that.editErrors = error.data.errors
                 })
             }
-        }
+        },
     }
 </script>
 
 <style scoped>
     .errors {
-        border: dashed red 4px;
+        border: dashed indianred 4px;
+    }
+    .senior-list {
+        margin-top: 8em;
     }
 </style>

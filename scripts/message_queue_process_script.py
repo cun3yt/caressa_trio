@@ -2,7 +2,7 @@ from streaming.models import Messages, AudioFile, Tag, VoiceMessageStatus
 from alexa.models import User
 from caressa.settings import S3_RAW_UPLOAD_BUCKET, S3_REGION, S3_PRODUCTION_BUCKET
 import boto3
-from utilities.logger import log
+from utilities.logger import log, log_error
 from pydub import AudioSegment
 from caressa.settings import pusher_client
 from voice_service.google import tts
@@ -12,19 +12,26 @@ import traceback
 
 # todo revisit `senior_communication_channel` part, it may need to be `facility_channel` in some cases
 
+def _realtime_message(channel, event_name, data):
+    log("Sending realtime message, channel: {channel}\n "
+        "event_name: {event_name},\n "
+        "data: {data}".format(channel=channel, event_name=event_name, data=data))
+    pusher_client.trigger(channel, event_name, data)
 
-def audio_worker(publisher, next_queued_job: Messages):
-    ios_file_key = next_queued_job.message['key']
-    file_key = ios_file_key + '.mp3'
-    mail_type = 'voice_mail'
-    if publisher == 'facility':
-        mail_type = 'urgent_mail'
 
-    next_queued_job.process_state = Messages.PROCESS_RUNNING
-    next_queued_job.save()
-    log('Queue State : {process_state}'.format(process_state=next_queued_job.process_state))
-
+def _move_file_from_upload_to_prod_bucket(file_key):
     s3 = boto3.resource('s3')
+    copy_source = {
+        'Bucket': S3_RAW_UPLOAD_BUCKET,
+        'Key': file_key
+    }
+    bucket = s3.Bucket(S3_PRODUCTION_BUCKET)
+    bucket.copy(copy_source, file_key)
+
+
+def _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key):
+    s3 = boto3.resource('s3')
+    file_key = ios_file_key + '.mp3'
     s3.Bucket(S3_RAW_UPLOAD_BUCKET).download_file(ios_file_key, '/tmp/{}'.format(ios_file_key))
     webm_audio = AudioSegment.from_file('/tmp/{}'.format(ios_file_key), format='wav')
     webm_audio.export('/tmp/{}'.format(file_key), format='mp3')
@@ -33,6 +40,26 @@ def audio_worker(publisher, next_queued_job: Messages):
                           S3_PRODUCTION_BUCKET,
                           '{file_key}'.format(file_key=file_key),
                           ExtraArgs={'ACL': 'public-read', 'ContentType': 'audio/mp3'})
+    return file_key
+
+
+def audio_worker(publisher, next_queued_job: Messages):
+    next_queued_job.process_state = Messages.PROCESS_RUNNING
+    next_queued_job.save()
+
+    log('Queue State : {process_state}'.format(process_state=next_queued_job.process_state))
+
+    mail_type = 'voice_mail'
+    if publisher == 'facility':
+        mail_type = 'urgent_mail'
+
+    ios_file_key = next_queued_job.message['key']
+
+    if not next_queued_job.message['key'].endswith('.mp3'):
+        file_key = _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key)
+    else:
+        file_key = ios_file_key
+        _move_file_from_upload_to_prod_bucket(ios_file_key)
 
     audio_type = '{publisher}_voice_record'.format(publisher=publisher)
     description = 'Audio Record from {publisher}'.format(publisher=publisher)
@@ -54,11 +81,17 @@ def audio_worker(publisher, next_queued_job: Messages):
     assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
     source = User.objects.get(pk=user_id)
 
-    destination = source.circle_set.all()[0].person_of_interest
-
-    pusher_client.trigger(destination.senior_communication_channel,
-                          mail_type,
-                          url)
+    if source.is_provider():
+        channels = source.communication_channels()
+        assert len(channels) == 1, "Provider is supposed to have only one channel, which is a SLF channel"
+        _realtime_message(channels[0], mail_type, url)
+        destination = None
+    else:
+        assert source.is_family(), (
+            "Source must be family if not a provider since senior cannot trigger a message (at the moment)"
+        )
+        destination = source.circle_set.all()[0].person_of_interest
+        _realtime_message(destination.senior_communication_channel, mail_type, url)
 
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
@@ -97,9 +130,7 @@ def text_worker(publisher, next_queued_job: Messages):
     source = User.objects.get(pk=user_id)
 
     destination = source.circle_set.all()[0].person_of_interest
-    pusher_client.trigger(destination.senior_communication_channel,
-                          mail_type,
-                          url)
+    _realtime_message(destination.senior_communication_channel, mail_type, url)
 
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
@@ -143,9 +174,7 @@ def personalization_worker(publisher, next_queued_job: Messages):
 
     destination = source.circle_set.all()[0].person_of_interest
 
-    pusher_client.trigger(destination.senior_communication_channel,
-                          mail_type,
-                          url)
+    _realtime_message(destination.senior_communication_channel, mail_type, url)
 
     new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
     new_voice_message_status.save()
@@ -163,6 +192,10 @@ worker_registry = {     # Mapping from message type to [consumer (worker fn), pu
         'consumer': 'text_worker',
     },
     'facility_ios_audio': {
+        'publisher': 'facility',
+        'consumer': 'audio_worker',
+    },
+    'facility_web_audio': {
         'publisher': 'facility',
         'consumer': 'audio_worker',
     },
@@ -199,6 +232,7 @@ def run():
             globals()[consumer](publisher, next_queued_job)
         except Exception:
             error_message = traceback.format_exc()
+            log_error(error_message)
             next_queued_job.message['error'] = error_message
             next_queued_job.process_state = Messages.PROCESS_FAILED
             next_queued_job.save()

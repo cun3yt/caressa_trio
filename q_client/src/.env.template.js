@@ -6,5 +6,7 @@ export default {
   PUSHER_CHANNEL: 'pusher-channel-name',   // todo hard coded here
   PUSHER_KEY: 'key-value',
   PUSHER_CLUSTER: 'cluster-value',
-  API_HOST: 'api-host-address'
+  API_HOST: 'api-host-address',
+  CLIENT_ID: 'api-client-id',
+  CLIENT_SECRET: 'api-client-secret'
 }

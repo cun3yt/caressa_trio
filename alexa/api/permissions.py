@@ -32,7 +32,7 @@ class CommentAccessible(BasePermission):
 
 class IsFacilityMember(BasePermission):
     def has_permission(self, request, view):
-        return request.user.user_type == User.CAREGIVER_ORG
+        return request.user.is_provider()
 
     def has_object_permission(self, request, view, obj):
         assert isinstance(obj, User), (
