@@ -65,7 +65,6 @@
 </template>
 
 <script>
-    import Vue from 'vue'
     import TabularData from '../components/TabularData.vue'
     import EditModal from '../components/EditModal.vue'
     import FixedHeader from '../components/FixedHeader.vue'
@@ -81,42 +80,14 @@
             apiBase: String
         },
         mounted: function () {
-            this.accessToken = this.$cookies.get('access_token')
-            this.refreshToken = this.$cookies.get('refresh_token')
+            this.auth.setup(this.clientId, this.clientSecret, this.apiBase)
 
-            // todo: make this one as a function as `requireLogin()`
-            if (!this.accessToken) {
-                window.location.href = this.api_url('accounts/login/');
-            }
-            // Get User Detail
-            let that = this
-            let promise = this.getAdminData()
-            promise.then(
-                function(response){
-                    this.user = response.data
-                    this.list()
-                    this.loading = false
-                }, function(error) {
-                    let pro = that.useRefreshToken()
-                    pro.then(function(response) {
-                        that.accessToken = response.body.access_token
-                        that.refreshToken = response.body.refresh_token
-                        that.$cookies.set('access_token', that.accessToken)
-                        that.$cookies.set('refresh_token', that.refreshToken)
-
-                        that.getAdminData().then(function (response) {
-                            that.user = response.data
-                            that.list()
-                            that.loading = false
-                        }, function (error) {
-                            console.error('Unexpected error', error)
-                        })
-                    }, function(error) {
-                        that.$cookies.remove('access_token')
-                        that.$cookies.remove('refresh_token')
-                        window.location.href = that.api_url('accounts/login/')
-                    })
-                })
+            this.auth.requireLogin((userData) => {
+                this.accessToken = this.$cookies.get('access_token')
+                this.user = userData
+                this.list()
+                this.loading = false
+            })
 
             bus.$on('searchKey', (searchKey) => {
                 this.searchQuery = searchKey
@@ -129,7 +100,6 @@
                 formData: {},
                 user: {},
                 accessToken: '',
-                refreshToken: '',
                 searchQuery: '',
                 gridColumns: [
                     {field: 'first_name', label: 'First Name', sortable: true},
@@ -162,36 +132,16 @@
             api_url(path) {
                 return `${this.apiBase}/${path}`
             },
-            useRefreshToken: function() {
-                return this.$http({
-                    method: 'POST',
-                    url: this.api_url('o/token/'),
-                    emulateJSON: true,
-                    body: {
-                        grant_type:'refresh_token',
-                        refresh_token: this.refreshToken,
-                        client_id: this.clientId,
-                        client_secret: this.clientSecret,
-                    }
-                })
-            },
-            getAdminData: function() {
-                return this.$http.get(this.api_url('api/users/me/'), {
-                    headers: {
-                        Authorization: `Bearer ${this.accessToken}`
-                    }
-                })
-            },
             list: function () {
-                this.$http.get(this.api_url('api/seniors/'), {
-                    headers: {
-                        Authorization: `Bearer ${this.accessToken}`
-                    }
+                let that = this
+
+                this.auth.http({
+                    method: 'GET',
+                    url: this.api_url('api/seniors/')
                 }).then(function (response) {
                     let rawData = response.data.results
-                    let that = this
 
-                    this.gridData = rawData.map(function (row) {
+                    that.gridData = rawData.map(function (row) {
                         row.is_contact_editable = true  // if no contact (default case): contact editable
 
                         for (var col of that.gridColumns) {
@@ -254,13 +204,10 @@
                 })
 
                 let that = this
-                this.$http({
+                this.auth.http({
                     method: 'DELETE',
                     url: this.api_url(`api/seniors/${pk}/`),
-                    emulateJSON: true,
-                    headers: {
-                        Authorization: `Bearer ${this.accessToken}`
-                    }
+                    emulateJSON: true
                 }).then(function () {
                     console.log('successful deletion')
                 }, function (error) {
@@ -289,28 +236,13 @@
                 this.editForm['contact.phone_number'] = contact.phone_number
             },
             logout: function () {
-                this.$http({
-                    method: 'POST',
-                    url: this.api_url('o/revoke_token/'),
-                    emulateJSON: true,
-                    body: {
-                        token: this.accessToken,
-                        client_id: this.clientId,
-                        client_secret: this.clientSecret
-                    }
-                })
-                this.$cookies.remove('access_token')
-                this.$cookies.remove('refresh_token')
-                window.location.href = this.api_url('accounts/login/');
+                this.auth.logout()
             },
             onSubmit: function () {
-                this.$http({
+                this.auth.http({
                     method: 'POST',
                     url: this.api_url('api/seniors/'),
                     emulateHTTP: true,
-                    headers: {
-                        Authorization: `Bearer ${this.accessToken}`
-                    },
                     body: this.formData
                 }).then(function (response) {
                     bus.$emit('clearForm')
@@ -322,15 +254,11 @@
             },
             editSubmit: function (pk) {
                 this.editErrors = []
-
                 let that = this
 
-                this.$http({
+                this.auth.http({
                     method: 'PUT',
                     url: this.api_url(`api/seniors/${this.modalOperationData.editModal.pk}/`),
-                    headers: {
-                        Authorization: `Bearer ${this.accessToken}`
-                    },
                     body: this.editForm
                 }).then(function(response){
                     that.modalOperationData.editModal.show = false
