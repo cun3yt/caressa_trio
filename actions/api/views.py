@@ -14,9 +14,8 @@ from caressa import settings
 from utilities.views.mixins import SerializerRequestViewSetMixin
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from alexa.api.permissions import IsSameUser, IsInCircle, CommentAccessible
-from PIL import Image
-from uuid import uuid4
-from utilities.file_operations import download_to_tmp_from_s3, profile_picture_resizing_wrapper, upload_to_s3_from_tmp
+from utilities.file_operations import download_to_tmp_from_s3, profile_picture_resizing_wrapper, upload_to_s3_from_tmp, \
+    generate_profile_picture_name
 
 class ActionViewSet(SerializerRequestViewSetMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = ActionSerializer
@@ -251,22 +250,12 @@ def new_profile_picture(request):
 
     current_user_profile_pic = user.profile_pic
 
-    uuid = str(uuid4())[:8]
-
-    save_picture_format = 'png'
-
-    if not current_user_profile_pic:
-        new_profile_pic_hash_version = '{hash}_v0'.format(hash=uuid)
-    else:
-        current_profile_picture_version = current_user_profile_pic.rsplit('_')[1]
-        increment_version = int(current_profile_picture_version[1:]) + 1
-        new_profile_pic_hash_version = '{hash}_v{version}'.format(hash=str(uuid4())[:8],
-                                                                  version=increment_version,)
+    new_profile_pic_hash_version = generate_profile_picture_name(current_user_profile_pic)
 
     download_to_tmp_from_s3(file_name, settings.S3_RAW_UPLOAD_BUCKET)
 
+    save_picture_format = 'png'
     picture_set = profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version, save_picture_format)
-
     upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
 
     user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]

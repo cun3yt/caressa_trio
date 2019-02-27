@@ -1,35 +1,30 @@
 from PIL import Image
 import boto3
 from shutil import copyfile
+from uuid import uuid4
+
+
+def image_resizer(file_name, hash_version, file_format, size):
+    resize_file_name = '{hash_version}_w_{size}.{file_format}'.format(hash_version=hash_version,
+                                                                      size=size,
+                                                                      file_format=file_format)
+    copyfile(src='/tmp/{file_name}'.format(file_name=file_name),
+             dst='/tmp/{resize_file_name}'.format(resize_file_name=resize_file_name))
+
+    img = Image.open('/tmp/{resize_file_name}'.format(resize_file_name=resize_file_name))
+    img = img.convert("RGB")
+    thumbnail_size = size, size
+    img.thumbnail(thumbnail_size, Image.ANTIALIAS)
+    img.save('/tmp/{resize_file_name}'.format(resize_file_name=resize_file_name))
+    return resize_file_name
 
 
 def image_thumbnail_resizer(file_name, hash_version, file_format):
-    file_name_thumbnail = '{hash_version}_w_25.{file_format}'.format(hash_version=hash_version,
-                                                                     file_format=file_format)
-    copyfile(src='/tmp/{file_name}'.format(file_name=file_name),
-             dst='/tmp/{file_name_thumbnail}'.format(file_name_thumbnail=file_name_thumbnail))
-
-    img = Image.open('/tmp/{file_name_thumbnail}'.format(file_name_thumbnail=file_name_thumbnail))
-    thumbnail_size = 25, 25
-    img.thumbnail(thumbnail_size, Image.ANTIALIAS)
-    img.save('/tmp/{file_name_thumbnail}'.format(file_name_thumbnail=file_name_thumbnail))
-
-    return file_name_thumbnail
+    return image_resizer(file_name, hash_version, file_format, 25)
 
 
 def image_profile_pic_resizer(file_name, hash_version, file_format):
-    file_name_profile_pic = '{hash_version}_w_250.{file_format}'.format(hash_version=hash_version,
-                                                                        file_format=file_format)
-
-    copyfile(src='/tmp/{file_name}'.format(file_name=file_name),
-             dst='/tmp/{file_name_profile_pic}'.format(file_name_profile_pic=file_name_profile_pic))
-
-    img = Image.open('/tmp/{file_name_profile_pic}'.format(file_name_profile_pic=file_name_profile_pic))
-    thumbnail_size = 250, 250
-    img.thumbnail(thumbnail_size, Image.ANTIALIAS)
-    img.save('/tmp/{file_name_profile_pic}'.format(file_name_profile_pic=file_name_profile_pic))
-
-    return file_name_profile_pic
+    return image_resizer(file_name, hash_version, file_format, 250)
 
 
 def image_raw_reformat_rename(file_name, hash_version, file_format):
@@ -63,3 +58,14 @@ def upload_to_s3_from_tmp(bucket, files: list, user_id):
                               'images/user/{user_id}/{file_name}'.format(user_id=user_id,
                                                                          file_name=file_name),
                               ExtraArgs={'ACL': 'public-read', 'ContentType': 'image/png'})
+
+
+def generate_profile_picture_name(current_user_profile_pic):
+    uuid = str(uuid4())[:8]
+    if not current_user_profile_pic:
+        return '{hash}_v0'.format(hash=uuid)
+
+    current_profile_picture_version = current_user_profile_pic.rsplit('_')[1]
+    increment_version = int(current_profile_picture_version[1:]) + 1
+    return '{hash}_v{version}'.format(hash=str(uuid4())[:8],
+                                      version=increment_version,)

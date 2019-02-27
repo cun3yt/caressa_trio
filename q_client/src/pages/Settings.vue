@@ -268,15 +268,16 @@
           <div v-if="profilePictureData.croppingState">
             <div class="cut">
               <vue-cropper ref="cropper" :img="profilePictureData.option.img" :output-size="profilePictureData.option.size"
-                           :output-type="profilePictureData.option.outputType"
-                           :info="true" :full="profilePictureData.option.full" :can-move="profilePictureData.option.canMove"
+                           :output-type="profilePictureData.option.outputType" :can-move="profilePictureData.option.canMove"
                            :can-move-box="profilePictureData.option.canMoveBox"
                            :fixed-box="profilePictureData.option.fixedBox" :original="profilePictureData.option.original"
                            :auto-crop="profilePictureData.option.autoCrop"
                            :auto-crop-width="profilePictureData.option.autoCropWidth"
                            :auto-crop-height="profilePictureData.option.autoCropHeight"
                            :center-box="profilePictureData.option.centerBox" @real-time="realTime"
-                           :high="profilePictureData.option.high" @img-load="imgLoad" >
+                           :high="profilePictureData.option.high" @img-load="imgLoad"
+                           :can-scale="profilePictureData.option.canScale" :info="profilePictureData.option.info"
+                           :fixed="profilePictureData.option.fixed" :full="profilePictureData.option.full">
               </vue-cropper>
             </div>
           </div>
@@ -310,10 +311,14 @@ export default {
       profilePictureData: {
         croppingState: false,
         option: {
+          canScale: false,
+          info: false,
+          centerBox: true,
+          fixed: false,
           img: '',
           size: 1,
-          full: false,
-          outputType: 'jpg',
+          full: true,
+          outputType: 'png',
           canMove: true,
           fixedBox: false,
           original: false,
@@ -321,7 +326,6 @@ export default {
           autoCrop: true,
           autoCropWidth: 150,
           autoCropHeight: 150,
-          centerBox: false,
           high: true
         },
         previews: {},
