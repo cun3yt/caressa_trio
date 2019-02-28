@@ -262,9 +262,15 @@
         </q-item>
     </div>
     <q-page-container>
-      <q-modal v-model="profilePictureData.updateProfilePictureModal " minimized>
-        <div style="padding: 10px">
-          <div class="q-display-1 q-mb-md">New Profile Picture</div>
+      <q-modal v-model="profilePictureData.updateProfilePictureModal" minimized content-css="padding: 8px" @hide="clearImage">
+          <div class="q-display-1 q-mb-md">
+            <span class="q-title">New Profile Picture</span>
+            <q-btn color="red" style="float: right" v-close-overlay icon="fas fa-times" @click="clearImage"/>
+          </div>
+        <div v-if="profilePictureData.isLoading">
+          <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
+        </div>
+        <div v-else>
           <div v-if="profilePictureData.croppingState">
             <div class="cut">
               <vue-cropper ref="cropper" :img="profilePictureData.option.img" :output-size="profilePictureData.option.size"
@@ -274,22 +280,30 @@
                            :auto-crop="profilePictureData.option.autoCrop"
                            :auto-crop-width="profilePictureData.option.autoCropWidth"
                            :auto-crop-height="profilePictureData.option.autoCropHeight"
-                           :center-box="profilePictureData.option.centerBox" @real-time="realTime"
-                           :high="profilePictureData.option.high" @img-load="imgLoad"
+                           :center-box="profilePictureData.option.centerBox" :high="profilePictureData.option.high"
                            :can-scale="profilePictureData.option.canScale" :info="profilePictureData.option.info"
                            :fixed="profilePictureData.option.fixed" :full="profilePictureData.option.full">
               </vue-cropper>
             </div>
+            <q-btn color="tertiary" v-if="!this.profilePictureData.signedUrl" label="Looks Good!" @click="getCroppedFile"/>
           </div>
-          <img v-if="profilePictureData.croppedImage" :src="profilePictureData.croppedImage">
-            <div>
-              <input id="file" class="inputfile" type="file" v-on:change="newFileFromInput" accept="image/*">
-              <label for="file"><strong>Choose a file</strong></label>
-              <q-btn label="Looks Good" @click="getCroppedFile"/>
-              <q-btn label="Change Picture" @click="uploadPicture"/>
+          <div v-if="!profilePictureData.croppingState">
+            <div class="profile-pic">
+              <img v-if="profilePictureData.file" :src="profilePictureData.option.img">
+              <img v-else :src="profilePictureData.option.img">
             </div>
-            <q-btn color="red" v-close-overlay label="Close" />
-        </div>
+            <span v-if="profilePictureData.option.img">
+                <q-btn v-if="this.profilePictureData.signedUrl"
+                       color="primary"
+                       stlye="border-radius: 5px;"
+                       label="Save Picture" @click="uploadPicture"/>
+              </span>
+            <span v-if="!profilePictureData.croppingState && !this.profilePictureData.signedUrl">
+              <input id="file" class="inputfile" type="file" v-on:change="newFileFromInput" accept="image/*">
+            <label for="file"><strong>Choose a file</strong></label>
+            </span>
+          </div>
+          </div>
       </q-modal>
     </q-page-container>
   </q-page>
@@ -314,7 +328,7 @@ export default {
           canScale: false,
           info: false,
           centerBox: true,
-          fixed: false,
+          fixed: true,
           img: '',
           size: 1,
           full: true,
@@ -328,18 +342,12 @@ export default {
           autoCropHeight: 150,
           high: true
         },
-        previews: {},
-        cropperLabels: {
-          submit: 'Looks Good!',
-          cancel: 'Cancel'
-        },
-        croppedImage: null,
         updateProfilePictureModal: false,
-        generatadPreSignedUrl: '',
         fileName: '',
         fileType: '',
         file: null,
-        signedUrl: null
+        signedUrl: null,
+        isLoading: false
       },
       user: 'Maggy',
       genres: [
@@ -405,23 +413,14 @@ export default {
       let file
       this.$refs.cropper.getCropBlob((data) => {
         file = new File([data], vm.profilePictureData.fileName, {type: data.type})
+        this.profilePictureData.option.img = window.URL.createObjectURL(file)
         vm.getSignedUrl(file)
         vm.profilePictureData.file = file
         vm.profilePictureData.croppingState = false
       })
     },
-    realTime (data) {
-      this.profilePictureData.previews = data
-      console.log(data)
-    },
-    imgLoad (msg) {
-      console.log(msg)
-    },
-    cropSubmit () {
-      console.log(this.profilePictureData)
-      this.profilePictureData.croppedImage = this.profilePictureData.file
-    },
     uploadPicture () {
+      this.profilePictureData.isLoading = true
       this.$http({
         method: 'PUT',
         url: this.profilePictureData.signedUrl,
@@ -430,14 +429,26 @@ export default {
           'Content-Type': this.profilePictureData.file.type
         }
       }).then(response => {
+        this.profilePictureData.isLoading = false
+        this.toggleNewProfilePictureModal()
+        this.showNotif({message: 'Success', icon: 'far fa-check-circle', color: 'tertiary'})
         console.log(response)
         this.newProfilePicture()
       }).catch(err => {
+        this.profilePictureData.isLoading = false
         console.log(err)
+        this.showNotif({message: 'Failed', icon: 'fas fa-times', color: 'negative'})
       })
     },
     clearImage () {
-      // todo implement
+      this.profilePictureData.croppingState = false
+      this.profilePictureData.option.img = ''
+      this.profilePictureData.isLoading = false
+      this.profilePictureData.updateProfilePictureModal = false
+      this.profilePictureData.fileName = ''
+      this.profilePictureData.fileType = ''
+      this.profilePictureData.file = null
+      this.profilePictureData.signedUrl = null
     },
     newFileFromInput (inputFile) {
       const files = inputFile.target.files || inputFile.dataTransfer.files
@@ -480,16 +491,32 @@ export default {
       this.logOut()
     },
     getPresignedUrl (fileName, contentType) {
+      this.profilePictureData.isLoading = true
       return this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
         'key': fileName,
         'content-type': contentType,
         'client-method': 'put_object',
         'request-type': 'PUT'
+      }).then(success => {
+        this.profilePictureData.isLoading = false
+        return success
+      }, error => {
+        this.showNotif({message: 'Something is Wrong', icon: 'fas fa-times', color: 'negative'})
+        this.clearImage()
+        return error
       })
     },
     newProfilePicture () {
       this.$auth.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
         'file_name': this.profilePictureData.fileName
+      })
+    },
+    showNotif (data) {
+      this.$q.notify({
+        color: data.color,
+        message: data.message,
+        position: 'top-right',
+        icon: data.icon
       })
     }
   }
@@ -503,6 +530,12 @@ export default {
 }
 
 .cut {
+  width: 225px;
+  height: 225px;
+  margin: 5px auto;
+}
+
+.profile-pic {
   width: 225px;
   height: 225px;
   margin: 5px auto;
@@ -529,7 +562,7 @@ export default {
   font-weight: 600;
   margin-bottom: 1rem;
   outline: none;
-  padding: 1rem 50px;
+  padding: 1rem 30px;
   position: relative;
   transition: all 0.3s;
   vertical-align: middle;

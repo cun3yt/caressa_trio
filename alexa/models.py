@@ -143,31 +143,24 @@ class User(AbstractCaressaUser, TimeStampedModel):
 
     objects = CaressaUserManager()
 
-    @staticmethod
-    def get_profile_picture_url(user_id, profile_picture, dimensions):
-        return '{region}/{bucket}/images/{user_id}/{profile_picture}_{dimensions}.png'.format(region=S3_REGION,
-                                                                                              bucket=S3_PRODUCTION_BUCKET,
-                                                                                              profile_picture=profile_picture,
-                                                                                              user_id=user_id,
-                                                                                              dimensions=dimensions)
+    def get_profile_picture_url(self, dimensions):
+        upper_dir = self.id if self.profile_pic else 'no_user'
+        profile_picture = self.profile_pic if self.profile_pic else 'default_profile_pic'
+        return '{region}/{bucket}/images/user/{upper_dir}/{profile_picture}_{dimensions}.png'.format(region=S3_REGION,
+                                                                                                     bucket=S3_PRODUCTION_BUCKET,
+                                                                                                     profile_picture=profile_picture,
+                                                                                                     upper_dir=upper_dir,
+                                                                                                     dimensions=dimensions)
 
     def get_profile_pic(self):
-        if self.profile_pic:
-            return self.get_profile_picture_url(self.id, self.profile_pic, 'w_250')
+        return self.get_profile_picture_url('w_250')
 
-        return self.get_profile_picture_url('no_user', 'default_profile_pic')
-
-    def get_thumbnail_profile_pic(self):
-        if self.profile_pic:
-            return self.get_profile_picture_url(self.id, self.profile_pic, 'w_25')
-
-        return self.get_profile_picture_url('no_user', 'default_profile_pic', 'w_25')
-
-    def get_raw_profile_pic(self):
-        if self.profile_pic:
-            return self.get_profile_picture_url(self.id, self.profile_pic, 'raw')
-
-        return self.get_profile_picture_url('no_user', 'default_profile_pic', 'raw')
+    def get_profile_pictures(self):
+        return {
+            'w_250': self.get_profile_picture_url('w_250'),
+            'w_25': self.get_profile_picture_url('w_25'),
+            'raw': self.get_profile_picture_url('raw'),
+        }
 
     def is_senior(self):
         return self.user_type == self.CARETAKER
