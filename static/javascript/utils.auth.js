@@ -27,15 +27,22 @@ let module = {
         this._apiBase = apiBase
     },
 
-    http (callConfiguration = {}) {
-        let configuration = {
+    http (config = {}) {
+        /**
+         * Use this method to make calls requiring bearer token-based authorization header.
+         * It is a wrapper for Vue.http with Authorization.
+         *
+         * @type {{headers: {Authorization: string}}}
+         *
+         */
+        let configForResource = {
             headers: {
                 Authorization: `Bearer ${this._accessToken}`
             }
         }
 
-        configuration = Object.assign(configuration, callConfiguration);
-        return Vue.http(configuration)
+        configForResource = Object.assign(configForResource, config);
+        return Vue.http(configForResource)
     },
 
     requireLogin (successFn = (data) => {}, loginPath = 'accounts/login/') {
@@ -51,7 +58,7 @@ let module = {
             return
         }
 
-        let promise = this.getUserData(this._accessToken)
+        let promise = this.getUserData()
 
         promise.then(
             (response) => { successFn(response.data) },
@@ -65,7 +72,7 @@ let module = {
                     Vue.cookies.set('access_token', this._accessToken)
                     Vue.cookies.set('refresh_token', this._refreshToken)
 
-                    this.getUserData(this._accessToken).then(
+                    this.getUserData().then(
                         (response) => { successFn(response.data) },
                         (error) => { console.error('Unexpected error', error) }
                     )
@@ -77,11 +84,10 @@ let module = {
             })
     },
 
-    getUserData (accessToken) {
-        return Vue.http.get(this._apiUrl('api/users/me/'), {
-            headers: {
-                Authorization: `Bearer ${accessToken}`
-            }
+    getUserData () {
+        return this.http({
+            method: 'GET',
+            url: this._apiUrl('api/users/me/')
         })
     },
 

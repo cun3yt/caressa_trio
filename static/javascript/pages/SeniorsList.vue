@@ -132,7 +132,7 @@
             api_url(path) {
                 return `${this.apiBase}/${path}`
             },
-            list: function () {
+            list () {
                 let that = this
 
                 this.auth.http({
@@ -189,7 +189,7 @@
                     console.error(error)
                 })
             },
-            deleteEntry: function (pk) {
+            deleteEntry (pk) {
                 let deletedEntryList = this.gridData.filter(function (data) {
                     return data.pk == pk
                 })
@@ -215,7 +215,7 @@
                     that.gridData = deletedEntryList.concat(that.gridData)
                 })
             },
-            editEntry: function (senior) {
+            editEntry (senior) {
                 this.modalOperationData.editModal.show = true
                 this.modalOperationData.editModal.pk = senior.pk
                 this.modalOperationData.editModal.isContactEditable = senior.is_contact_editable
@@ -235,10 +235,10 @@
                 this.editForm['contact.email'] = contact.email
                 this.editForm['contact.phone_number'] = contact.phone_number
             },
-            logout: function () {
+            logout () {
                 this.auth.logout()
             },
-            onSubmit: function () {
+            onSubmit () {
                 this.auth.http({
                     method: 'POST',
                     url: this.api_url('api/seniors/'),
@@ -252,7 +252,7 @@
                     this.errors = error.data.errors
                 })
             },
-            editSubmit: function (pk) {
+            editSubmit (pk) {
                 this.editErrors = []
                 let that = this
 
@@ -260,12 +260,12 @@
                     method: 'PUT',
                     url: this.api_url(`api/seniors/${this.modalOperationData.editModal.pk}/`),
                     body: this.editForm
-                }).then(function(response){
-                    that.modalOperationData.editModal.show = false
-                    that.list()
-                }, function(error) {
-                    that.editErrors = error.data.errors
-                })
+                }).then(
+                    (response) => {
+                        that.modalOperationData.editModal.show = false
+                        that.list()
+                    },
+                    (error) => { that.editErrors = error.data.errors })
             }
         },
     }

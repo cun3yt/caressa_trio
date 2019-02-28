@@ -24,6 +24,12 @@ class SeniorLivingFacility(TimeStampedModel):
                                 null=False,
                                 blank=False,
                                 default=DEFAULT_TIMEZONE, )
+    check_in_morning_start = models.TimeField(null=True,
+                                              default=None, )
+    check_in_deadline = models.TimeField(null=True,
+                                         default=None, )
+    check_in_reminder = models.TimeField(null=True,
+                                         default=None, )
 
     @property
     def admins(self):

@@ -29,7 +29,9 @@ from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from voice_service.views import speech_to_text
 from caressa.admin import get_admin
-from senior_living_facility.urls import urls as senior_living_facility_urls
+from senior_living_facility.urls import urls as senior_living_facility_urls, \
+    api_urls as senior_living_facility_api_urls
+
 
 admin = get_admin()
 
@@ -62,6 +64,5 @@ urlpatterns = [
     path('accounts/', include(senior_living_facility_urls)),
 ]
 
-urlpatterns += individual_paths_alexa()
-
+urlpatterns += individual_paths_alexa() + senior_living_facility_api_urls
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

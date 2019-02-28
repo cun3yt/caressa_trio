@@ -11,7 +11,7 @@ from rest_framework.serializers import ValidationError as RestFrameworkValidatio
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'senior_living_facility', )
 
 
 class CircleSerializer(serializers.ModelSerializer):
