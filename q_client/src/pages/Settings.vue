@@ -408,12 +408,72 @@ export default {
     }
   },
   methods: {
+    cordovaGetFileUrl () {
+      let vm = this
+      window.resolveLocalFileSystemURL(cordova.file.documentsDirectory, function (dir) {
+        dir.getFile(vm.profilePictureData.fileName, {create: true}, function (res) {
+          console.log(res)
+          return res.url
+        }, function (err) {
+          console.log(err)
+        })
+      })
+    },
+    cordovaReadFile (fileEntry) {
+      fileEntry.file(function (file) {
+        let reader = new FileReader()
+        reader.onloadend = function () {
+          console.log('Successful file read:' + this.result)
+        }
+        reader.readAsText(file)
+      })
+    },
+    cordovaSaveFile (fileData, fileName) {
+      let vm = this
+      window.resolveLocalFileSystemURL(cordova.file.documentsDirectory, function (dir) {
+        dir.getFile(fileName, {create: true, exclusive: false}, function (fileEntry) {
+          vm.cordovaWriteFile(fileEntry, fileData)
+        })
+      }, function (err) { console.log(err) })
+    },
+    cordovaWriteFile (fileEntry, dataObj, isAppend) {
+      let vm = this
+      fileEntry.createWriter(function (fileWriter) {
+        fileWriter.onwriteend = function () {
+          console.log('Successful file write...')
+          if (dataObj.type === 'image/png') {
+            vm.cordovaReadBinaryFile(fileEntry)
+          } else {
+            vm.cordovaReadFile(fileEntry)
+          }
+        }
+        fileWriter.onerror = function (e) {
+          console.log('Failed file write: ' + e.toString())
+        }
+
+        fileWriter.write(dataObj)
+      })
+    },
+    cordovaReadBinaryFile (fileEntry) {
+      let vm = this
+      fileEntry.file(function (file) {
+        let reader = new FileReader()
+
+        reader.onloadend = function () {
+          let blob = new Blob([new Uint8Array(this.result)], { type: 'image/png' })
+          vm.profilePictureData.option.img = window.URL.createObjectURL(blob)
+          vm.profilePictureData.file = blob
+        }
+
+        reader.readAsArrayBuffer(file)
+      })
+    },
     getCroppedFile () {
       let vm = this
       let file
       this.$refs.cropper.getCropBlob((data) => {
-        file = new File([data], vm.profilePictureData.fileName, {type: data.type})
-        this.profilePictureData.option.img = window.URL.createObjectURL(file)
+        file = new File([data], vm.profilePictureData.fileName, data.type)
+        this.cordovaSaveFile(data, this.profilePictureData.fileName)
         vm.getSignedUrl(file)
         vm.profilePictureData.file = file
         vm.profilePictureData.croppingState = false
@@ -452,7 +512,6 @@ export default {
     },
     newFileFromInput (inputFile) {
       const files = inputFile.target.files || inputFile.dataTransfer.files
-      console.log(files[0])
       this.profilePictureData.option.img = window.URL.createObjectURL(files[0])
       this.profilePictureData.fileName = this.randomFileName()
       this.profilePictureData.croppingState = true
@@ -501,7 +560,7 @@ export default {
         this.profilePictureData.isLoading = false
         return success
       }, error => {
-        this.showNotif({message: 'Something is Wrong', icon: 'fas fa-times', color: 'negative'})
+        this.showNotif({message: 'Something is Wrong', icon: 'fas fa-times', color: 'negative', timeout: '7000'})
         this.clearImage()
         return error
       })
