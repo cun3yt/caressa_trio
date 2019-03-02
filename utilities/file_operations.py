@@ -20,11 +20,17 @@ def image_resizer(file_name, hash_version, file_format, size):
 
 
 def _image_thumbnail_resizer(file_name, hash_version, file_format):
-    return image_resizer(file_name, hash_version, file_format, 25)
+    return {
+        'file_name': image_resizer(file_name, hash_version, file_format, 25),
+        'file_format': 'image/jpg'
+    }
 
 
 def _image_profile_pic_resizer(file_name, hash_version, file_format):
-    return image_resizer(file_name, hash_version, file_format, 250)
+    return {
+        'file_name': image_resizer(file_name, hash_version, file_format, 250),
+        'file_format': 'image/jpg'
+    }
 
 
 def _image_raw_reformat_rename(file_name, hash_version):
@@ -33,7 +39,10 @@ def _image_raw_reformat_rename(file_name, hash_version):
     image_name = '{hash_version}_raw.{file_format}'.format(hash_version=hash_version,
                                                            file_format=file_format)
     img.save('/tmp/{image_name}'.format(image_name=image_name))
-    return image_name
+    return {
+        'file_name': image_name,
+        'file_format': 'image/png'
+    }
 
 
 def profile_picture_resizing_wrapper(file_name, hash_version, file_format):
@@ -52,16 +61,22 @@ def download_to_tmp_from_s3(file_name, bucket):
 
 def upload_to_s3_from_tmp(bucket, files: list, user_id):
     s3_client = boto3.client('s3')
-    for file_name in files:
-        file_path = '/tmp/{file_name}'.format(file_name=file_name)
+    for file in files:
+        file_path = '/tmp/{file_name}'.format(file_name=file['file_name'])
         s3_client.upload_file(file_path,
                               bucket,
                               'images/user/{user_id}/{file_name}'.format(user_id=user_id,
-                                                                         file_name=file_name),
-                              ExtraArgs={'ACL': 'public-read', 'ContentType': 'image/png'})
+                                                                         file_name=file['file_name']),
+                              ExtraArgs={'ACL': 'public-read', 'ContentType': file['file_format']})
 
 
 def generate_versioned_picture_name(current_picture_name=''):
+    """
+    This is for versioned pictures (e.g. profile_picture). If a picture has or need a pointer from database this
+    function will provide as version zero (uuid_v0) or increment older version number (uuid_v{version_number+1})
+    :param current_picture_name: {uuid}_v{version_number}
+    :return: {uuid}_v{version_number+1}
+    """
     uuid = str(uuid4())[:8]
     if not current_picture_name:
         return '{hash}_v0'.format(hash=uuid)

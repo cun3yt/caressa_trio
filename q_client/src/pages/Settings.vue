@@ -289,8 +289,8 @@
           </div>
           <div v-if="!profilePictureData.croppingState">
             <div class="profile-pic">
-              <img v-if="profilePictureData.file" :src="profilePictureData.option.img">
-              <img v-else :src="profilePictureData.option.img">
+              <img class="image-container" v-if="profilePictureData.file" :src="profilePictureData.option.img">
+              <img class="image-container" v-else :src="profilePictureData.userProfilePic">
             </div>
             <span v-if="profilePictureData.option.img">
                 <q-btn v-if="this.profilePictureData.signedUrl"
@@ -323,6 +323,7 @@ export default {
   data () {
     return {
       profilePictureData: {
+        userProfilePic: this.$root.$options.user.profilePic,
         croppingState: false,
         option: {
           canScale: false,
@@ -408,17 +409,6 @@ export default {
     }
   },
   methods: {
-    cordovaGetFileUrl () {
-      let vm = this
-      window.resolveLocalFileSystemURL(cordova.file.documentsDirectory, function (dir) {
-        dir.getFile(vm.profilePictureData.fileName, {create: true}, function (res) {
-          console.log(res)
-          return res.url
-        }, function (err) {
-          console.log(err)
-        })
-      })
-    },
     cordovaReadFile (fileEntry) {
       fileEntry.file(function (file) {
         let reader = new FileReader()
@@ -474,6 +464,8 @@ export default {
       this.$refs.cropper.getCropBlob((data) => {
         file = new File([data], vm.profilePictureData.fileName, data.type)
         this.cordovaSaveFile(data, this.profilePictureData.fileName)
+        // this.profilePictureData.option.img = window.URL.createObjectURL(file)
+        // todo line above add junction point that decides environment and executes e.g. browser/ios/android.
         vm.getSignedUrl(file)
         vm.profilePictureData.file = file
         vm.profilePictureData.croppingState = false
@@ -489,7 +481,6 @@ export default {
           'Content-Type': this.profilePictureData.file.type
         }
       }).then(response => {
-        this.profilePictureData.isLoading = false
         this.toggleNewProfilePictureModal()
         this.showNotif({message: 'Success', icon: 'far fa-check-circle', color: 'tertiary'})
         console.log(response)
@@ -560,7 +551,7 @@ export default {
         this.profilePictureData.isLoading = false
         return success
       }, error => {
-        this.showNotif({message: 'Something is Wrong', icon: 'fas fa-times', color: 'negative', timeout: '7000'})
+        this.showNotif({message: 'Something is Wrong', icon: 'fas fa-times', color: 'negative'})
         this.clearImage()
         return error
       })
@@ -568,6 +559,9 @@ export default {
     newProfilePicture () {
       this.$auth.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
         'file_name': this.profilePictureData.fileName
+      }).then(res => {
+        console.log(res)
+        this.profilePictureData.isLoading = false
       })
     },
     showNotif (data) {
@@ -607,6 +601,10 @@ export default {
   overflow: hidden;
   position: absolute;
   z-index: -1;
+}
+
+.image-container {
+  max-width: 100%
 }
 
 .inputfile + label {
