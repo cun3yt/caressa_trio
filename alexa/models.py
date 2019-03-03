@@ -237,6 +237,9 @@ class Circle(TimeStampedModel):
     def is_member(self, member: User):
         return CircleMembership.is_member(self, member)
 
+    def is_admin(self, member: User):
+        return self.is_member(member) and member in self.admins
+
     @property
     def admins(self):
         return self.members.filter(circle_memberships__is_admin=True).all()
@@ -390,6 +393,31 @@ class FamilyOutreach(TimeStampedModel):
         return '{base_url}{url}?invitation_code={code}'.format(base_url=WEB_BASE_URL,
                                                                url=reverse('family-prospect-invitation-code'),
                                                                code=self.tracking_code)
+
+
+class UserSettings(TimeStampedModel):
+    class Meta:
+        db_table = 'user_settings'
+
+    # For a new user settings type, add the default value to be back filled for all users.
+    # If there is new field in data is needed, add entry to DEFAULTS dictionary and getter/setter methods
+    DEFAULTS = {
+        'genres': []
+    }
+
+    user = models.ForeignKey(to=User,
+                             null=False,
+                             on_delete=models.DO_NOTHING,
+                             related_name='settings', )
+    data = JSONField(default=DEFAULTS)  # payload info: e.g. which genres selected.
+
+    @property
+    def genres(self):
+        return self.data.get('genres', self.DEFAULTS['genres'])
+
+    @genres.setter
+    def genres(self, genres):
+        self.data['genres'] = genres
 
 
 class Joke(TimeStampedModel, FetchRandomMixin):

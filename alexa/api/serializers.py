@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from alexa.models import Joke, News, User, FamilyProspect, Circle
+from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings
 from actions.models import UserAction
+from streaming.models import Tag
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
 from random import randint
@@ -12,6 +13,40 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', )
+
+
+class UserSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSettings
+        fields = ('pk', 'user_id', 'settings', )
+
+    settings = serializers.SerializerMethodField()
+
+    def get_settings(self, user_settings: UserSettings):
+        available_settings_genres = Tag.objects.all().filter(is_setting_available=True)
+        selected_genre_ids = user_settings.genres
+
+        selected_genres = [{'name': setting.name, 'id': setting.id, 'is_selected': True}
+                           if setting.id in selected_genre_ids
+                           else {'name': setting.name, 'id': setting.id, 'is_selected': False}
+                           for setting in available_settings_genres]
+        return {'genres': selected_genres}
+
+    def update(self, instance: UserSettings, validated_data):
+        request = self.context['request']
+        genres = request.data.get('settings', {}).get('genres')
+
+        genres_all = [genre['id'] for genre in genres]
+
+        assert len(genres_all) == Tag.objects.filter(pk__in=genres_all, is_setting_available=True).all().count(), (
+            "Some of the settings that are intended to be saved are not available!"
+        )
+
+        selected_genres = [genre['id'] for genre in genres if genre['is_selected']]
+
+        instance.genres = selected_genres
+        instance.save()
+        return instance
 
 
 class CircleSerializer(serializers.ModelSerializer):

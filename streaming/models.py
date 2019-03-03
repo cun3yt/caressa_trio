@@ -23,6 +23,8 @@ class Tag(TimeStampedModel):
 
     name = models.TextField(null=False,
                             blank=False, )
+    is_setting_available = models.BooleanField(null=False,
+                                               blank=False)
 
     @staticmethod
     def _tag_string_to_list(tag_string: str) -> list:
