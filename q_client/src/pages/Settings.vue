@@ -19,30 +19,6 @@
             />
           </q-item-side>
         </q-item>
-        <q-item>
-          <q-item-side>
-            <q-item-tile icon="fas fa-question-circle" color="primary" />
-          </q-item-side>
-          <q-item-main>
-            <q-item-tile label>Help</q-item-tile>
-            <q-item-tile sublabel>Ask us anything</q-item-tile>
-          </q-item-main>
-          <q-item-side>
-            <q-btn
-              color="primary"
-              size="sm"
-              icon="fas fa-phone"
-            />
-          </q-item-side>
-        </q-item>
-        <q-collapsible highlight>
-          <template slot="header">
-            <q-item-side icon="fas fa-exclamation-circle" color="primary" small>
-            </q-item-side>
-            <q-item-main label="Submit Feedback" />
-          </template>
-            <textarea placeholder="What went wrong?" class="full-width no-border"></textarea>
-        </q-collapsible>
       </q-list><div class="q-pa-sm"></div>
       <q-list>
         <q-list-header>
@@ -57,7 +33,7 @@
                 <q-checkbox v-model="item.is_selected" />
               </q-item-side>
               <q-item-main>
-                <q-item-tile title>{{item.name}}</q-item-tile>
+                <q-item-tile title>{{item.label}}</q-item-tile>
               </q-item-main>
             </q-item>
             <q-item>
@@ -330,10 +306,12 @@ export default {
   },
   mounted () {
     let seniorId = 1 // todo fix hard code
+    let vm = this
     this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${seniorId}/settings/`)
       .then(res => {
         console.log(res.body)
-        this.genres = res.body
+        vm.genres = res.body
+        vm.genres.settings.genres.sort((item1, item2) => { return item1.label < item2.label ? -1 : 1 })
       })
   },
   computed: {

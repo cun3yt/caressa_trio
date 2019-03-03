@@ -23,8 +23,18 @@ class Tag(TimeStampedModel):
 
     name = models.TextField(null=False,
                             blank=False, )
+    label = models.TextField(null=False,
+                             blank=False,
+                             help_text=(
+                                 "Label is the text that is readable by the users. Tags are exposed as settings "
+                                 "for end user if `is_setting_available` set for the tag. An example for label is "
+                                 "'Classical Music' for classical songs, where name may be 'song-classical'."
+                             ), )
     is_setting_available = models.BooleanField(null=False,
-                                               blank=False)
+                                               blank=False,
+                                               help_text=(
+                                                   "This makes the tag available as settings on the family mobile app."
+                                               ), )
 
     @staticmethod
     def _tag_string_to_list(tag_string: str) -> list:

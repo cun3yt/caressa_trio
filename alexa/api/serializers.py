@@ -23,14 +23,17 @@ class UserSettingsSerializer(serializers.ModelSerializer):
     settings = serializers.SerializerMethodField()
 
     def get_settings(self, user_settings: UserSettings):
+        def _setting_to_item(setting, is_selected):
+            return {'label': setting.label, 'id': setting.id, 'is_selected': is_selected}
+
         available_settings_genres = Tag.objects.all().filter(is_setting_available=True)
         selected_genre_ids = user_settings.genres
 
-        selected_genres = [{'name': setting.name, 'id': setting.id, 'is_selected': True}
-                           if setting.id in selected_genre_ids
-                           else {'name': setting.name, 'id': setting.id, 'is_selected': False}
-                           for setting in available_settings_genres]
-        return {'genres': selected_genres}
+        genres_with_user_preference = [_setting_to_item(setting=setting, is_selected=True)
+                                       if setting.id in selected_genre_ids
+                                       else _setting_to_item(setting=setting, is_selected=False)
+                                       for setting in available_settings_genres]
+        return {'genres': genres_with_user_preference}
 
     def update(self, instance: UserSettings, validated_data):
         request = self.context['request']
