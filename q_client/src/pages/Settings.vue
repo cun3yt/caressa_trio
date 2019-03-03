@@ -48,20 +48,21 @@
         <q-list-header>
          <q-item-main label="Personalize"></q-item-main>
         </q-list-header>
-        <q-collapsible icon="fas fa-music" label="Music Genres">
+        <q-collapsible icon="fas fa-music" label="Music Genres"
+                       :sublabel="musicSelectionStatus ? '' : `Please help us personalize music for ${user}`">
           <q-list-header >What {{user}} would love to listen?</q-list-header>
-          <q-list>
-            <q-item v-for="(item, index) in genres" :key="index" tag="label">
+          <q-list v-if="genres.settings">
+            <q-item v-for="(item, index) in genres.settings.genres" :key="index" tag="label">
               <q-item-side>
-                <q-checkbox v-model="genres[index].checked" />
+                <q-checkbox v-model="item.is_selected" />
               </q-item-side>
               <q-item-main>
-                <q-item-tile title>{{genres[index].genre}}</q-item-tile>
+                <q-item-tile title>{{item.name}}</q-item-tile>
               </q-item-main>
             </q-item>
             <q-item>
                 <q-item-main>
-                <q-btn @click="sendInterests('genres')" label="Apply" color="primary" size="0.9rem" icon="fas fa-check"/>
+                <q-btn @click="sendInterests()" label="Apply" color="primary" size="0.9rem" icon="fas fa-check"/>
               </q-item-main>
               </q-item>
       </q-list>
@@ -275,28 +276,7 @@ export default {
   data () {
     return {
       user: 'Maggy',
-      genres: [
-        {
-          'genre': 'Classical',
-          'checked': false
-        },
-        {
-          'genre': 'Jazz',
-          'checked': false
-        },
-        {
-          'genre': 'Blues',
-          'checked': false
-        },
-        {
-          'genre': 'Pop',
-          'checked': false
-        },
-        {
-          'genre': 'R&B',
-          'checked': false
-        }
-      ],
+      genres: [],
       checked_one: true,
       checked_two: false,
       checked_three: false,
@@ -337,21 +317,31 @@ export default {
       const baseUrl = 'https://www.caressa.ai/'
       window.open(baseUrl + link)
     },
-    sendInterests (type) {
-      let checkedItems = []
-      for (let i = 0; i < this[`${type}`].length; i++) {
-        if (this[`${type}`][i].checked) {
-          checkedItems.push(this[`${type}`][i]['genre'])
-        }
-      }
-      this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
-        'userId': 2,
-        'type': type,
-        'key': checkedItems
-      })
+    sendInterests () {
+      let seniorId = 1
+      this.$auth.patch(`${this.$root.$options.hosts.rest}/api/users/${seniorId}/settings/`, this.genres)
+        .then(res => {
+          console.log(res.body)
+        })
     },
     signOut: function () {
       this.logOut()
+    }
+  },
+  mounted () {
+    let seniorId = 1 // todo fix hard code
+    this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${seniorId}/settings/`)
+      .then(res => {
+        console.log(res.body)
+        this.genres = res.body
+      })
+  },
+  computed: {
+    musicSelectionStatus () {
+      if (this.genres.length === 0) {
+        return false
+      }
+      return this.genres.settings.genres.filter((genre) => { return genre.is_selected }).length > 0
     }
   }
 }
