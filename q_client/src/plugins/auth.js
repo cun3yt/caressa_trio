@@ -117,7 +117,7 @@ authModule = {
     })
     return promise
   },
-  patch: function (url, data) {
+  patch: function (url, data) { // todo unify similar calls
     let promise = Vue.http({
       method: 'PATCH',
       url: url,
