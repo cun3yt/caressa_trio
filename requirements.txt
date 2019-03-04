@@ -36,3 +36,4 @@ google-cloud-texttospeech==0.2.0
 google-cloud-speech==0.36.0
 twilio==6.7.0
 coverage==4.5.2
+pillow==5.4.1

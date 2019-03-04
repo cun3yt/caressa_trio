@@ -303,10 +303,16 @@ export default {
         })
       this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/`)
         .then(response => {
-          Cookies.set('user_id', response.data['pk'], {expires: 10})
-          Cookies.set('email', response.data['email'], {expires: 10})
-          vm.$root.$options.user.id = response.data['pk']
-          vm.$root.$options.user.email = response.data['email']
+          const pk = response.data['pk']
+          const email = response.data['email']
+          const profilePicUrl = response.data['profile_pic_url']
+          Cookies.set('user_id', pk, {expires: 10})
+          Cookies.set('email', email, {expires: 10})
+          Cookies.set('profile_pic', profilePicUrl, {expires: 10})
+          vm.$root.$options.user.id = pk
+          vm.$root.$options.user.email = email
+          vm.$root.$options.user.profilePic = profilePicUrl
+          // vm.$root.$options.user.circleCenter = response.data['circle_center']
           this.loginModal = false
         })
     },
