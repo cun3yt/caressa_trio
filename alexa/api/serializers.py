@@ -1,6 +1,7 @@
 from rest_framework import serializers
-from alexa.models import Joke, News, User, FamilyProspect, Circle
+from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings
 from actions.models import UserAction
+from streaming.models import Tag
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
 from random import randint
@@ -11,11 +12,61 @@ from rest_framework.serializers import ValidationError as RestFrameworkValidatio
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'profile_pic_url')
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'profile_pic_url', 'senior', )
 
     profile_pic_url = serializers.SerializerMethodField()
+    senior = serializers.SerializerMethodField()
+
     def get_profile_pic_url(self, user: User):
         return user.get_profile_pic()
+
+    def get_senior(self, user: User):
+        if not user.user_type == User.FAMILY:
+            return {}
+        senior = user.senior_circle.person_of_interest
+        return {
+            'id': senior.id,
+            'first_name': senior.first_name,
+            'last_name': senior.last_name,
+            'profile_pic_url': senior.profile_pic,
+        }
+
+
+class UserSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserSettings
+        fields = ('pk', 'settings', )
+
+    settings = serializers.SerializerMethodField()
+
+    def get_settings(self, user_settings: UserSettings):
+        def _setting_to_item(setting, is_selected):
+            return {'label': setting.label, 'id': setting.id, 'is_selected': is_selected}
+
+        available_settings_genres = Tag.objects.all().filter(is_setting_available=True)
+        selected_genre_ids = user_settings.genres
+
+        genres_with_user_preference = [_setting_to_item(setting=setting, is_selected=True)
+                                       if setting.id in selected_genre_ids
+                                       else _setting_to_item(setting=setting, is_selected=False)
+                                       for setting in available_settings_genres]
+        return {'genres': genres_with_user_preference}
+
+    def update(self, instance: UserSettings, validated_data):
+        request = self.context['request']
+        genres = request.data.get('settings', {}).get('genres')
+
+        genres_all = [genre['id'] for genre in genres]
+
+        assert len(genres_all) == Tag.objects.filter(pk__in=genres_all, is_setting_available=True).all().count(), (
+            "Some of the settings that are intended to be saved are not available!"
+        )
+
+        selected_genres = [genre['id'] for genre in genres if genre['is_selected']]
+
+        instance.genres = selected_genres
+        instance.save()
+        return instance
 
 
 class CircleSerializer(serializers.ModelSerializer):

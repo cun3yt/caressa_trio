@@ -20,49 +20,26 @@
             />
           </q-item-side>
         </q-item>
-        <q-item>
-          <q-item-side>
-            <q-item-tile icon="fas fa-question-circle" color="primary" />
-          </q-item-side>
-          <q-item-main>
-            <q-item-tile label>Help</q-item-tile>
-            <q-item-tile sublabel>Ask us anything</q-item-tile>
-          </q-item-main>
-          <q-item-side>
-            <q-btn
-              color="primary"
-              size="sm"
-              icon="fas fa-phone"
-            />
-          </q-item-side>
-        </q-item>
-        <q-collapsible highlight>
-          <template slot="header">
-            <q-item-side icon="fas fa-exclamation-circle" color="primary" small>
-            </q-item-side>
-            <q-item-main label="Submit Feedback" />
-          </template>
-            <textarea placeholder="What went wrong?" class="full-width no-border"></textarea>
-        </q-collapsible>
       </q-list><div class="q-pa-sm"></div>
       <q-list>
         <q-list-header>
          <q-item-main label="Personalize"></q-item-main>
         </q-list-header>
-        <q-collapsible icon="fas fa-music" label="Music Genres">
-          <q-list-header >What {{user}} would love to listen?</q-list-header>
-          <q-list>
-            <q-item v-for="(item, index) in genres" :key="index" tag="label">
+        <q-collapsible icon="fas fa-music" label="Music Genres"
+                       :sublabel="musicSelectionStatus ? '' : `Please help us personalize music for ${senior.firstName}`">
+          <q-list-header >What {{senior.firstName}} would love to listen?</q-list-header>
+          <q-list v-if="genres.settings">
+            <q-item v-for="(item, index) in genres.settings.genres" :key="index" tag="label">
               <q-item-side>
-                <q-checkbox v-model="genres[index].checked" />
+                <q-checkbox v-model="item.is_selected" />
               </q-item-side>
               <q-item-main>
-                <q-item-tile title>{{genres[index].genre}}</q-item-tile>
+                <q-item-tile title>{{item.label}}</q-item-tile>
               </q-item-main>
             </q-item>
             <q-item>
                 <q-item-main>
-                <q-btn @click="sendInterests('genres')" label="Apply" color="primary" size="0.9rem" icon="fas fa-check"/>
+                <q-btn @click="sendInterests()" label="Apply" color="primary" size="0.9rem" icon="fas fa-check"/>
               </q-item-main>
               </q-item>
       </q-list>
@@ -311,6 +288,8 @@
 
 <script>
 import { VueCropper } from 'vue-cropper'
+import {bus} from '../plugins/auth.js'
+
 export default {
   name: 'settings',
   components: {VueCropper},
@@ -350,29 +329,8 @@ export default {
         signedUrl: null,
         isLoading: false
       },
-      user: 'Maggy',
-      genres: [
-        {
-          'genre': 'Classical',
-          'checked': false
-        },
-        {
-          'genre': 'Jazz',
-          'checked': false
-        },
-        {
-          'genre': 'Blues',
-          'checked': false
-        },
-        {
-          'genre': 'Pop',
-          'checked': false
-        },
-        {
-          'genre': 'R&B',
-          'checked': false
-        }
-      ],
+      senior: {},
+      genres: [],
       checked_one: true,
       checked_two: false,
       checked_three: false,
@@ -524,18 +482,11 @@ export default {
     toggleNewProfilePictureModal () {
       this.profilePictureData.updateProfilePictureModal = !this.profilePictureData.updateProfilePictureModal
     },
-    sendInterests (type) {
-      let checkedItems = []
-      for (let i = 0; i < this[`${type}`].length; i++) {
-        if (this[`${type}`][i].checked) {
-          checkedItems.push(this[`${type}`][i]['genre'])
-        }
-      }
-      this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
-        'userId': 2,
-        'type': type,
-        'key': checkedItems
-      })
+    sendInterests () {
+      this.$auth.patch(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`, this.genres)
+        .then(res => {
+          console.log(res.body)
+        })
     },
     signOut: function () {
       this.logOut()
@@ -570,6 +521,31 @@ export default {
         position: 'top-right',
         icon: data.icon
       })
+    },
+    setInitialData () {
+      this.senior = this.$root.$options.senior
+
+      if (!this.senior.id) { return }
+
+      let vm = this
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`)
+        .then(res => {
+          console.log(res.body)
+          vm.genres = res.body
+          vm.genres.settings.genres.sort((item1, item2) => { return item1.label < item2.label ? -1 : 1 })
+        })
+    }
+  },
+  mounted () {
+    this.setInitialData()
+    bus.$on('loginSuccessRedirect', this.setInitialData)
+  },
+  computed: {
+    musicSelectionStatus () {
+      if (this.genres.length === 0) {
+        return false
+      }
+      return this.genres.settings.genres.filter((genre) => { return genre.is_selected }).length > 0
     }
   }
 }

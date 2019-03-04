@@ -268,7 +268,7 @@ export default {
       formData1: [],
       audio: {},
       avatars: {
-        '1': this.$root.$options.user.circleCenter.profilePic,
+        '1': this.$root.$options.senior.profilePic,
         '2': this.$root.$options.user.profilePic
       },
       messageText: '',

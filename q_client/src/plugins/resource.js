@@ -13,8 +13,9 @@ export default ({ app, router, Vue }) => {
     id: Cookies.get('id'),
     email: Cookies.get('email'),
     profilePic: Cookies.get('profile_pic'),
-    circleCenter: {
-      profilePic: '/statics/grandma-avatar.png' // todo these items need to go to `hard-coding`
+    senior: {
+      userId: null,
+      profilePic: null
     }
   }
   app.pusherConfig = {

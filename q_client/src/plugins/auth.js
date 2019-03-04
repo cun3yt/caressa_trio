@@ -117,6 +117,27 @@ authModule = {
     })
     return promise
   },
+  patch: function (url, data) { // todo unify similar calls
+    let promise = Vue.http({
+      method: 'PATCH',
+      url: url,
+      emulateHTTP: true,
+      body: data,
+      headers: {'Authorization': `Bearer ${this.access_token}`}
+    })
+    promise.then(response => {
+      console.log(response, 'post success')
+    }, response => {
+      console.log(response, 'post error')
+      if (response.status === 401) {
+        let isRefreshSuccess = this.refreshToken()
+        if (isRefreshSuccess) {
+          return this.post(url, data)
+        }
+      }
+    })
+    return promise
+  },
   post: function (url, data) {
     let promise = Vue.http({
       method: 'POST',

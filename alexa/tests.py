@@ -78,8 +78,7 @@ class UserModelTestCase(TestCase):
     def test_senior_circle(self):
         self.assertIsInstance(self.user_one.senior_circle, Circle)
 
-        with self.assertRaises(KeyError):
-            _ = self.user_two.senior_circle
+        self.assertIsInstance(self.user_two.senior_circle, Circle)
 
         with self.assertRaises(KeyError):
             _ = self.user_three.senior_circle
