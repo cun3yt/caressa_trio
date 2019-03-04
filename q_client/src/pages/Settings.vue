@@ -26,8 +26,8 @@
          <q-item-main label="Personalize"></q-item-main>
         </q-list-header>
         <q-collapsible icon="fas fa-music" label="Music Genres"
-                       :sublabel="musicSelectionStatus ? '' : `Please help us personalize music for ${user}`">
-          <q-list-header >What {{user}} would love to listen?</q-list-header>
+                       :sublabel="musicSelectionStatus ? '' : `Please help us personalize music for ${senior.firstName}`">
+          <q-list-header >What {{senior.firstName}} would love to listen?</q-list-header>
           <q-list v-if="genres.settings">
             <q-item v-for="(item, index) in genres.settings.genres" :key="index" tag="label">
               <q-item-side>
@@ -288,6 +288,8 @@
 
 <script>
 import { VueCropper } from 'vue-cropper'
+import {bus} from '../plugins/auth.js'
+
 export default {
   name: 'settings',
   components: {VueCropper},
@@ -327,7 +329,7 @@ export default {
         signedUrl: null,
         isLoading: false
       },
-      user: 'Maggy',
+      senior: {},
       genres: [],
       checked_one: true,
       checked_two: false,
@@ -481,8 +483,7 @@ export default {
       this.profilePictureData.updateProfilePictureModal = !this.profilePictureData.updateProfilePictureModal
     },
     sendInterests () {
-      let seniorId = 1
-      this.$auth.patch(`${this.$root.$options.hosts.rest}/api/users/${seniorId}/settings/`, this.genres)
+      this.$auth.patch(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`, this.genres)
         .then(res => {
           console.log(res.body)
         })
@@ -520,17 +521,24 @@ export default {
         position: 'top-right',
         icon: data.icon
       })
+    },
+    setInitialData () {
+      this.senior = this.$root.$options.senior
+
+      if (!this.senior.id) { return }
+
+      let vm = this
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`)
+        .then(res => {
+          console.log(res.body)
+          vm.genres = res.body
+          vm.genres.settings.genres.sort((item1, item2) => { return item1.label < item2.label ? -1 : 1 })
+        })
     }
   },
   mounted () {
-    let seniorId = 1 // todo fix hard code
-    let vm = this
-    this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${seniorId}/settings/`)
-      .then(res => {
-        console.log(res.body)
-        vm.genres = res.body
-        vm.genres.settings.genres.sort((item1, item2) => { return item1.label < item2.label ? -1 : 1 })
-      })
+    this.setInitialData()
+    bus.$on('loginSuccessRedirect', this.setInitialData)
   },
   computed: {
     musicSelectionStatus () {

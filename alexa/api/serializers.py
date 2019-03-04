@@ -12,17 +12,30 @@ from rest_framework.serializers import ValidationError as RestFrameworkValidatio
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'profile_pic_url')
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'profile_pic_url', 'senior', )
 
     profile_pic_url = serializers.SerializerMethodField()
+    senior = serializers.SerializerMethodField()
+
     def get_profile_pic_url(self, user: User):
         return user.get_profile_pic()
+
+    def get_senior(self, user: User):
+        if not user.user_type == User.FAMILY:
+            return {}
+        senior = user.senior_circle.person_of_interest
+        return {
+            'id': senior.id,
+            'first_name': senior.first_name,
+            'last_name': senior.last_name,
+            'profile_pic_url': senior.profile_pic,
+        }
 
 
 class UserSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserSettings
-        fields = ('pk', 'user_id', 'settings', )
+        fields = ('pk', 'settings', )
 
     settings = serializers.SerializerMethodField()
 

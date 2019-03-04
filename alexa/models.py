@@ -174,7 +174,7 @@ class User(AbstractCaressaUser, TimeStampedModel):
 
     @property
     def senior_circle(self) -> 'Circle':
-        if self.user_type != self.CARETAKER:
+        if self.user_type not in (self.CARETAKER, self.FAMILY, ):
             raise KeyError("User type expected to be {user_type}. Found: {found_type}".format(user_type=self.CARETAKER,
                                                                                               found_type=self.user_type))
         return self.circle_set.all()[0]
