@@ -13,6 +13,7 @@
           </q-item-main>
           <q-item-side>
             <q-btn
+              @click="toggleNewProfilePictureModal"
               color="primary"
               size="sm"
               icon="fas fa-pencil-alt"
@@ -260,12 +261,59 @@
           />
         </q-item>
     </div>
+    <q-page-container>
+      <q-modal v-model="profilePictureData.updateProfilePictureModal" minimized content-css="padding: 8px" @hide="clearImage">
+          <div class="q-display-1 q-mb-md">
+            <span class="q-title">New Profile Picture</span>
+            <q-btn color="red" style="float: right" v-close-overlay icon="fas fa-times" @click="clearImage"/>
+          </div>
+        <div v-if="profilePictureData.isLoading">
+          <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
+        </div>
+        <div v-else>
+          <div v-if="profilePictureData.croppingState">
+            <div class="cut">
+              <vue-cropper ref="cropper" :img="profilePictureData.option.img" :output-size="profilePictureData.option.size"
+                           :output-type="profilePictureData.option.outputType" :can-move="profilePictureData.option.canMove"
+                           :can-move-box="profilePictureData.option.canMoveBox"
+                           :fixed-box="profilePictureData.option.fixedBox" :original="profilePictureData.option.original"
+                           :auto-crop="profilePictureData.option.autoCrop"
+                           :auto-crop-width="profilePictureData.option.autoCropWidth"
+                           :auto-crop-height="profilePictureData.option.autoCropHeight"
+                           :center-box="profilePictureData.option.centerBox" :high="profilePictureData.option.high"
+                           :can-scale="profilePictureData.option.canScale" :info="profilePictureData.option.info"
+                           :fixed="profilePictureData.option.fixed" :full="profilePictureData.option.full">
+              </vue-cropper>
+            </div>
+            <q-btn color="tertiary" v-if="!this.profilePictureData.signedUrl" label="Looks Good!" @click="getCroppedFile"/>
+          </div>
+          <div v-if="!profilePictureData.croppingState">
+            <div class="profile-pic">
+              <img class="image-container" v-if="profilePictureData.file" :src="profilePictureData.option.img">
+              <img class="image-container" v-else :src="profilePictureData.userProfilePic">
+            </div>
+            <span v-if="profilePictureData.option.img">
+                <q-btn v-if="this.profilePictureData.signedUrl"
+                       color="primary"
+                       stlye="border-radius: 5px;"
+                       label="Save Picture" @click="uploadPicture"/>
+              </span>
+            <span v-if="!profilePictureData.croppingState && !this.profilePictureData.signedUrl">
+              <input id="file" class="inputfile" type="file" v-on:change="newFileFromInput" accept="image/*">
+            <label for="file"><strong>Choose a file</strong></label>
+            </span>
+          </div>
+          </div>
+      </q-modal>
+    </q-page-container>
   </q-page>
 </template>
 
 <script>
+import { VueCropper } from 'vue-cropper'
 export default {
   name: 'settings',
+  components: {VueCropper},
   props: ['setupContent', 'logOut'],
   created () {
     this.setupContent({
@@ -274,6 +322,34 @@ export default {
   },
   data () {
     return {
+      profilePictureData: {
+        userProfilePic: this.$root.$options.user.profilePic,
+        croppingState: false,
+        option: {
+          canScale: false,
+          info: false,
+          centerBox: true,
+          fixed: true,
+          img: '',
+          size: 1,
+          full: true,
+          outputType: 'png',
+          canMove: true,
+          fixedBox: false,
+          original: false,
+          canMoveBox: true,
+          autoCrop: true,
+          autoCropWidth: 150,
+          autoCropHeight: 150,
+          high: true
+        },
+        updateProfilePictureModal: false,
+        fileName: '',
+        fileType: '',
+        file: null,
+        signedUrl: null,
+        isLoading: false
+      },
       user: 'Maggy',
       genres: [
         {
@@ -333,9 +409,120 @@ export default {
     }
   },
   methods: {
+    cordovaReadFile (fileEntry) {
+      fileEntry.file(function (file) {
+        let reader = new FileReader()
+        reader.onloadend = function () {
+          console.log('Successful file read:' + this.result)
+        }
+        reader.readAsText(file)
+      })
+    },
+    cordovaSaveFile (fileData, fileName) {
+      let vm = this
+      window.resolveLocalFileSystemURL(cordova.file.documentsDirectory, function (dir) {
+        dir.getFile(fileName, {create: true, exclusive: false}, function (fileEntry) {
+          vm.cordovaWriteFile(fileEntry, fileData)
+        })
+      }, function (err) { console.log(err) })
+    },
+    cordovaWriteFile (fileEntry, dataObj, isAppend) {
+      let vm = this
+      fileEntry.createWriter(function (fileWriter) {
+        fileWriter.onwriteend = function () {
+          console.log('Successful file write...')
+          if (dataObj.type === 'image/png') {
+            vm.cordovaReadBinaryFile(fileEntry)
+          } else {
+            vm.cordovaReadFile(fileEntry)
+          }
+        }
+        fileWriter.onerror = function (e) {
+          console.log('Failed file write: ' + e.toString())
+        }
+
+        fileWriter.write(dataObj)
+      })
+    },
+    cordovaReadBinaryFile (fileEntry) {
+      let vm = this
+      fileEntry.file(function (file) {
+        let reader = new FileReader()
+
+        reader.onloadend = function () {
+          let blob = new Blob([new Uint8Array(this.result)], { type: 'image/png' })
+          vm.profilePictureData.option.img = window.URL.createObjectURL(blob)
+          vm.profilePictureData.file = blob
+        }
+
+        reader.readAsArrayBuffer(file)
+      })
+    },
+    getCroppedFile () {
+      let vm = this
+      let file
+      this.$refs.cropper.getCropBlob((data) => {
+        file = new File([data], vm.profilePictureData.fileName, data.type)
+        this.cordovaSaveFile(data, this.profilePictureData.fileName)
+        // this.profilePictureData.option.img = window.URL.createObjectURL(file)
+        // todo line above add junction point that decides environment and executes e.g. browser/ios/android.
+        vm.getSignedUrl(file)
+        vm.profilePictureData.file = file
+        vm.profilePictureData.croppingState = false
+      })
+    },
+    uploadPicture () {
+      this.profilePictureData.isLoading = true
+      this.$http({
+        method: 'PUT',
+        url: this.profilePictureData.signedUrl,
+        body: this.profilePictureData.file,
+        headers: {
+          'Content-Type': this.profilePictureData.file.type
+        }
+      }).then(response => {
+        this.toggleNewProfilePictureModal()
+        this.showNotif({message: 'Success', icon: 'far fa-check-circle', color: 'tertiary'})
+        console.log(response)
+        this.newProfilePicture()
+      }).catch(err => {
+        this.profilePictureData.isLoading = false
+        console.log(err)
+        this.showNotif({message: 'Failed', icon: 'fas fa-times', color: 'negative'})
+      })
+    },
+    clearImage () {
+      this.profilePictureData.croppingState = false
+      this.profilePictureData.option.img = ''
+      this.profilePictureData.isLoading = false
+      this.profilePictureData.updateProfilePictureModal = false
+      this.profilePictureData.fileName = ''
+      this.profilePictureData.fileType = ''
+      this.profilePictureData.file = null
+      this.profilePictureData.signedUrl = null
+    },
+    newFileFromInput (inputFile) {
+      const files = inputFile.target.files || inputFile.dataTransfer.files
+      this.profilePictureData.option.img = window.URL.createObjectURL(files[0])
+      this.profilePictureData.fileName = this.randomFileName()
+      this.profilePictureData.croppingState = true
+    },
+    randomFileName () {
+      const randomInt = Math.random().toString(36).substring(2, 15)
+      return `new_profile_pic_${randomInt}`
+    },
+    async getSignedUrl (file) {
+      const contentType = file.type // To send the correct Content-Type
+      const fileName = this.profilePictureData.fileName // If you want to use this value to calculate the S3 Key.
+      const response = await this.getPresignedUrl(fileName, contentType) // Your api call to a sever that calculates the signed url.
+      this.profilePictureData.signedUrl = response.body
+    },
     newPage (link) {
       const baseUrl = 'https://www.caressa.ai/'
       window.open(baseUrl + link)
+    },
+    toggleNewProfilePictureModal () {
+      this.profilePictureData.updateProfilePictureModal = !this.profilePictureData.updateProfilePictureModal
     },
     sendInterests (type) {
       let checkedItems = []
@@ -352,14 +539,89 @@ export default {
     },
     signOut: function () {
       this.logOut()
+    },
+    getPresignedUrl (fileName, contentType) {
+      this.profilePictureData.isLoading = true
+      return this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
+        'key': fileName,
+        'content-type': contentType,
+        'client-method': 'put_object',
+        'request-type': 'PUT'
+      }).then(success => {
+        this.profilePictureData.isLoading = false
+        return success
+      }, error => {
+        this.showNotif({message: 'Something is Wrong', icon: 'fas fa-times', color: 'negative'})
+        this.clearImage()
+        return error
+      })
+    },
+    newProfilePicture () {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
+        'file_name': this.profilePictureData.fileName
+      }).then(res => {
+        console.log(res)
+        this.profilePictureData.isLoading = false
+      })
+    },
+    showNotif (data) {
+      this.$q.notify({
+        color: data.color,
+        message: data.message,
+        position: 'top-right',
+        icon: data.icon
+      })
     }
   }
 }
 </script>
 
-<style lang="stylus">
+<style scoped lang="stylus">
 .main-content {
   width: 500px;
   max-width: 90vw;
+}
+
+.cut {
+  width: 225px;
+  height: 225px;
+  margin: 5px auto;
+}
+
+.profile-pic {
+  width: 225px;
+  height: 225px;
+  margin: 5px auto;
+}
+
+.inputfile {
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -1;
+}
+
+.image-container {
+  max-width: 100%
+}
+
+.inputfile + label {
+  background: #f15d22;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-block;
+  font-family: 'Poppins', sans-serif;
+  font-size: inherit;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  outline: none;
+  padding: 1rem 30px;
+  position: relative;
+  transition: all 0.3s;
+  vertical-align: middle;
 }
 </style>
