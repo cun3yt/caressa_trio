@@ -14,6 +14,8 @@ from caressa import settings
 from utilities.views.mixins import SerializerRequestViewSetMixin
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from alexa.api.permissions import IsSameUser, IsInCircle, CommentAccessible
+from utilities.file_operations import download_to_tmp_from_s3, profile_picture_resizing_wrapper, upload_to_s3_from_tmp, \
+    generate_versioned_picture_name
 
 
 class ActionViewSet(SerializerRequestViewSetMixin, NestedViewSetMixin, viewsets.ReadOnlyModelViewSet):
@@ -238,3 +240,26 @@ def new_job_for_message_queue(request):
     new_message.save()
 
     return Response({'message': 'Saved...'})
+
+
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
+@api_view(['POST'])
+def new_profile_picture(request):
+    user = request.user
+    file_name = request.data.get('file_name')
+
+    current_user_profile_pic = user.profile_pic
+
+    new_profile_pic_hash_version = generate_versioned_picture_name(current_user_profile_pic)
+
+    download_to_tmp_from_s3(file_name, settings.S3_RAW_UPLOAD_BUCKET)
+
+    save_picture_format = 'jpg'
+    picture_set = profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version, save_picture_format)
+    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
+
+    user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
+    user.save()
+
+    return Response({'message': 'Profile Picture Updated'})
