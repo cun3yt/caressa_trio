@@ -18,7 +18,6 @@ from rest_framework.renderers import JSONRenderer
 from caressa.settings import HOSTED_ENV
 from django.utils import timezone
 from random import sample
-from django.utils.crypto import get_random_string
 from senior_living_facility.models import SeniorLivingFacility
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
@@ -30,6 +29,7 @@ from django.urls import reverse
 from caressa.settings import WEB_BASE_URL, S3_PRODUCTION_BUCKET, S3_REGION
 from utilities.email import send_email
 from utilities.sms import send_sms
+from typing import Union
 
 
 class CaressaUserManager(BaseUserManager):
@@ -173,10 +173,14 @@ class User(AbstractCaressaUser, TimeStampedModel):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
 
     @property
-    def senior_circle(self) -> 'Circle':
+    def senior_circle(self) -> Union['Circle', None]:
         if self.user_type not in (self.CARETAKER, self.FAMILY, ):
             raise KeyError("User type expected to be {user_type}. Found: {found_type}".format(user_type=self.CARETAKER,
                                                                                               found_type=self.user_type))
+
+        if self.circle_set.all().count() == 0:
+            return None
+
         return self.circle_set.all()[0]
 
     @property
@@ -558,6 +562,8 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
 
 def create_circle_for_user(sender, instance, created, **kwargs):
     user = instance     # type: User
+    if user.user_type is not User.CARETAKER:
+        return
     user.create_initial_circle()
 
 

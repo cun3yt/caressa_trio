@@ -25,8 +25,9 @@ export default {
       this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/`)
         .then(res => {
           let userData = res.body
+
           this.$root.$options.user = {
-            'id': userData.id,
+            'id': userData.pk,
             'firstName': userData.first_name,
             'lastName': userData.last_name,
             'email': userData.email,

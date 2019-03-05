@@ -9,7 +9,7 @@
           </q-item-side>
           <q-item-main>
             <q-item-tile label>Edit Profile</q-item-tile>
-            <q-item-tile sublabel>Change your circle profile</q-item-tile>
+            <q-item-tile sublabel>Change your profile picture</q-item-tile>
           </q-item-main>
           <q-item-side>
             <q-btn
@@ -23,9 +23,9 @@
       </q-list><div class="q-pa-sm"></div>
       <q-list>
         <q-list-header>
-         <q-item-main label="Personalize"></q-item-main>
+         <q-item-main label="Music"></q-item-main>
         </q-list-header>
-        <q-collapsible icon="fas fa-music" label="Music Genres"
+        <q-collapsible icon="fas fa-music" label="Genres"
                        :sublabel="musicSelectionStatus ? '' : `Please help us personalize music for ${senior.firstName}`">
           <q-list-header >What {{senior.firstName}} would love to listen?</q-list-header>
           <q-list v-if="genres.settings">
@@ -46,146 +46,43 @@
           </q-collapsible>
       </q-list>
       <div class="q-pa-sm"></div>
-      <q-list>
+      <q-list inset-separator>
         <q-list-header>
-         <q-item-main label="Circle Control"></q-item-main>
+         <q-item-main label="Family"></q-item-main>
         </q-list-header>
-            <q-list highlight>
-              <q-item>
+
+              <q-item v-for="(member, index) in circleMembers" :key="index">
                 <q-item-side>
-                  <q-item-tile icon="fas fa-envelope" color="primary"/>
+                  <q-item-tile icon="fas fa-user" color="primary" />
                 </q-item-side>
-                <q-item-main>
-                  <q-input value="" type="email" stack-label="New Member Mail" />
-                </q-item-main>
-              </q-item>
-              <q-item>
-                <q-item-side>
-                  <q-item-tile icon="fas fa-clipboard-list" color="primary" />
-                </q-item-side>
-                <q-item-main>
-                <q-btn-dropdown
+                <q-item-main
+                  :label="`${member.first_name} ${member.last_name}`"
+                  label-lines="1"
+                  :sublabel="member.is_admin ? 'Admin' : ''"
+                  sublabel-lines="1"
+                />
+                <q-btn
+                  v-if="isAdmin"
                   color="primary"
-                  label="Pick Role"
-                >
-                  <q-list link>
-                    <q-item @click.native="handlerFunction">
-                      <q-item-side icon="fas fa-user-tie" inverted color="positive" />
-                      <q-item-main>
-                        <q-item-tile label>Family Member</q-item-tile>
-                      </q-item-main>
-                    </q-item>
-                    <q-item @click.native="handlerFunction">
-                      <q-item-side icon="fas fa-user-tie" inverted color="positive" />
-                      <q-item-main>
-                        <q-item-tile label>Caregiver</q-item-tile>
-                      </q-item-main>
-                    </q-item>
-                    <q-item @click.native="handlerFunction">
-                      <q-item-side icon="fas fa-building" inverted color="positive" />
-                      <q-item-main>
-                        <q-item-tile label>Caregiver Org.</q-item-tile>
-                      </q-item-main>
-                    </q-item>
-                  </q-list>
-                </q-btn-dropdown>
+                  size="sm"
+                  icon="fas fa-pencil-alt"
+                />
+              </q-item>
+                <q-item v-if="isAdmin">
+                  <q-item-side>
+                    <q-item-tile icon="far fa-user" color="secondary"/>
+                  </q-item-side>
+                  <q-item-main label="Add Member">
+                    <q-input v-model="newMemberEmail" type="email" placeholder="email">
+                      <q-btn
+                        color="secondary"
+                        size="sm"
+                        icon="fas fa-plus"
+                        @click.native="newCircleMember"
+                      />
+                    </q-input>
                   </q-item-main>
-              </q-item>
-              <q-item>
-                <q-item-main>
-                <q-btn
-                  label="Add"
-                  color="primary"
-                  size="sm"
-                  icon="fas fa-plus"
-                />
-              </q-item-main>
-              </q-item>
-            </q-list>
-        <q-collapsible icon="fas fa-users-cog" label="Circle Members">
-            <q-list highlight inset-separator>
-              <q-item>
-                <q-item-side>
-                  <q-item-tile icon="fas fa-user" color="primary" />
-                </q-item-side>
-                <q-item-main
-                  label="Marie D."
-                  label-lines="1"
-                  sublabel="Caretaker"
-                  sublabel-lines="1"
-                />
-                <q-btn
-                  color="primary"
-                  size="sm"
-                  icon="fas fa-pencil-alt"
-                />
-              </q-item>
-              <q-item>
-                <q-item-side>
-                  <q-item-tile icon="fas fa-user" color="primary" />
-                </q-item-side>
-                <q-item-main
-                  label="Andrew D."
-                  label-lines="1"
-                  sublabel="Family"
-                  sublabel-lines="1"
-                />
-                <q-btn
-                  color="primary"
-                  size="sm"
-                  icon="fas fa-pencil-alt"
-                />
-              </q-item>
-              <q-item>
-                <q-item-side>
-                  <q-item-tile icon="fas fa-user" color="primary" />
-                </q-item-side>
-                <q-item-main
-                  label="Lisa W."
-                  label-lines="1"
-                  sublabel="Family"
-                  sublabel-lines="1"
-                />
-                <q-btn
-                  color="primary"
-                  size="sm"
-                  icon="fas fa-pencil-alt"
-                />
-              </q-item>
-              <q-item>
-                <q-item-side>
-                  <q-item-tile icon="fas fa-user-tie" color="primary" />
-                </q-item-side>
-                <q-item-main
-                  label="Tracy S."
-                  label-lines="1"
-                  sublabel="Caregiver"
-                  sublabel-lines="1"
-                />
-                <q-btn
-                  color="primary"
-                  size="sm"
-                  icon="fas fa-pencil-alt"
-                />
-              </q-item>
-              <q-item>
-                <q-item-side>
-                  <q-item-tile icon="fas fa-building" color="primary" />
-                </q-item-side>
-                <q-item-main
-                  label="Longevity Corp."
-                  label-lines="1"
-                  sublabel="Caregiver Org."
-                  sublabel-lines="1"
-                />
-                <q-btn
-                  color="primary"
-                  size="sm"
-                  icon="fas fa-pencil-alt"
-                />
-              </q-item>
-            </q-list>
-          </q-collapsible>
+                </q-item>
       </q-list>
       <div class="q-pa-sm"></div>
       <q-list highlight>
@@ -331,9 +228,10 @@ export default {
       },
       senior: {},
       genres: [],
-      checked_one: true,
-      checked_two: false,
-      checked_three: false,
+      circleMembers: [],
+      isAdmin: false,
+      newMemberEmail: '',
+      circleId: null,
       option: 'opt1',
       select: 'fb',
       multipleSelect: ['goog', 'twtr'],
@@ -525,14 +423,34 @@ export default {
     setInitialData () {
       this.senior = this.$root.$options.senior
 
-      if (!this.senior.id) { return }
+      if (!this.senior || !this.senior.id) { return }
 
       let vm = this
       this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`)
         .then(res => {
-          console.log(res.body)
           vm.genres = res.body
           vm.genres.settings.genres.sort((item1, item2) => { return item1.label < item2.label ? -1 : 1 })
+        })
+
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
+        .then(res => {
+          this.circleId = res.body.pk
+          this.circleMembers = res.body.members
+          let userInCircleArray = this.circleMembers.filter((member) => { return vm.$root.$options.user.id === member.pk })
+          if (userInCircleArray.length > 0) {
+            vm.isAdmin = userInCircleArray[0].is_admin
+          }
+        })
+    },
+    newCircleMember () {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/`, {'email': this.newMemberEmail})
+        .then(res => {
+          this.showNotif({message: `An email was sent to ${this.newMemberEmail}`, icon: 'far fa-check-circle', color: 'tertiary'})
+          this.circleMembers.push({first_name: this.newMemberEmail, last_name: '(pending)', is_admin: false})
+          this.newMemberEmail = ''
+        }, err => {
+          this.showNotif({message: 'Something went wrong, please try again.', icon: 'fas fa-times', color: 'negative'})
+          console.error(err)
         })
     }
   },

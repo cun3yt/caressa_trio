@@ -69,19 +69,51 @@ class UserSettingsSerializer(serializers.ModelSerializer):
         return instance
 
 
+class CircleAdminSerializer(UserSerializer):
+    fields = UserSerializer.Meta.fields + ('is_admin',)
+
+    is_admin = serializers.SerializerMethodField()
+
+    def get_is_admin(self):
+        return True
+
+
 class CircleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Circle
-        fields = ('pk', 'members', 'senior')
+        fields = ('pk', 'members', 'senior', )
 
     senior = serializers.SerializerMethodField()
     members = serializers.SerializerMethodField()
 
     def get_members(self, circle: Circle):
-        return UserSerializer(circle.members, many=True).data
+        members = circle.members.filter(user_type=User.FAMILY)
+        members_lst = list(UserSerializer(members, many=True).data)
+        admin_ids = [admin.id for admin in circle.admins.all()]
+
+        for index, member in enumerate(members_lst):
+            members_lst[index]['is_admin'] = True if member['pk'] in admin_ids else False
+
+        return members_lst
 
     def get_senior(self, circle: Circle):
         return SeniorSerializer(circle.person_of_interest).data
+
+
+class CircleMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'email', )
+
+    def create(self, validated_data):
+        user = User.objects.create(email=validated_data['email'],
+                                   user_type=User.FAMILY, )
+        user.set_unusable_password()
+        circle_id = self.context['view'].kwargs['circle_pk']
+
+        circle = Circle.objects.get(id=circle_id)
+        circle.add_member(user, False)
+        return user
 
 
 class ChannelSerializer(serializers.ModelSerializer):
