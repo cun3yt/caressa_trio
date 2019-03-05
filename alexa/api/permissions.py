@@ -1,5 +1,5 @@
 from rest_framework.permissions import BasePermission
-from alexa.models import User, Circle
+from alexa.models import User, Circle, UserSettings
 from actions.models import Comment
 
 
@@ -17,6 +17,27 @@ class IsInCircle(BasePermission):
             "The object that is tried to be reached supposed to be Circle, found: '%s'" % type(obj)
         )
         return obj.is_member(request.user)
+
+
+class CanAccessUserSettings(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        """ If settings belong to the request user, it is allowed.
+        If settings belong to the senior, the request user must be the admin of that senior's circle
+        """
+
+        assert isinstance(obj, UserSettings), (
+                "The object that is tried to be reached supposed to be UserSettings, found: '%s'" % type(obj)
+        )
+        user_settings = obj
+        if user_settings.user == request.user:
+            return True
+
+        senior_user = user_settings.user
+
+        if not senior_user.is_senior():
+            return False
+
+        return senior_user.senior_circle.is_admin(request.user)
 
 
 class CommentAccessible(BasePermission):

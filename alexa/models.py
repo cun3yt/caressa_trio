@@ -27,7 +27,7 @@ from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
 from uuid import uuid4
 from django.urls import reverse
-from caressa.settings import WEB_BASE_URL
+from caressa.settings import WEB_BASE_URL, S3_PRODUCTION_BUCKET, S3_REGION
 from utilities.email import send_email
 from utilities.sms import send_sms
 
@@ -143,8 +143,25 @@ class User(AbstractCaressaUser, TimeStampedModel):
 
     objects = CaressaUserManager()
 
+    def get_profile_picture_url(self, dimensions, file_format):
+        upper_dir = self.id if self.profile_pic else 'no_user'
+        profile_picture = self.profile_pic if self.profile_pic else 'default_profile_pic'
+        return '{region}/{bucket}/images/user/{upper_dir}/{profile_picture}_{dimensions}.{file_format}'.format(region=S3_REGION,
+                                                                                                               bucket=S3_PRODUCTION_BUCKET,
+                                                                                                               profile_picture=profile_picture,
+                                                                                                               upper_dir=upper_dir,
+                                                                                                               dimensions=dimensions,
+                                                                                                               file_format=file_format)
+
     def get_profile_pic(self):
-        return '/statics/{}.png'.format(self.profile_pic) if self.profile_pic else None
+        return self.get_profile_picture_url('w_250', 'jpg')
+
+    def get_profile_pictures(self):
+        return {
+            'w_250': self.get_profile_picture_url('w_250', 'jpg'),
+            'w_25': self.get_profile_picture_url('w_25', 'jpg'),
+            'raw': self.get_profile_picture_url('raw', 'png'),
+        }
 
     def is_senior(self):
         return self.user_type == self.CARETAKER
@@ -157,7 +174,7 @@ class User(AbstractCaressaUser, TimeStampedModel):
 
     @property
     def senior_circle(self) -> 'Circle':
-        if self.user_type != self.CARETAKER:
+        if self.user_type not in (self.CARETAKER, self.FAMILY, ):
             raise KeyError("User type expected to be {user_type}. Found: {found_type}".format(user_type=self.CARETAKER,
                                                                                               found_type=self.user_type))
         return self.circle_set.all()[0]
@@ -236,6 +253,9 @@ class Circle(TimeStampedModel):
 
     def is_member(self, member: User):
         return CircleMembership.is_member(self, member)
+
+    def is_admin(self, member: User):
+        return self.is_member(member) and member in self.admins
 
     @property
     def admins(self):
@@ -390,6 +410,31 @@ class FamilyOutreach(TimeStampedModel):
         return '{base_url}{url}?invitation_code={code}'.format(base_url=WEB_BASE_URL,
                                                                url=reverse('family-prospect-invitation-code'),
                                                                code=self.tracking_code)
+
+
+class UserSettings(TimeStampedModel):
+    class Meta:
+        db_table = 'user_settings'
+
+    # For a new user settings type, add the default value to be back filled for all users.
+    # If there is new field in data is needed, add entry to DEFAULTS dictionary and getter/setter methods
+    DEFAULTS = {
+        'genres': []
+    }
+
+    user = models.ForeignKey(to=User,
+                             null=False,
+                             on_delete=models.DO_NOTHING,
+                             related_name='settings', )
+    data = JSONField(default=DEFAULTS)  # payload info: e.g. which genres selected.
+
+    @property
+    def genres(self):
+        return self.data.get('genres', self.DEFAULTS['genres'])
+
+    @genres.setter
+    def genres(self, genres):
+        self.data['genres'] = genres
 
 
 class Joke(TimeStampedModel, FetchRandomMixin):

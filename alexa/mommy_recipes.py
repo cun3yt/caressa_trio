@@ -8,7 +8,7 @@ user = Recipe(
     last_name='TestLastName1',
     email=seq('user1@example.com'),
     phone_number='+14151234567',
-    profile_pic='TestProfilePic1',
+    profile_pic='',
     state='TestState1',
     city='TestCity1',
     senior_living_facility=foreign_key(senior_living_facility_recipe),  # todo: make sure this is used for either senior or facility member
@@ -20,7 +20,7 @@ user2 = Recipe(
     last_name='TestLastName2',
     email=seq('user2@example.com'),
     phone_number='+11112223344',
-    profile_pic='TestProfilePic2',
+    profile_pic='',
     state='TestState2',
     city='TestCity2',
 )
@@ -32,7 +32,7 @@ family_user = Recipe(
     last_name='User',
     email=seq('family_user@example.com'),
     phone_number='+4155554433',
-    profile_pic='family_guy.jpg',
+    profile_pic='',
     state='Arkansas',
     city='Little Rock',
 )

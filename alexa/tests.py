@@ -27,7 +27,16 @@ class UserModelTestCase(TestCase):
                                           email='user4@example.com')
 
     def test_get_profile_object(self):
-        self.assertEqual(self.user_one.get_profile_pic(), '/statics/TestProfilePic1.png')
+        self.assertEqual(self.user_one.get_profile_pic(),
+                         'https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_250.jpg')
+
+    def test_get_profile_pictures(self):
+        assert_value = {
+            'w_250': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_250.jpg',
+            'w_25': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_25.jpg',
+            'raw': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_raw.png',
+        }
+        self.assertEqual(self.user_one.get_profile_pictures(), assert_value)
 
     def test_is_senior(self):
         self.assertTrue(self.user_one.is_senior())
@@ -51,7 +60,7 @@ class UserModelTestCase(TestCase):
                          last_name='TestLastName1',
                          email='my.test.user@example.com',
                          phone_number='+14151234567',
-                         profile_pic='TestProfilePic1')
+                         profile_pic='')
         user_five.save()
         self.assertFalse(self.user_one.create_initial_circle())
         self.assertTrue(user_five.create_initial_circle())
@@ -69,8 +78,7 @@ class UserModelTestCase(TestCase):
     def test_senior_circle(self):
         self.assertIsInstance(self.user_one.senior_circle, Circle)
 
-        with self.assertRaises(KeyError):
-            _ = self.user_two.senior_circle
+        self.assertIsInstance(self.user_two.senior_circle, Circle)
 
         with self.assertRaises(KeyError):
             _ = self.user_three.senior_circle

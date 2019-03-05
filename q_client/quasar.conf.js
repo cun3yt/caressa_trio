@@ -82,7 +82,8 @@ module.exports = function (ctx) {
         'QBtnDropdown',
         'QVideo',
         'QCollapsible',
-        'QPopover'
+        'QPopover',
+        'QUploader',
       ],
       directives: [
         'Ripple',
@@ -90,6 +91,7 @@ module.exports = function (ctx) {
       ],
       // Quasar plugins
       plugins: [
+        'Cookies',
         'Notify'
       ],
       iconSet: 'fontawesome'
