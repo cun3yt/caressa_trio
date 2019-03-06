@@ -2,17 +2,7 @@
     <div>
         <div v-if="content.length==1">
             <input v-if="isEdit" v-model='fieldValue' v-on:keyup.stop="updateFormInput()" type="text" :name="name">
-            <div v-else-if="name=='device_status'">
-                <div v-if="content[0]==null">No Device</div>
-                <div v-else-if="content[0]" class="online">
-                    <i class="fas fa-circle"></i>
-                    Online
-                </div>
-                <div v-else class="offline">
-                    <i class="fas fa-circle"></i>
-                    Offline
-                </div>
-            </div>
+            <device-state v-else-if="name=='device_status'" :content="content"></device-state>
             <span v-else>{{ content[0] }}</span>
         </div>
         <div v-else v-for="entry in content">
@@ -24,9 +14,11 @@
 
 <script>
     import bus from '../utils.communication.js'
+    import DeviceState from './grids/DeviceState.vue'
 
     export default {
         name: "grid-unit",
+        components: { DeviceState },
         props: {
             content: Array,
             name: String,
@@ -62,10 +54,5 @@
 </script>
 
 <style scoped>
-    .online {
-        color: seagreen;
-    }
-    .offline {
-        color: indianred;
-    }
+
 </style>
