@@ -1,6 +1,7 @@
 <template>
     <div class="header sticky" id="myHeader">
         <div>Welcome {{user.first_name}} {{user.last_name}}</div>
+        <a href="/accounts/settings">Settings</a>
         <button @click="logout()" href="#">Logout</button>
         <div>
             <label class="switch">

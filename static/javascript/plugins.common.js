@@ -13,10 +13,14 @@
 // Vue.use(VuePluginYouWant)
 //
 
-import VueCookies from 'vue-cookies'
 import VueResource from 'vue-resource'
+import ElementUI from 'element-ui';
+import Auth from './utils.auth';
+import VueCookies from 'vue-cookies'
 
 export default [
     VueCookies,
-    VueResource
+    VueResource,
+    ElementUI,
+    Auth
 ]
