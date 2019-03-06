@@ -31,6 +31,8 @@ from voice_service.views import speech_to_text
 from caressa.admin import get_admin
 from senior_living_facility.urls import urls as senior_living_facility_urls
 
+from rest_framework.documentation import include_docs_urls
+
 admin = get_admin()
 
 router = ExtendedSimpleRouter()
@@ -61,6 +63,10 @@ urlpatterns = [
     path('new_message/', new_job_for_message_queue),
     path('new_profile_picture/', new_profile_picture),
     path('accounts/', include(senior_living_facility_urls)),
+    path('docs/', include_docs_urls(title='Caressa API',
+                                    public=True,
+                                    authentication_classes=[],
+                                    permission_classes=[], ))
 ]
 
 urlpatterns += individual_paths_alexa()
