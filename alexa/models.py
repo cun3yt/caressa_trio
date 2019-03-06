@@ -441,6 +441,40 @@ class UserSettings(TimeStampedModel):
         self.data['genres'] = genres
 
 
+class CircleInvitation(TimeStampedModel):
+    class Meta:
+        db_table = 'circle_invitation'
+
+    circle = models.ForeignKey(to=Circle, on_delete=models.DO_NOTHING, null=False, )
+    email = models.EmailField(_('email address'), null=False, unique=True, )
+    inviter = models.ForeignKey(to=User, on_delete=models.DO_NOTHING, related_name='circle_inviter')
+    name = models.TextField(null=True, )
+    surname = models.TextField(null=True, )
+    invitation_code = models.UUIDField(default=uuid4, db_index=True, )
+    converted_user = models.ForeignKey(to=User,
+                                       on_delete=models.DO_NOTHING,
+                                       null=True,
+                                       related_name='created_user_from_invitation')
+
+    @property
+    def invitation_url(self):
+        return '{base_url}{url}?invitation_code={code}'.format(base_url=WEB_BASE_URL,
+                                                               url=reverse('circle-member-invitation'),
+                                                               code=self.invitation_code)
+
+    def send_circle_invitation_mail(self) -> bool:
+        send_email([self.email],
+                   'Invitation from {}'.format(self.inviter.first_name),
+                   'email/circle-invitation.html',
+                   'email/circle-invitation.txt',
+                   context={
+                       'invitation': self,
+                       'inviter': self.inviter,
+                       'invitation_url': self.invitation_url,
+                   })
+        return True
+
+
 class Joke(TimeStampedModel, FetchRandomMixin):
     class Meta:
         db_table = 'joke'

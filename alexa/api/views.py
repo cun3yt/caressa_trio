@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from utilities.views.mixins import SerializerRequestViewSetMixin
 from alexa.api.serializers import UserSerializer, SeniorSerializer, JokeSerializer, \
-    NewsSerializer, ChannelSerializer, CircleSerializer, UserSettingsSerializer, CircleMemberSerializer
-from alexa.models import Joke, News, User, UserSettings, Circle
+    NewsSerializer, ChannelSerializer, CircleSerializer, UserSettingsSerializer, CircleInvitationSerializer
+from alexa.models import Joke, News, User, UserSettings, Circle, CircleInvitation
 from alexa.api.permissions import IsSameUser, IsFacilityMember, IsInCircle, CanAccessUserSettings
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from rest_framework.pagination import PageNumberPagination
@@ -43,12 +43,11 @@ class CirclesViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         return self.request.user.circle_set.all()[0]
 
 
-class CircleMembersViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+class CircleInvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsInCircle, )
-    queryset = User.objects.all()  # todo change to proper query
-    serializer_class = CircleMemberSerializer
-
+    queryset = CircleInvitation.objects.all()
+    serializer_class = CircleInvitationSerializer
 
 
 class ChannelsViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):

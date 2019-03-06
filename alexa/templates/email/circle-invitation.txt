@@ -1,0 +1,7 @@
+Hello,
+
+{{ inviter.first_name }} invited you to connect with your family including {{ invitation.circle.person_of_interest.full_name }} using Caressa.
+
+Click the link below to download Caressa app and feel better connected with your family and {{ invitation.circle.person_of_interest.first_name }}.
+
+{{ invitation_url }}

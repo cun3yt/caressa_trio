@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings
+from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings, CircleInvitation
 from actions.models import UserAction
 from streaming.models import Tag
 from actions.api.serializers import ActionSerializer
@@ -100,20 +100,23 @@ class CircleSerializer(serializers.ModelSerializer):
         return SeniorSerializer(circle.person_of_interest).data
 
 
-class CircleMemberSerializer(serializers.ModelSerializer):
+class CircleInvitationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'email', )
 
     def create(self, validated_data):
-        user = User.objects.create(email=validated_data['email'],
-                                   user_type=User.FAMILY, )
-        user.set_unusable_password()
         circle_id = self.context['view'].kwargs['circle_pk']
-
         circle = Circle.objects.get(id=circle_id)
-        circle.add_member(user, False)
-        return user
+        inviter_user = self.context['request'].user
+
+        circle_invitation = CircleInvitation.objects.create(circle=circle,
+                                                            email=validated_data['email'],
+                                                            inviter=inviter_user, )
+
+        circle_invitation.send_circle_invitation_mail()
+
+        return circle_invitation
 
 
 class ChannelSerializer(serializers.ModelSerializer):
