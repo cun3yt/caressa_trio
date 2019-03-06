@@ -56,8 +56,7 @@ class ChannelsViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 class SeniorListViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixins.CreateModelMixin,
                         mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
-    permission_classes = (IsAuthenticated, IsFacilityOrgMemberAndCanSeeSenior,)
-    # todo facility admin only check is needed
+    permission_classes = (IsAuthenticated, IsFacilityOrgMemberAndCanSeeSenior, )
     serializer_class = SeniorSerializer
 
     class _Pagination(PageNumberPagination):
