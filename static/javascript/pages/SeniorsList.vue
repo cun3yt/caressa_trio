@@ -145,16 +145,23 @@
                         row.is_contact_editable = true  // if no contact (default case): contact editable
 
                         for (var col of that.gridColumns) {
-                            if (col.field == 'device_status') {
+                            if (col.field === 'device_status') {
                                 if ( !row[col.field] ) {
                                     row[col.field] = [ null ]
                                     continue
                                 }
-                                row[col.field] = [ row[col.field].is_online ]
+                                row[col.field] = [
+                                    {
+                                        'is_online': row[col.field].is_online,
+                                        'last_activity_time': row[col.field].last_activity_time,
+                                        'status_checked': row[col.field].status_checked,
+                                        'is_today_checked_in': row[col.field].is_today_checked_in
+                                    }
+                                ]
                                 continue
                             }
 
-                            if (col.field == 'primary_contact') {
+                            if (col.field === 'primary_contact') {
                                 if (!row[col.field]) {
                                     row[col.field] = ['']
                                     continue
@@ -191,7 +198,7 @@
             },
             deleteEntry (pk) {
                 let deletedEntryList = this.gridData.filter(function (data) {
-                    return data.pk == pk
+                    return data.pk === pk
                 })
 
                 let confirmation = confirm(`Are you sure deleting '${deletedEntryList[0].first_name}'?`)
@@ -200,7 +207,7 @@
                 }
 
                 this.gridData = this.gridData.filter(function (data) {
-                    return data.pk != pk
+                    return data.pk !== pk
                 })
 
                 let that = this
@@ -252,7 +259,7 @@
                     this.errors = error.data.errors
                 })
             },
-            editSubmit (pk) {
+            editSubmit () {
                 this.editErrors = []
                 let that = this
 

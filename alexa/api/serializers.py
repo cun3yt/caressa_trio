@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings
 from actions.models import UserAction
+from senior_living_facility.models import SeniorDeviceUserActivityLog
 from streaming.models import Tag
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
@@ -147,7 +148,8 @@ class SeniorSerializer(serializers.ModelSerializer):
     primary_contact = serializers.SerializerMethodField()
     device_status = serializers.SerializerMethodField()
 
-    def get_primary_contact(self, senior: User):
+    @staticmethod
+    def get_primary_contact(senior: User):
         circle = senior.circle_set.all()[0]
         admins = circle.admins
         if admins.count() == 0:
@@ -155,13 +157,28 @@ class SeniorSerializer(serializers.ModelSerializer):
             return FamilyProspectSerializer(prospects[0]).data if prospects.count() > 0 else None
         return FamilyMemberSerializer(admins[0]).data if admins.count() else None
 
-    def get_device_status(self, senior: User):
-        if senior.devices.count() == 0:
+    @staticmethod
+    def get_device_status(senior: User):
+        device = senior.device
+
+        if not device:
             return None
-        device = senior.devices.all()[0]
+
+        last_user_log = SeniorDeviceUserActivityLog.get_last_user_log(senior)
+
+        if not last_user_log:
+            last_activity_time = None
+            is_today_checked_in = False
+        else:
+            facility = senior.senior_living_facility
+            last_activity_time = last_user_log.created
+            is_today_checked_in = last_user_log.is_activity_counted_as_check_in(facility)
+
         return {
             'is_online': device.is_online,
             'status_checked': device.status_checked,
+            'last_activity_time': last_activity_time,
+            'is_today_checked_in': is_today_checked_in,
         }
 
     def create(self, validated_data):

@@ -63,3 +63,8 @@ class IsFacilityOrgMemberAndCanSeeSenior(BasePermission):
         if not senior.senior_living_facility:
             return False
         return senior.senior_living_facility == request.user.senior_living_facility
+
+
+class IsSenior(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_senior()

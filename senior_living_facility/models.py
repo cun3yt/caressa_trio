@@ -1,8 +1,12 @@
+import pytz
+
 from django.db import models
+from django.utils.timezone import localtime
 from model_utils.models import TimeStampedModel
 from django.contrib.auth import get_user_model
 from caressa.settings import TIME_ZONE as DEFAULT_TIMEZONE
 from jsonfield import JSONField
+from typing import Union
 
 
 class SeniorLivingFacility(TimeStampedModel):
@@ -25,7 +29,7 @@ class SeniorLivingFacility(TimeStampedModel):
                                 blank=False,
                                 default=DEFAULT_TIMEZONE, )
     check_in_morning_start = models.TimeField(null=True,
-                                              default=None, )
+                                              default='05:30:00', )
     check_in_deadline = models.TimeField(null=True,
                                          default=None, )
     check_in_reminder = models.TimeField(null=True,
@@ -50,6 +54,9 @@ class SeniorLivingFacility(TimeStampedModel):
 class SeniorDevice(TimeStampedModel):
     """
     This class represents a Caressa Hardware
+    Currently this only represents internet access of the devices.
+
+    Todo this or something else needs to represent caressa-service's availability, too.
     """
     class Meta:
         db_table = 'senior_device'
@@ -74,3 +81,48 @@ class SeniorDevicesRawLog(TimeStampedModel):
         verbose_name_plural = "Senior Devices' Raw Logs"
 
     data = JSONField(default={})
+
+
+class SeniorDeviceUserActivityLog(TimeStampedModel):
+    """
+    This class represents users' interaction with his/her device.
+
+    Example activity log:
+        activity: click.main-button
+        data (extra/notes/payload): { 'device-response': 'pause.content' }
+    """
+
+    class Meta:
+        db_table = 'senior_device_user_activity_log'
+        verbose_name = "Senior Device User Activity Log"
+        verbose_name_plural = "Senior Device User Activity Logs"
+
+    user = models.ForeignKey(to='alexa.User', null=True, on_delete=models.DO_NOTHING, related_name='device_user_logs')
+    activity = models.TextField(db_index=True)
+    data = JSONField(default={})
+
+    @classmethod
+    def get_last_user_log(cls, senior) -> Union['SeniorDeviceUserActivityLog', None]:
+        logs = senior.device_user_logs.order_by('-id')
+        if logs.count() == 0:
+            return None
+        return logs[0]
+
+    def is_activity_counted_as_check_in(self, facility: SeniorLivingFacility):
+        """
+        compares this log's creation time to SeniorLivingFacility's daily check in start
+        to decide if this user log is counted as check in.
+
+        :param facility:
+        :return: boolean
+        """
+        activity_time_in_tz = localtime(self.created,
+                                        timezone=pytz.timezone(facility.timezone))
+
+        now_in_tz = localtime(timezone=pytz.timezone(facility.timezone))
+        check_in_time_today_in_tz = now_in_tz.replace(hour=facility.check_in_morning_start.hour,
+                                                      minute=facility.check_in_morning_start.minute,
+                                                      second=0,
+                                                      microsecond=0)
+
+        return check_in_time_today_in_tz < activity_time_in_tz

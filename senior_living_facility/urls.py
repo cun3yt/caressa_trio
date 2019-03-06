@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 from senior_living_facility.views import facility_home, facility_settings, family_prospect_invitation, sign_up, \
     app_downloads
-from senior_living_facility.api.views import SeniorLivingFacilityViewSet
+from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -26,6 +26,8 @@ urls = [
 ]
 
 api_urls = [
-    path('api/senior_living_facilities/<int:pk>/', SeniorLivingFacilityViewSet.as_view({'get': 'retrieve',
-                                                                                        'patch': 'partial_update', })),
+    path('api/senior_living_facilities/<int:pk>/',
+         SeniorLivingFacilityViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update', })),
+    path('api/user-activity-log/',
+         SeniorDeviceUserActivityLogCreateViewSet.as_view({'post': 'create'})),
 ]
