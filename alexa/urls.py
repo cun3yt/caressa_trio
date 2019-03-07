@@ -38,7 +38,7 @@ def individual_paths():
         path('api/users/me/', UserMeViewSet.as_view({'get': 'retrieve'})),
         path('api/users/me/circles/', CirclesViewSet.as_view({'get': 'retrieve'})),
         path('api/circles/<int:circle_pk>/members/invite/', CircleInvitationViewSet.as_view({'post': 'create'})),
-        path('api/circles/<int:circle_pk>/members/reinvite/', CircleReinvitationViewSet.as_view({'post': 'create'})),
+        path('api/circle-invitation/<uuid:invitation_code>/reinvite/', CircleReinvitationViewSet.as_view({'post': 'create'})),
         path('api/users/me/channels/', ChannelsViewSet.as_view({'get': 'retrieve'})),
         path('api/users/<int:user_pk>/settings/', UserSettingsViewSet.as_view({'get': 'retrieve',
                                                                                'patch': 'partial_update', })),

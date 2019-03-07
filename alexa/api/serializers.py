@@ -120,7 +120,7 @@ class CircleReinvitationSerializer(serializers.ModelSerializer):
         fields = ('pk', )
 
     def create(self, validated_data):
-        invitation_code = self.context['request'].data['invitation_code']
+        invitation_code = self.context['view'].kwargs['invitation_code']
 
         circle_invitation = CircleInvitation.objects.get(invitation_code=invitation_code,)
         circle_reinvitation = CircleReinvitation.objects.create(circle_invitation=circle_invitation)

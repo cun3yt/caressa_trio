@@ -473,11 +473,8 @@ export default {
         })
     },
     reInviteMember (invitationCode, contact) {
-      let data = {
-        'invitation_code': invitationCode
-      }
       this.$auth.post(
-        `${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/reinvite/`, data)
+        `${this.$root.$options.hosts.rest}/api/circle-invitation/${invitationCode}/reinvite/`, {'data': 'data'})
         .then(res => {
           this.showNotif({message: `Invitation was re-sent to ${contact}`, icon: 'far fa-check-circle', color: 'tertiary'})
         }, err => {

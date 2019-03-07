@@ -454,7 +454,7 @@ class CircleInvitation(TimeStampedModel):
     inviter = models.ForeignKey(to=User, on_delete=models.DO_NOTHING, related_name='circle_inviter')
     name = models.TextField(null=True, )
     surname = models.TextField(null=True, )
-    invitation_code = models.UUIDField(default=uuid4, db_index=True, )
+    invitation_code = models.UUIDField(default=uuid4, primary_key=True, db_index=True, )
     converted_user = models.ForeignKey(to=User,
                                        on_delete=models.DO_NOTHING,
                                        null=True,

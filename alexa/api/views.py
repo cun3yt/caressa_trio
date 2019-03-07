@@ -47,14 +47,16 @@ class CirclesViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 class CircleInvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsInCircle, )
-    queryset = CircleInvitation.objects.all()
     serializer_class = CircleInvitationSerializer
+
+    def get_queryset(self):
+        return CircleInvitation.objects.filter(converted_user_id__isnull=T).all()
 
 
 class CircleReinvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated, IsInCircle,)
-    queryset = CircleReinvitation.objects.all()
+    queryset = CircleInvitation.objects.all()
     serializer_class = CircleReinvitationSerializer
 
 
