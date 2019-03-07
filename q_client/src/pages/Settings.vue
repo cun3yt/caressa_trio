@@ -29,7 +29,7 @@
                        :sublabel="musicSelectionStatus ? '' : `Please help us personalize music for ${senior.firstName}`">
           <q-list-header >What {{senior.firstName}} would love to listen?</q-list-header>
           <q-list v-if="genres.settings">
-            <q-item v-for="(item, index) in genres.settings.genres" :key="index" tag="label">
+            <q-item v-for="(item, index) in genres.settings.genres" :key="`genre-${index}`" tag="label">
               <q-item-side>
                 <q-checkbox v-model="item.is_selected" />
               </q-item-side>
@@ -50,39 +50,55 @@
         <q-list-header>
          <q-item-main label="Family"></q-item-main>
         </q-list-header>
-
-              <q-item v-for="(member, index) in circleMembers" :key="index">
-                <q-item-side>
-                  <q-item-tile icon="fas fa-user" color="primary" />
-                </q-item-side>
-                <q-item-main
-                  :label="`${member.first_name} ${member.last_name}`"
-                  label-lines="1"
-                  :sublabel="member.is_admin ? 'Admin' : ''"
-                  sublabel-lines="1"
-                />
-                <q-btn
-                  v-if="isAdmin"
-                  color="primary"
-                  size="sm"
-                  icon="fas fa-pencil-alt"
-                />
-              </q-item>
-                <q-item v-if="isAdmin">
-                  <q-item-side>
-                    <q-item-tile icon="far fa-user" color="secondary"/>
-                  </q-item-side>
-                  <q-item-main label="Add Member">
-                    <q-input v-model="newMemberEmail" type="email" placeholder="email">
-                      <q-btn
-                        color="secondary"
-                        size="sm"
-                        icon="fas fa-plus"
-                        @click.native="newCircleMember"
-                      />
-                    </q-input>
-                  </q-item-main>
-                </q-item>
+        <q-item v-for="(member, index) in circleMembership.members" :key="`member-${index}`">
+          <q-item-side>
+            <q-item-tile icon="fas fa-user" color="primary" />
+          </q-item-side>
+            <q-item-main
+              :label="`${member.first_name} ${member.last_name}`"
+              label-lines="1"
+              :sublabel="member.is_admin ? 'Admin' : ''"
+              sublabel-lines="1"
+            />
+            <q-btn
+              v-if="isAdmin"
+              color="primary"
+              size="sm"
+              icon="fas fa-pencil-alt"
+            />
+        </q-item>
+        <q-item v-for="(pendingMember, index) in circleMembership.pendings" :key="`pending_member-${index}`">
+          <q-item-side>
+            <q-item-tile icon="fas fa-user-clock" color="secondary" />
+          </q-item-side>
+          <q-item-main
+            :label="pendingMember.email"
+            sublabel="Pending"
+            label-lines="1"
+            sublabel-lines="1"
+          />
+          <q-btn
+            color="secondary"
+            size="sm"
+            icon="fas fa-redo-alt"
+            @click.native="reInviteMember(pendingMember.invitation_code, pendingMember.email)"
+          />
+        </q-item>
+        <q-item v-if="isAdmin">
+          <q-item-side>
+            <q-item-tile icon="far fa-user" color="secondary"/>
+          </q-item-side>
+          <q-item-main label="Add Member">
+            <q-input v-model="newMemberEmail" type="email" placeholder="email">
+              <q-btn
+                color="secondary"
+                size="sm"
+                icon="fas fa-plus"
+                @click.native="newCircleMember"
+              />
+            </q-input>
+          </q-item-main>
+        </q-item>
       </q-list>
       <div class="q-pa-sm"></div>
       <q-list highlight>
@@ -228,7 +244,7 @@ export default {
       },
       senior: {},
       genres: [],
-      circleMembers: [],
+      circleMembership: {},
       isAdmin: false,
       newMemberEmail: '',
       circleId: null,
@@ -427,7 +443,7 @@ export default {
 
       let vm = this
       this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`)
-        .then(res => {
+        .then(function (res) {
           vm.genres = res.body
           vm.genres.settings.genres.sort((item1, item2) => { return item1.label < item2.label ? -1 : 1 })
         })
@@ -435,19 +451,35 @@ export default {
       this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
         .then(res => {
           this.circleId = res.body.pk
-          this.circleMembers = res.body.members
-          let userInCircleArray = this.circleMembers.filter((member) => { return vm.$root.$options.user.id === member.pk })
+          this.circleMembership = {
+            'members': res.body.members,
+            'pendings': res.body.pending_invitations
+          }
+          let userInCircleArray = res.body.members.filter((member) => { return vm.$root.$options.user.id === member.pk })
           if (userInCircleArray.length > 0) {
             vm.isAdmin = userInCircleArray[0].is_admin
           }
         })
     },
     newCircleMember () {
-      this.$auth.post(`${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/`, {'email': this.newMemberEmail})
+      this.$auth.post(`${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/invite/`, {'email': this.newMemberEmail})
         .then(res => {
           this.showNotif({message: `An email was sent to ${this.newMemberEmail}`, icon: 'far fa-check-circle', color: 'tertiary'})
           this.circleMembers.push({first_name: this.newMemberEmail, last_name: '(pending)', is_admin: false})
           this.newMemberEmail = ''
+        }, err => {
+          this.showNotif({message: 'Something went wrong, please try again.', icon: 'fas fa-times', color: 'negative'})
+          console.error(err)
+        })
+    },
+    reInviteMember (invitationCode, contact) {
+      let data = {
+        'invitation_code': invitationCode
+      }
+      this.$auth.post(
+        `${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/reinvite/`, data)
+        .then(res => {
+          this.showNotif({message: `Invitation was re-sent to ${contact}`, icon: 'far fa-check-circle', color: 'tertiary'})
         }, err => {
           this.showNotif({message: 'Something went wrong, please try again.', icon: 'fas fa-times', color: 'negative'})
           console.error(err)

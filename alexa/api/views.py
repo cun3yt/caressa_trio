@@ -3,8 +3,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from utilities.views.mixins import SerializerRequestViewSetMixin
 from alexa.api.serializers import UserSerializer, SeniorSerializer, JokeSerializer, \
-    NewsSerializer, ChannelSerializer, CircleSerializer, UserSettingsSerializer, CircleInvitationSerializer
-from alexa.models import Joke, News, User, UserSettings, Circle, CircleInvitation
+    NewsSerializer, ChannelSerializer, CircleSerializer, UserSettingsSerializer, CircleInvitationSerializer, \
+    CircleReinvitationSerializer
+from alexa.models import Joke, News, User, UserSettings, Circle, CircleInvitation, CircleReinvitation
 from alexa.api.permissions import IsSameUser, IsFacilityMember, IsInCircle, CanAccessUserSettings
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from rest_framework.pagination import PageNumberPagination
@@ -48,6 +49,13 @@ class CircleInvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated, IsInCircle, )
     queryset = CircleInvitation.objects.all()
     serializer_class = CircleInvitationSerializer
+
+
+class CircleReinvitationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication,)
+    permission_classes = (IsAuthenticated, IsInCircle,)
+    queryset = CircleReinvitation.objects.all()
+    serializer_class = CircleReinvitationSerializer
 
 
 class ChannelsViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):

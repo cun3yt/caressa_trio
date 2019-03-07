@@ -262,6 +262,10 @@ class Circle(TimeStampedModel):
         return self.is_member(member) and member in self.admins
 
     @property
+    def pending_invitations(self):
+        return CircleInvitation.objects.filter(circle=self, converted_user_id=None).all()
+
+    @property
     def admins(self):
         return self.members.filter(circle_memberships__is_admin=True).all()
 
@@ -473,6 +477,13 @@ class CircleInvitation(TimeStampedModel):
                        'invitation_url': self.invitation_url,
                    })
         return True
+
+
+class CircleReinvitation(TimeStampedModel):
+    class Meta:
+        db_table = 'circle_reinvitation'
+
+    circle_invitation = models.ForeignKey(to=CircleInvitation, on_delete=models.DO_NOTHING, null=False, )
 
 
 class Joke(TimeStampedModel, FetchRandomMixin):

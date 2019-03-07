@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings, CircleInvitation
+from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings, CircleInvitation, CircleReinvitation
 from actions.models import UserAction
 from streaming.models import Tag
 from actions.api.serializers import ActionSerializer
@@ -81,10 +81,11 @@ class CircleAdminSerializer(UserSerializer):
 class CircleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Circle
-        fields = ('pk', 'members', 'senior', )
+        fields = ('pk', 'members', 'senior', 'pending_invitations')
 
     senior = serializers.SerializerMethodField()
     members = serializers.SerializerMethodField()
+    pending_invitations = serializers.SerializerMethodField()
 
     def get_members(self, circle: Circle):
         members = circle.members.filter(user_type=User.FAMILY)
@@ -99,11 +100,14 @@ class CircleSerializer(serializers.ModelSerializer):
     def get_senior(self, circle: Circle):
         return SeniorSerializer(circle.person_of_interest).data
 
+    def get_pending_invitations(self, circle):
+        return CircleInvitationSerializer(circle.pending_invitations, many=True).data
+
 
 class CircleInvitationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ('pk', 'email', )
+        model = CircleInvitation
+        fields = ('pk', 'created', 'email', 'invitation_code')
 
     def create(self, validated_data):
         circle_id = self.context['view'].kwargs['circle_pk']
@@ -117,6 +121,21 @@ class CircleInvitationSerializer(serializers.ModelSerializer):
         circle_invitation.send_circle_invitation_mail()
 
         return circle_invitation
+
+
+class CircleReinvitationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CircleReinvitation
+        fields = ('pk', )
+
+    def create(self, validated_data):
+        invitation_code = self.context['request'].data['invitation_code']
+
+        circle_invitation = CircleInvitation.objects.get(invitation_code=invitation_code,)
+        circle_reinvitation = CircleReinvitation.objects.create(circle_invitation=circle_invitation)
+        circle_invitation.send_circle_invitation_mail()
+
+        return circle_reinvitation
 
 
 class ChannelSerializer(serializers.ModelSerializer):

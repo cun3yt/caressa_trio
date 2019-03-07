@@ -4,7 +4,7 @@ from django.template.response import TemplateResponse
 from django.urls import reverse
 from rest_framework.exceptions import ValidationError
 
-from alexa.admin import UserCreationForm
+from alexa.admin import UserCreationForm, FamilyMemberCreationForm
 from alexa.models import User, CircleInvitation
 
 
@@ -22,11 +22,12 @@ def main_view(request):
 
 def circle_member_invitation(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = FamilyMemberCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
             user.user_type = User.FAMILY
             user.save()
+            form.save_m2m()
             invitation_code = form.data.get('invitation_code')
             circle_invitation = CircleInvitation.objects.get(invitation_code=invitation_code,
                                                              converted_user_id=None, )
@@ -36,10 +37,10 @@ def circle_member_invitation(request):
             redirect_url = "{url}?success=1".format(url=reverse('app-downloads'))
             return redirect(redirect_url)
 
-    form = UserCreationForm()
     try:
         circle_invitation = CircleInvitation.objects.get(invitation_code=request.GET.get('invitation_code'),
                                                          converted_user=None)
+        form = FamilyMemberCreationForm(initial={'email': circle_invitation.email})
     except (CircleInvitation.DoesNotExist, ValidationError, ):
         return redirect('sign-up')
     else:
