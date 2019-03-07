@@ -232,13 +232,6 @@ def user_post_activity_save(sender: UserPost, instance, created, **kwargs):
 signals.post_save.connect(receiver=user_post_activity_save, sender=UserPost)
 
 
-class UserListened(TimeStampedModel):
-    class Meta:
-        db_table = 'user_listened'
-
-    action = models.ForeignKey(UserAction, on_delete=models.DO_NOTHING)
-
-
 class UserQuery(TimeStampedModel):
     class Meta:
         db_table = 'user_query'
