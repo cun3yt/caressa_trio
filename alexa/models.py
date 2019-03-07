@@ -7,7 +7,7 @@ from jsonfield import JSONField
 from model_utils.models import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField
 from django.apps import apps
-from utilities.logger import log
+from utilities.logger import log, log_warning
 from django.db.models import signals
 from actstream import action
 from actstream.actions import follow as act_follow
@@ -18,6 +18,8 @@ from rest_framework.renderers import JSONRenderer
 from caressa.settings import HOSTED_ENV
 from django.utils import timezone
 from random import sample
+from typing import Union
+from senior_living_facility.models import SeniorDevice
 from senior_living_facility.models import SeniorLivingFacility
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
@@ -29,7 +31,6 @@ from django.urls import reverse
 from caressa.settings import WEB_BASE_URL, S3_PRODUCTION_BUCKET, S3_REGION
 from utilities.email import send_email
 from utilities.sms import send_sms
-from typing import Union
 
 
 class CaressaUserManager(BaseUserManager):
@@ -237,6 +238,17 @@ class User(AbstractCaressaUser, TimeStampedModel):
 
     def __str__(self):
         return self.get_full_name()
+
+    @property
+    def device(self) -> Union[SeniorDevice, None]:
+        num_devices = self.devices.count()
+        if self.devices.count() == 0:
+            return None
+
+        if num_devices > 1:
+            log_warning("Number of devices expected is 0 or 1 but found {}".format(num_devices))
+
+        return self.devices.all()[0]
 
 
 class Circle(TimeStampedModel):
@@ -490,6 +502,8 @@ class CircleReinvitation(TimeStampedModel):
 
 
 class Joke(TimeStampedModel, FetchRandomMixin):
+    # todo 1. Joke, News, Facts and others need to be moved to a separate app, e.g. named "content",
+    # todo 2. then alexa app renamed as "user"
     class Meta:
         db_table = 'joke'
 

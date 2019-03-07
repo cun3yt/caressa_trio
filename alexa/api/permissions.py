@@ -51,7 +51,7 @@ class CommentAccessible(BasePermission):
         return circle.is_member(request.user)
 
 
-class IsFacilityMember(BasePermission):
+class IsFacilityOrgMemberAndCanSeeSenior(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_provider()
 
@@ -63,3 +63,8 @@ class IsFacilityMember(BasePermission):
         if not senior.senior_living_facility:
             return False
         return senior.senior_living_facility == request.user.senior_living_facility
+
+
+class IsSenior(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_senior()

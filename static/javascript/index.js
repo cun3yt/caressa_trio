@@ -8,6 +8,7 @@
 import Vue from 'vue'
 import router from './router.js'
 import plugins from './plugins.common.js';
+import 'element-ui/lib/theme-chalk/index.css';
 
 // Installing common Vue Plugins
 for(let _index in plugins) {

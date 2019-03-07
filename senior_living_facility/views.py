@@ -19,6 +19,16 @@ def facility_home(request):
     return TemplateResponse(request, 'seniors-list.html', context)
 
 
+@csrf_exempt
+def facility_settings(request):
+    context = {
+        'api_base': API_URL,
+        'client_id': WEB_CLIENT['id'],
+        'client_secret': WEB_CLIENT['secret'],
+    }
+    return TemplateResponse(request, 'settings.html', context)
+
+
 def sign_up(request):
     form = UserCreationForm()
     return TemplateResponse(request, 'invitation-not-valid.html', context={'form': form})
