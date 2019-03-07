@@ -467,12 +467,15 @@ class CircleInvitation(TimeStampedModel):
                                                                code=self.invitation_code)
 
     def send_circle_invitation_mail(self) -> bool:
+        assert self.converted_user is None, (
+            "send_circle_invitation_mail can be called for only for not converted users."
+        )
         send_email([self.email],
                    'Invitation from {}'.format(self.inviter.first_name),
                    'email/circle-invitation.html',
                    'email/circle-invitation.txt',
                    context={
-                       'invitation': self,
+                       'person_of_interest': self.circle.person_of_interest,
                        'inviter': self.inviter,
                        'invitation_url': self.invitation_url,
                    })

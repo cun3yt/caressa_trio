@@ -69,15 +69,6 @@ class UserSettingsSerializer(serializers.ModelSerializer):
         return instance
 
 
-class CircleAdminSerializer(UserSerializer):
-    fields = UserSerializer.Meta.fields + ('is_admin',)
-
-    is_admin = serializers.SerializerMethodField()
-
-    def get_is_admin(self):
-        return True
-
-
 class CircleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Circle
