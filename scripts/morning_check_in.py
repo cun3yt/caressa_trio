@@ -17,9 +17,6 @@ def send_check_in_call(senior_living_facility_id):
     facility = SeniorLivingFacility.objects.get(id=senior_living_facility_id)
     recipient_ids = facility.get_resident_ids_with_device_but_not_checked_in()
 
-    log_debug(recipient_ids)
-    log_debug("recipients: {}".format(', '.join( map(str, recipient_ids))))
-
     channel = User.get_facility_channel(facility.facility_id)
 
     text = SeniorDevice.call_for_action_text()
@@ -28,9 +25,11 @@ def send_check_in_call(senior_living_facility_id):
                                                content_type='Check-In-Call',
                                                text_content=text)
 
-    log(content.audio_url)
-    log(channel)
-    log(recipient_ids)
+    log("Running Check In Call to Action: `send_check_in_call` with: ")
+    log("  recipient user ids (not check in seniors' user IDs): {}".format(', '.join(map(str, recipient_ids))))
+    log("  on channel: {}".format(channel))
+    log("  text: {}".format(text))
+    log("  SeniorLivingFacilityContent.hash: {}".format(content.text_content_hash))
 
     pusher_client.trigger(channel,
                           'urgent_mail',

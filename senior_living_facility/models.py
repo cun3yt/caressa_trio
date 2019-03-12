@@ -67,7 +67,7 @@ class SeniorLivingFacility(TimeStampedModel):
 
         checked_in_senior_ids = list(user_model.objects.filter(senior_living_facility=self,
                                                                user_type__exact=user_model.CARETAKER,
-                                                               device_user_logs__created__gt=morning_check_in_time)  # todo index for created!
+                                                               device_user_logs__created__gt=morning_check_in_time)
                                      .distinct().values_list('id', flat=True))
         return checked_in_senior_ids
 
@@ -170,7 +170,9 @@ SeniorDeviceUserActivityLog._meta.get_field('created').db_index = True
 class SeniorLivingFacilityContent(TimeStampedModel):
     class Meta:
         db_table = 'senior_living_facility_content'
-        index_together = ('senior_living_facility', 'text_content', 'content_type', )
+        indexes = [
+            models.Index(fields=['senior_living_facility', 'text_content', 'content_type', ])
+        ]
 
     CONTENT_TYPES = Choices('Daily-Calendar-Summary', 'Event', 'Check-In-Call', )
 
