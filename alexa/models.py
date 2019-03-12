@@ -18,7 +18,7 @@ from rest_framework.renderers import JSONRenderer
 from caressa.settings import HOSTED_ENV
 from django.utils import timezone
 from random import sample
-from typing import Union
+from typing import Optional
 from senior_living_facility.models import SeniorDevice
 from senior_living_facility.models import SeniorLivingFacility
 from django.contrib.auth.base_user import AbstractBaseUser
@@ -236,7 +236,7 @@ class User(AbstractCaressaUser, TimeStampedModel):
         return self.get_full_name()
 
     @property
-    def device(self) -> Union[SeniorDevice, None]:
+    def device(self) -> Optional[SeniorDevice]:
         num_devices = self.devices.count()
         if self.devices.count() == 0:
             return None
@@ -377,7 +377,7 @@ class FamilyProspect(TimeStampedModel):
 
             send_res, text_content, to_phone_number = send_sms(
                 to_phone_number=to_phone_number,
-                template_txt='email/reach-prospect.txt',
+                template_file='email/reach-prospect.txt',
                 context={
                     'prospect': self,
                     'facility': self.senior.senior_living_facility,
@@ -563,7 +563,7 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
                 action_object=action_object,
                 target=circle,
                 )
-    channel_name = 'channel-{env}-circle-{circle}'.format(env=SETTINGS_ENV, circle=circle.id)
+    channel_name = user.get_family_circle_channel()
     user_action = user_action_model.objects.my_actions(user, circle).order_by('-timestamp')[0]
     serializer = ActionSerializer(user_action)
     json = JSONRenderer().render(serializer.data).decode('utf8')

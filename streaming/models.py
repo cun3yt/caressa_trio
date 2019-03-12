@@ -14,7 +14,7 @@ from datetime import datetime
 from django.db.models import Q
 from random import randint
 from uuid import uuid4
-from typing import Union
+from typing import Optional
 
 
 class Tag(TimeStampedModel):
@@ -41,7 +41,7 @@ class Tag(TimeStampedModel):
         return [el.strip() for el in tag_string.split(',')]
 
     @staticmethod
-    def _tag_list_to_audio_file(tag_list: list, context={}) -> Union['AudioFile', None]:
+    def _tag_list_to_audio_file(tag_list: list, context={}) -> Optional['AudioFile']:
         user = context.get('user', None)
         format_context = {
             'city': user.city if user else 'unknown',

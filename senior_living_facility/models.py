@@ -1,12 +1,17 @@
+import hashlib
 import pytz
 
-from django.db import models
-from django.utils.timezone import localtime
-from model_utils.models import TimeStampedModel
 from django.contrib.auth import get_user_model
+from django.db import models
+from django.db.models import signals
+from django.utils.timezone import localtime
+from model_utils.models import TimeStampedModel, StatusField
 from caressa.settings import TIME_ZONE as DEFAULT_TIMEZONE
 from jsonfield import JSONField
-from typing import Union
+from typing import Optional
+from utilities.template import template_to_str
+from model_utils import Choices
+from voice_service.google.tts import tts_to_s3
 
 
 class SeniorLivingFacility(TimeStampedModel):
@@ -31,9 +36,9 @@ class SeniorLivingFacility(TimeStampedModel):
     check_in_morning_start = models.TimeField(null=True,
                                               default='05:30:00', )
     check_in_deadline = models.TimeField(null=True,
-                                         default=None, )
+                                         default=None, )    # todo check business value of having default value
     check_in_reminder = models.TimeField(null=True,
-                                         default=None, )
+                                         default=None, )    # todo check business value of having default value
 
     @property
     def admins(self):
@@ -46,6 +51,35 @@ class SeniorLivingFacility(TimeStampedModel):
         user_model = get_user_model()
         return user_model.objects.filter(senior_living_facility=self,
                                          user_type__exact=user_model.CARETAKER)
+
+    @property
+    def check_in_time_today_in_tz(self):
+        now_in_tz = localtime(timezone=pytz.timezone(self.timezone))
+        check_in_time_today_in_tz = now_in_tz.replace(hour=self.check_in_morning_start.hour,
+                                                      minute=self.check_in_morning_start.minute,
+                                                      second=0,
+                                                      microsecond=0)
+        return check_in_time_today_in_tz
+
+    def get_resident_ids_checked_in(self):
+        user_model = get_user_model()
+        morning_check_in_time = self.check_in_time_today_in_tz.strftime('%Y-%m-%d %H:%M:%S%z')
+
+        checked_in_senior_ids = list(user_model.objects.filter(senior_living_facility=self,
+                                                               user_type__exact=user_model.CARETAKER,
+                                                               device_user_logs__created__gt=morning_check_in_time)  # todo index for created!
+                                     .distinct().values_list('id', flat=True))
+        return checked_in_senior_ids
+
+    def get_resident_ids_with_device_but_not_checked_in(self):
+        user_model = get_user_model()
+        checked_in_senior_ids = self.get_resident_ids_checked_in()
+        result_list = list(user_model.objects.filter(senior_living_facility=self,
+                                                     user_type__exact=user_model.CARETAKER,
+                                                     devices__isnull=False)
+                           .exclude(id__in=checked_in_senior_ids)
+                           .values_list('id', flat=True))
+        return result_list
 
     def __str__(self):
         return self.name
@@ -68,6 +102,13 @@ class SeniorDevice(TimeStampedModel):
     is_online = models.BooleanField(default=False, )
     status_checked = models.DateTimeField(null=False, )
     raw_log = models.ForeignKey(to='senior_living_facility.SeniorDevicesRawLog', null=True, on_delete=models.DO_NOTHING)
+
+    @staticmethod
+    def call_for_action_text():
+        context = {
+            'greeting': 'Hello',
+        }
+        return template_to_str('speech/call-for-check-in.txt', context)
 
 
 class SeniorDevicesRawLog(TimeStampedModel):
@@ -102,7 +143,7 @@ class SeniorDeviceUserActivityLog(TimeStampedModel):
     data = JSONField(default={})
 
     @classmethod
-    def get_last_user_log(cls, senior) -> Union['SeniorDeviceUserActivityLog', None]:
+    def get_last_user_log(cls, senior) -> Optional['SeniorDeviceUserActivityLog']:
         logs = senior.device_user_logs.order_by('-id')
         if logs.count() == 0:
             return None
@@ -119,10 +160,49 @@ class SeniorDeviceUserActivityLog(TimeStampedModel):
         activity_time_in_tz = localtime(self.created,
                                         timezone=pytz.timezone(facility.timezone))
 
-        now_in_tz = localtime(timezone=pytz.timezone(facility.timezone))
-        check_in_time_today_in_tz = now_in_tz.replace(hour=facility.check_in_morning_start.hour,
-                                                      minute=facility.check_in_morning_start.minute,
-                                                      second=0,
-                                                      microsecond=0)
-
+        check_in_time_today_in_tz = facility.check_in_time_today_in_tz
         return check_in_time_today_in_tz < activity_time_in_tz
+
+
+SeniorDeviceUserActivityLog._meta.get_field('created').db_index = True
+
+
+class SeniorLivingFacilityContent(TimeStampedModel):
+    class Meta:
+        db_table = 'senior_living_facility_content'
+        index_together = ('senior_living_facility', 'text_content', 'content_type', )
+
+    CONTENT_TYPES = Choices('Daily-Calendar-Summary', 'Event', 'Check-In-Call', )
+
+    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
+                                               null=False,
+                                               blank=False,
+                                               default=None,
+                                               on_delete=models.DO_NOTHING, )
+    content_type = StatusField(choices_name='CONTENT_TYPES',
+                               null=False,
+                               blank=False, )
+    text_content = models.TextField(null=False,
+                                    blank=True,
+                                    default='', )
+    text_content_hash = models.TextField(null=False,
+                                         blank=True,
+                                         default='',
+                                         db_index=True, )
+    audio_url = models.URLField(null=False,
+                                blank=True,
+                                default='', )
+
+    @staticmethod
+    def find(**kwargs) -> 'SeniorLivingFacilityContent':
+        inst, _ = SeniorLivingFacilityContent.objects.get_or_create(**kwargs)
+        return inst
+
+
+def compute_hash_for_text_content(sender, instance, raw, using, update_fields, **kwargs):
+    instance.hash = hashlib.sha256(instance.text_content.encode('utf-8')).hexdigest() if instance.text_content else ''
+    instance.audio_url = tts_to_s3(return_format='url', text=instance.text_content) if instance.text_content else ''
+
+
+signals.pre_save.connect(receiver=compute_hash_for_text_content,
+                         sender=SeniorLivingFacilityContent, dispatch_uid='compute_hash_for_text_content')

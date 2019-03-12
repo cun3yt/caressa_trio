@@ -1,20 +1,13 @@
 from django.core.mail import EmailMultiAlternatives
-from django.template.loader import get_template
+from utilities.template import template_to_str
 
 
-FROM_EMAIL = 'cuneyt@caressa.ai' # todo hardcode and suitable email change
+FROM_EMAIL = 'cuneyt@caressa.ai'    # todo hardcode and suitable email change
 
 
-def send_email(to_email_addresses, subject, template_html, template_txt, context=None):
-    context = {} if context is None else context
-
-    html_template_content = get_template(template_html)
-    text_template_content = get_template(template_txt)
-
-    data = context
-
-    text_content = text_template_content.render(data)
-    html_content = html_template_content.render(data)
+def send_email(to_email_addresses, subject, template_html_file, template_txt_file, context=None):
+    html_content = template_to_str(template_html_file, context)
+    text_content = template_to_str(template_txt_file, context)
 
     msg = EmailMultiAlternatives(subject, text_content, FROM_EMAIL, to_email_addresses)
     msg.attach_alternative(html_content, "text/html")
