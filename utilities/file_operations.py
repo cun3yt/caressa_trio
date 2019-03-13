@@ -1,3 +1,9 @@
+"""
+todo image operations deserve their own module, I think this file can be renamed as `image.py`
+
+@author Cuneyt M.
+"""
+
 from PIL import Image
 import boto3
 from shutil import copyfile

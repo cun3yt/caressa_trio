@@ -1,0 +1,3 @@
+{{greeting}},
+
+Did you wake up? Click your Caressa device for the most exciting things coming up!

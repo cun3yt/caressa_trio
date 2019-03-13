@@ -1,12 +1,18 @@
+import hashlib
 import pytz
 
-from django.db import models
-from django.utils.timezone import localtime
-from model_utils.models import TimeStampedModel
 from django.contrib.auth import get_user_model
+from django.db import models
+from django.db.models import signals
+from django.utils.timezone import localtime
+from model_utils.models import TimeStampedModel, StatusField
 from caressa.settings import TIME_ZONE as DEFAULT_TIMEZONE
 from jsonfield import JSONField
-from typing import Union
+from typing import Optional
+from utilities.template import template_to_str
+from model_utils import Choices
+from voice_service.google.tts import tts_to_s3
+from utilities.models.abstract_models import CreatedTimeStampedModel
 
 
 class SeniorLivingFacility(TimeStampedModel):
@@ -28,12 +34,12 @@ class SeniorLivingFacility(TimeStampedModel):
                                 null=False,
                                 blank=False,
                                 default=DEFAULT_TIMEZONE, )
-    check_in_morning_start = models.TimeField(null=True,
+    check_in_morning_start = models.TimeField(null=False,
                                               default='05:30:00', )
-    check_in_deadline = models.TimeField(null=True,
-                                         default=None, )
+    check_in_deadline = models.TimeField(null=False,
+                                         default='10:00:00', )
     check_in_reminder = models.TimeField(null=True,
-                                         default=None, )
+                                         default=None, )    # todo check business value of having default value
 
     @property
     def admins(self):
@@ -46,6 +52,51 @@ class SeniorLivingFacility(TimeStampedModel):
         user_model = get_user_model()
         return user_model.objects.filter(senior_living_facility=self,
                                          user_type__exact=user_model.CARETAKER)
+
+    def time_today_in_tz(self, datetime):   # todo refactor to move these to utilities
+        now_in_tz = localtime(timezone=pytz.timezone(self.timezone))
+        time_today_in_tz = now_in_tz.replace(hour=datetime.hour,
+                                             minute=datetime.minute,
+                                             second=0,
+                                             microsecond=0)
+        return time_today_in_tz
+
+    @property
+    def check_in_time_today_in_tz(self):
+        return self.time_today_in_tz(self.check_in_morning_start)
+
+    @property
+    def deadline_in_time_today_in_tz(self):
+        return self.time_today_in_tz(self.check_in_deadline)
+
+    def has_check_in_reminder_passed(self):     # todo get rid of `tz` for comparison
+        assert self.check_in_reminder, (
+            "check_in_reminder must be set in SeniorLivingFacility "
+            "for has_check_in_reminder_passed function to be used."
+        )
+        check_in_reminder_in_tz = self.time_today_in_tz(self.check_in_reminder)
+        now_in_tz = localtime(timezone=pytz.timezone(self.timezone))
+        return check_in_reminder_in_tz <= now_in_tz
+
+    def get_resident_ids_checked_in(self):
+        user_model = get_user_model()
+        morning_check_in_time = self.check_in_time_today_in_tz.strftime('%Y-%m-%d %H:%M:%S%z')
+
+        checked_in_senior_ids = list(user_model.objects.filter(senior_living_facility=self,
+                                                               user_type__exact=user_model.CARETAKER,
+                                                               device_user_logs__created__gt=morning_check_in_time)
+                                     .distinct().values_list('id', flat=True))
+        return checked_in_senior_ids
+
+    def get_resident_ids_with_device_but_not_checked_in(self):
+        user_model = get_user_model()
+        checked_in_senior_ids = self.get_resident_ids_checked_in()
+        result_list = list(user_model.objects.filter(senior_living_facility=self,
+                                                     user_type__exact=user_model.CARETAKER,
+                                                     devices__isnull=False)
+                           .exclude(id__in=checked_in_senior_ids)
+                           .values_list('id', flat=True))
+        return result_list
 
     def __str__(self):
         return self.name
@@ -69,6 +120,13 @@ class SeniorDevice(TimeStampedModel):
     status_checked = models.DateTimeField(null=False, )
     raw_log = models.ForeignKey(to='senior_living_facility.SeniorDevicesRawLog', null=True, on_delete=models.DO_NOTHING)
 
+    @staticmethod
+    def call_for_action_text():
+        context = {
+            'greeting': 'Hello',
+        }
+        return template_to_str('speech/call-for-check-in.txt', context)
+
 
 class SeniorDevicesRawLog(TimeStampedModel):
     """
@@ -83,7 +141,7 @@ class SeniorDevicesRawLog(TimeStampedModel):
     data = JSONField(default={})
 
 
-class SeniorDeviceUserActivityLog(TimeStampedModel):
+class SeniorDeviceUserActivityLog(CreatedTimeStampedModel):
     """
     This class represents users' interaction with his/her device.
 
@@ -102,7 +160,7 @@ class SeniorDeviceUserActivityLog(TimeStampedModel):
     data = JSONField(default={})
 
     @classmethod
-    def get_last_user_log(cls, senior) -> Union['SeniorDeviceUserActivityLog', None]:
+    def get_last_user_log(cls, senior) -> Optional['SeniorDeviceUserActivityLog']:
         logs = senior.device_user_logs.order_by('-id')
         if logs.count() == 0:
             return None
@@ -119,10 +177,120 @@ class SeniorDeviceUserActivityLog(TimeStampedModel):
         activity_time_in_tz = localtime(self.created,
                                         timezone=pytz.timezone(facility.timezone))
 
-        now_in_tz = localtime(timezone=pytz.timezone(facility.timezone))
-        check_in_time_today_in_tz = now_in_tz.replace(hour=facility.check_in_morning_start.hour,
-                                                      minute=facility.check_in_morning_start.minute,
-                                                      second=0,
-                                                      microsecond=0)
-
+        check_in_time_today_in_tz = facility.check_in_time_today_in_tz
         return check_in_time_today_in_tz < activity_time_in_tz
+
+
+SeniorDeviceUserActivityLog._meta.get_field('created').db_index = True
+
+
+class SeniorLivingFacilityContent(CreatedTimeStampedModel):
+    """
+    All text (tts) contents that are sent from SeniorLivingFacility to seniors are saved here.
+    """
+    class Meta:
+        db_table = 'senior_living_facility_content'
+        indexes = [
+            models.Index(fields=['senior_living_facility', 'text_content', 'content_type', ])
+        ]
+
+    CONTENT_TYPES = Choices('Daily-Calendar-Summary', 'Event', 'Check-In-Call', )
+
+    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
+                                               null=False,
+                                               blank=False,
+                                               default=None,
+                                               on_delete=models.DO_NOTHING, )
+    content_type = StatusField(choices_name='CONTENT_TYPES',
+                               null=False,
+                               blank=False, )
+    text_content = models.TextField(null=False,
+                                    blank=True,
+                                    default='', )
+    text_content_hash = models.TextField(null=False,
+                                         blank=True,
+                                         default='',
+                                         db_index=True, )
+    audio_url = models.URLField(null=False,
+                                blank=True,
+                                default='', )
+
+    @staticmethod
+    def find(**kwargs) -> 'SeniorLivingFacilityContent':
+        inst, _ = SeniorLivingFacilityContent.objects.get_or_create(**kwargs)
+        return inst
+
+
+def compute_hash_for_text_content(sender, instance, raw, using, update_fields, **kwargs):
+    instance.text_content_hash = hashlib.sha256(instance.text_content.encode('utf-8')).hexdigest() \
+        if instance.text_content else ''
+    instance.audio_url = tts_to_s3(return_format='url', text=instance.text_content) if instance.text_content else ''
+
+
+signals.pre_save.connect(receiver=compute_hash_for_text_content,
+                         sender=SeniorLivingFacilityContent, dispatch_uid='compute_hash_for_text_content')
+
+
+class SeniorLivingFacilityMessageLog(CreatedTimeStampedModel):
+    """
+    This model keeps track of the message/content that is sent by a `SeniorLivingFacility` at a given timestamp.
+
+    Content Type: Definition of the content, e.g. 'Call for Morning Check In'
+    Medium Type: Text-to-Speech, Voice
+    Delivery Type: Urgent Mail, Voice Mail
+    """
+    class Meta:
+        db_table = 'senior_living_facility_message_log'
+
+    CONTENT_TYPE_CALL_FOR_MORNING_CHECK_IN = 'call-for-morning-check-in'
+    CONTENT_TYPE_CUSTOM_MESSAGE = 'custom-message'
+
+    CONTENT_TYPE_SET = (
+        (CONTENT_TYPE_CALL_FOR_MORNING_CHECK_IN, 'Call for Morning Check In'),
+        (CONTENT_TYPE_CUSTOM_MESSAGE, 'Custom Message'),
+    )
+
+    MEDIUM_TYPE_TEXT = 'text'
+    MEDIUM_TYPE_VOICE = 'voice'
+
+    MEDIUM_TYPE_SET = (
+        (MEDIUM_TYPE_TEXT, 'Text'),
+        (MEDIUM_TYPE_VOICE, 'Voice'),
+    )
+
+    DELIVERY_TYPE_URGENT_MAIL = 'urgent-mail'
+    DELIVERY_TYPE_VOICE_MAIL = 'voice-mail'
+
+    DELIVERY_TYPE_SET = (
+        (DELIVERY_TYPE_URGENT_MAIL, 'Urgent Mail'),
+        (DELIVERY_TYPE_VOICE_MAIL, 'Voice Mail'),
+    )
+
+    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
+                                               null=False,
+                                               blank=False,
+                                               default=None,
+                                               on_delete=models.DO_NOTHING, )
+
+    content_type = models.TextField(
+        choices=CONTENT_TYPE_SET,
+        null=False,
+        blank=False,
+        default=None, )
+
+    medium_type = models.TextField(
+        choices=MEDIUM_TYPE_SET,
+        null=False,
+        blank=False,
+        default=None, )
+
+    delivery_type = models.TextField(
+        choices=DELIVERY_TYPE_SET,
+        null=False,
+        blank=False,
+        default=None, )
+
+    data = JSONField(default={})
+
+
+SeniorLivingFacilityMessageLog._meta.get_field('created').db_index = True
