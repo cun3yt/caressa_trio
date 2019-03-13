@@ -1,4 +1,3 @@
-from caressa.settings import ENV as SETTINGS_ENV
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -174,7 +173,7 @@ class User(AbstractCaressaUser, TimeStampedModel):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
 
     @property
-    def senior_circle(self) -> Union['Circle', None]:
+    def senior_circle(self) -> Optional['Circle']:
         if self.user_type not in (self.CARETAKER, self.FAMILY, ):
             raise KeyError("User type expected to be {user_type}. Found: {found_type}".format(user_type=self.CARETAKER,
                                                                                               found_type=self.user_type))
