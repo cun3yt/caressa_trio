@@ -45,9 +45,10 @@ def family_prospect_invitation(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
             user.user_type = User.FAMILY
             user.save()
+            form.save_m2m()
             tracking_code = form.data.get('invitation_code')
             family_outreach = FamilyOutreach.objects.get(tracking_code=tracking_code,
                                                          converted_user=None)

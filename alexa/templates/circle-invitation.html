@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <p>Welcome,</p>
+    <p>Sign Up Here to Connect with your family on Caressa.</p>
+    <p>
+        <div>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="hidden" name="invitation_code" value="{{ invitation_code}}">
+                <button type="submit">Sign up</button>
+            </form>
+        </div>
+    </p>
+    <hr>
+    <p>Q: What is Caressa?</p>
+    <p>A: Caressa is a radio-like senior companion for entertainment and information that the seniors deserve! It brings the security of family connection and more.</p>
+{% endblock %}
+
+{% block js_3rd_parties %}
+{% endblock %}

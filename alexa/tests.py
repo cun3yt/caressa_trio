@@ -20,6 +20,8 @@ class UserModelTestCase(TestCase):
         cls.user_two = mommy.make_recipe('alexa.user', user_type='FAMILY',
                                          email='user2@example.com')
 
+        cls.user_one.senior_circle.add_member(cls.user_two, False)
+
         cls.user_three = mommy.make_recipe('alexa.user', user_type='CAREGIVER',
                                            email='user3@example.com')
 

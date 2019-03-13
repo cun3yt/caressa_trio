@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings
+from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings, CircleInvitation, CircleReinvitation
 from actions.models import UserAction
 from senior_living_facility.models import SeniorDeviceUserActivityLog
 from streaming.models import Tag
@@ -8,6 +8,8 @@ from actstream.models import action_object_stream
 from random import randint
 from django.core.exceptions import ValidationError
 from rest_framework.serializers import ValidationError as RestFrameworkValidationError
+
+from utilities.logger import log
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -73,16 +75,63 @@ class UserSettingsSerializer(serializers.ModelSerializer):
 class CircleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Circle
-        fields = ('pk', 'members', 'senior')
+        fields = ('pk', 'members', 'senior', 'pending_invitations')
 
     senior = serializers.SerializerMethodField()
     members = serializers.SerializerMethodField()
+    pending_invitations = serializers.SerializerMethodField()
 
     def get_members(self, circle: Circle):
-        return UserSerializer(circle.members, many=True).data
+        members = circle.members.filter(user_type=User.FAMILY)
+        members_lst = list(UserSerializer(members, many=True).data)
+        admin_ids = [admin.id for admin in circle.admins.all()]
+
+        for index, member in enumerate(members_lst):
+            members_lst[index]['is_admin'] = True if member['pk'] in admin_ids else False
+
+        return members_lst
 
     def get_senior(self, circle: Circle):
         return SeniorSerializer(circle.person_of_interest).data
+
+    def get_pending_invitations(self, circle):
+        return CircleInvitationSerializer(circle.pending_invitations, many=True).data
+
+
+class CircleInvitationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CircleInvitation
+        fields = ('pk', 'created', 'email', 'invitation_code')
+
+    def create(self, validated_data):
+        circle_id = self.context['view'].kwargs['circle_pk']
+        circle = Circle.objects.get(id=circle_id)
+        inviter_user = self.context['request'].user
+
+        circle_invitation = CircleInvitation.objects.create(circle=circle,
+                                                            email=validated_data['email'],
+                                                            inviter=inviter_user, )
+
+        # todo raise email already exist method mobile friendly.
+
+        circle_invitation.send_circle_invitation_mail()
+
+        return circle_invitation
+
+
+class CircleReinvitationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CircleReinvitation
+        fields = ('pk', )
+
+    def create(self, validated_data):
+        invitation_code = self.context['view'].kwargs['invitation_code']
+
+        circle_invitation = CircleInvitation.objects.get(invitation_code=invitation_code,)
+        circle_reinvitation = CircleReinvitation.objects.create(circle_invitation=circle_invitation)
+        circle_invitation.send_circle_invitation_mail()
+
+        return circle_reinvitation
 
 
 class ChannelSerializer(serializers.ModelSerializer):

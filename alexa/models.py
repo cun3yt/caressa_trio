@@ -174,10 +174,14 @@ class User(AbstractCaressaUser, TimeStampedModel):
         return self.user_type in (self.CAREGIVER, self.CAREGIVER_ORG)
 
     @property
-    def senior_circle(self) -> 'Circle':
+    def senior_circle(self) -> Union['Circle', None]:
         if self.user_type not in (self.CARETAKER, self.FAMILY, ):
             raise KeyError("User type expected to be {user_type}. Found: {found_type}".format(user_type=self.CARETAKER,
                                                                                               found_type=self.user_type))
+
+        if self.circle_set.all().count() == 0:
+            return None
+
         return self.circle_set.all()[0]
 
     @property
@@ -268,6 +272,10 @@ class Circle(TimeStampedModel):
 
     def is_admin(self, member: User):
         return self.is_member(member) and member in self.admins
+
+    @property
+    def pending_invitations(self):
+        return CircleInvitation.objects.filter(circle=self, converted_user_id=None).all()
 
     @property
     def admins(self):
@@ -449,6 +457,50 @@ class UserSettings(TimeStampedModel):
         self.data['genres'] = genres
 
 
+class CircleInvitation(TimeStampedModel):
+    class Meta:
+        db_table = 'circle_invitation'
+
+    circle = models.ForeignKey(to=Circle, on_delete=models.DO_NOTHING, null=False, )
+    email = models.EmailField(_('email address'), null=False, unique=True, )
+    inviter = models.ForeignKey(to=User, on_delete=models.DO_NOTHING, related_name='circle_inviter')
+    name = models.TextField(null=True, )
+    surname = models.TextField(null=True, )
+    invitation_code = models.UUIDField(default=uuid4, primary_key=True, db_index=True, )
+    converted_user = models.ForeignKey(to=User,
+                                       on_delete=models.DO_NOTHING,
+                                       null=True,
+                                       related_name='created_user_from_invitation')
+
+    @property
+    def invitation_url(self):
+        return '{base_url}{url}?invitation_code={code}'.format(base_url=WEB_BASE_URL,
+                                                               url=reverse('circle-member-invitation'),
+                                                               code=self.invitation_code)
+
+    def send_circle_invitation_mail(self) -> bool:
+        assert self.converted_user is None, (
+            "send_circle_invitation_mail can be called for only for not converted users."
+        )
+        send_email([self.email],
+                   'Invitation from {}'.format(self.inviter.first_name),
+                   'email/circle-invitation.html',
+                   'email/circle-invitation.txt',
+                   context={
+                       'person_of_interest': self.circle.person_of_interest,
+                       'inviter': self.inviter,
+                       'invitation_url': self.invitation_url,
+                   })
+        return True
+
+
+class CircleReinvitation(TimeStampedModel):
+    class Meta:
+        db_table = 'circle_reinvitation'
+
+    circle_invitation = models.ForeignKey(to=CircleInvitation, on_delete=models.DO_NOTHING, null=False, )
+
+
 class Joke(TimeStampedModel, FetchRandomMixin):
     # todo 1. Joke, News, Facts and others need to be moved to a separate app, e.g. named "content",
     # todo 2. then alexa app renamed as "user"
@@ -572,6 +624,8 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
 
 def create_circle_for_user(sender, instance, created, **kwargs):
     user = instance     # type: User
+    if user.user_type is not User.CARETAKER:
+        return
     user.create_initial_circle()
 
 
