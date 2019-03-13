@@ -9,6 +9,8 @@ from random import randint
 from django.core.exceptions import ValidationError
 from rest_framework.serializers import ValidationError as RestFrameworkValidationError
 
+from utilities.logger import log
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -109,6 +111,8 @@ class CircleInvitationSerializer(serializers.ModelSerializer):
         circle_invitation = CircleInvitation.objects.create(circle=circle,
                                                             email=validated_data['email'],
                                                             inviter=inviter_user, )
+
+        # todo raise email already exist method mobile friendly.
 
         circle_invitation.send_circle_invitation_mail()
 

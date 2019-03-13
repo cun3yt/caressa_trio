@@ -465,11 +465,15 @@ export default {
       this.$auth.post(`${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/invite/`, {'email': this.newMemberEmail})
         .then(res => {
           this.showNotif({message: `An email was sent to ${this.newMemberEmail}`, icon: 'far fa-check-circle', color: 'tertiary'})
-          this.circleMembers.push({first_name: this.newMemberEmail, last_name: '(pending)', is_admin: false})
+          this.circleMembership.pendings.push({email: this.newMemberEmail, is_admin: false})
           this.newMemberEmail = ''
         }, err => {
+          console.log(err)
+          if (err.data.email && err.data.email[0]) {
+            let message = err.data.email[0]
+            return this.showNotif({message: `${message}. try reinvite button or another email!`, icon: 'fas fa-times', color: 'negative'})
+          }
           this.showNotif({message: 'Something went wrong, please try again.', icon: 'fas fa-times', color: 'negative'})
-          console.error(err)
         })
     },
     reInviteMember (invitationCode, contact) {
