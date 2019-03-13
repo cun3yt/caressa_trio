@@ -34,15 +34,18 @@ def _can_send_for_facility(facility: SeniorLivingFacility) -> 'bool':
         log("Check in reminder time is not come for facility: ({}, {}). Passing it".format(facility.id, facility.name))
         return False
 
+    now = datetime.now(pytz.utc)
+    reminder_limit_after_deadline_in_minutes = 45
+    if now - timedelta(minutes=reminder_limit_after_deadline_in_minutes) > facility.deadline_in_time_today_in_tz:
+        log("Check in reminder is not available after {} minutes from deadline. Passing it".format(reminder_limit_after_deadline_in_minutes))
+        return False
+
     message_log_qs = MsgLog.objects.filter(senior_living_facility=facility,
                                            content_type=MsgLog.CONTENT_TYPE_CALL_FOR_MORNING_CHECK_IN).order_by(
         '-created')
 
-    # todo deadline will come here..
-
     if message_log_qs.count() > 0:
         message_log = message_log_qs[0]
-        now = datetime.now(pytz.utc)
         interval_in_hours = 12
         if (now - timedelta(hours=interval_in_hours)) < message_log.created:
             log("Check in reminded in the last {} hours for facility ({}, {}). Passing it".format(interval_in_hours,
