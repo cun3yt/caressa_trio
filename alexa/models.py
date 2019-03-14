@@ -146,12 +146,13 @@ class User(AbstractCaressaUser, TimeStampedModel):
     def get_profile_picture_url(self, dimensions, file_format):
         upper_dir = self.id if self.profile_pic else 'no_user'
         profile_picture = self.profile_pic if self.profile_pic else 'default_profile_pic'
-        return '{region}/{bucket}/images/user/{upper_dir}/{profile_picture}_{dimensions}.{file_format}'.format(region=S3_REGION,
-                                                                                                               bucket=S3_PRODUCTION_BUCKET,
-                                                                                                               profile_picture=profile_picture,
-                                                                                                               upper_dir=upper_dir,
-                                                                                                               dimensions=dimensions,
-                                                                                                               file_format=file_format)
+        format_string = '{region}/{bucket}/images/user/{upper_dir}/{profile_picture}_{dimensions}.{file_format}'
+        return format_string.format(region=S3_REGION,
+                                    bucket=S3_PRODUCTION_BUCKET,
+                                    profile_picture=profile_picture,
+                                    upper_dir=upper_dir,
+                                    dimensions=dimensions,
+                                    file_format=file_format)
 
     def get_profile_pic(self):
         return self.get_profile_picture_url('w_250', 'jpg')
@@ -293,8 +294,8 @@ class CircleMembership(TimeStampedModel):
     @classmethod
     def add_member(cls, circle: Circle, member: User, is_admin: bool) -> None:
         if cls.objects.filter(circle=circle, member=member).count() > 0:
-            log("{member} is already a member of circle: {circle}\n"\
-                "Other parameters are ignored even if "\
+            log("{member} is already a member of circle: {circle}\n"
+                "Other parameters are ignored even if "
                 "they are different from the current object".format(member=member, circle=circle))
             return
         cls.objects.create(circle=circle, member=member, is_admin=is_admin)
