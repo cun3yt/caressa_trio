@@ -14,7 +14,6 @@ from datetime import datetime
 from django.db.models import Q
 from random import randint
 from uuid import uuid4
-from typing import Optional
 
 
 class Tag(TimeStampedModel):
@@ -37,32 +36,27 @@ class Tag(TimeStampedModel):
                                                ), )
 
     @staticmethod
-    def _tag_string_to_list(tag_string: str) -> list:
-        return [el.strip() for el in tag_string.split(',')]
+    def tag_list_to_audio_file(tag_list: list) -> ['AudioFile']:
 
-    @staticmethod
-    def _tag_list_to_audio_file(tag_list: list, context={}) -> Optional['AudioFile']:
-        user = context.get('user', None)
-        format_context = {
-            'city': user.city if user else 'unknown',
-            'date': datetime.today().strftime('%Y-%m-%d')
-        }
-        formatted_tag_list = [tag.format(**format_context) for tag in tag_list]  # list comprehension
-        tags = Tag.objects.all().filter(name__in=formatted_tag_list)
+        tag_list = list(map(int, tag_list))
+
+        if len(tag_list) < 1:
+            tag_list = Tag.default_tags_list()
+        tags = Tag.objects.all().filter(pk__in=tag_list)
         qs = AudioFile.objects.all().filter(tags__in=tags)
         qs_count = qs.count()
-
-        if qs_count < 1:
-            return None
 
         random_slice = randint(0, qs_count - 1)
         result_set = qs[random_slice: random_slice + 1]
         return result_set[0]
 
     @staticmethod
-    def string_to_audio_file(tag_string: str, context={}) -> 'AudioFile':
-        tag_list = Tag._tag_string_to_list(tag_string)
-        return Tag._tag_list_to_audio_file(tag_list, context)
+    def default_tags_list():
+        tag_qs = Tag.objects.all().filter(is_setting_available=True)
+        lst = []
+        for tag in tag_qs:
+            lst.append(tag.id)
+        return lst
 
 
 class AudioFile(TimeStampedModel):
@@ -124,6 +118,13 @@ class AudioFile(TimeStampedModel):
     def is_publicly_accessible(self):
         return self.duration >= 0
     is_publicly_accessible.admin_order_field = 'duration'
+
+    @property
+    def tag_list(self):
+        if self.tags.all().count() > 0:
+            return [tag.name for tag in self.tags.all()]
+
+        return []
 
 
 AudioFile._meta.get_field('modified').db_index = True
@@ -266,10 +267,6 @@ class PlaylistHasAudio(TimeStampedModel):
 
     hash = models.UUIDField(default=uuid4)
 
-    def get_audio(self):        # todo: use this function instead of direct audio reach..
-        context = {'user': self.playlist.user}
-        return self.audio if self.audio else Tag.string_to_audio_file(self.tag, context)
-
     def _current_daytime(self):
         now = datetime.utcnow()
         if 12 < now.hour <= 19:
@@ -347,14 +344,37 @@ class UserPlaylistStatus(TimeStampedModel):
         return user.playlist_set.all()[0] if qs.count() >= 1 else Playlist.get_default()
 
     @classmethod
-    def get_user_playlist_status_for_user(cls, user: User):
+    def get_user_playlist_status_for_user(cls, user: User): # todo not in use. delete?
         playlist_entries_qs = cls.get_users_playlist(user).playlisthasaudio_set.all()
 
         obj_instance, created = cls.objects.select_for_update().get_or_create(
             user=user,
             defaults={
                 'playlist_has_audio': playlist_entries_qs[0],
-                'current_active_audio': playlist_entries_qs[0].get_audio(),
+                'current_active_audio': user.get_audio,
+            }
+        )
+        return obj_instance, created
+
+
+class UserAudioStatus(TimeStampedModel):
+    class Meta:
+        db_table = 'user_audio_status'
+        ordering = ['id', ]
+
+    user = models.ForeignKey(to=User,
+                             on_delete=models.DO_NOTHING, )
+
+    current_active_audio = models.ForeignKey(to=AudioFile,
+                                             on_delete=models.DO_NOTHING,
+                                             null=True, )
+
+    @classmethod
+    def get_user_audio_status_for_user(cls, user: User):
+        obj_instance, created = cls.objects.select_for_update().get_or_create(
+            user=user,
+            defaults={
+                'current_active_audio': user.get_audio,
             }
         )
         return obj_instance, created

@@ -30,6 +30,7 @@ from django.urls import reverse
 from caressa.settings import WEB_BASE_URL, S3_PRODUCTION_BUCKET, S3_REGION
 from utilities.email import send_email
 from utilities.sms import send_sms
+from streaming.models import Tag
 
 
 class CaressaUserManager(BaseUserManager):
@@ -248,6 +249,15 @@ class User(AbstractCaressaUser, TimeStampedModel):
             log_warning("Number of devices expected is 0 or 1 but found {}".format(num_devices))
 
         return self.devices.all()[0]
+
+    @property
+    def get_audio(self):
+        user_settings, _ = UserSettings.objects.get_or_create(user=self)
+        user_genres_id_list = user_settings.genres
+        if len(user_genres_id_list) == 0:
+            user_genres_id_list = Tag.default_tags_list()
+
+        return Tag.tag_list_to_audio_file(user_genres_id_list)
 
 
 class Circle(TimeStampedModel):

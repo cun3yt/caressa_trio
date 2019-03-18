@@ -5,6 +5,7 @@ from django.db import transaction
 from streaming.exceptions import PlaylistAlreadyExistException
 
 
+# todo this file may be obsolete to be deleted.
 def update_user_status_for_new_playlist(status: UserPlaylistStatus, new_playlist):
     audio_pointed = status.playlist_has_audio.audio
     status.playlist_has_audio = new_playlist.playlisthasaudio_set.filter(audio=audio_pointed).all()[0]
