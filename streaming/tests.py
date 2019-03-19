@@ -353,24 +353,6 @@ class UserPlaylistStatusModelTestCase(TestCase):
         self.assertIsInstance(user_2_playlist, Playlist)
         self.assertEqual(user_2_playlist, user_2_playlist_default)
 
-    # def test_get_user_playlist_status_for_user(self):
-    #
-    #     status_for_user_1, status_is_created_for_user_1 = self.user_playlist_status_1\
-    #         .get_user_playlist_status_for_user(self.user_1)
-    #     status_for_user_2, status_is_created_for_user_2 = self.user_playlist_status_1\
-    #         .get_user_playlist_status_for_user(self.user_2)
-    #
-    #     status_object_for_user_1 = UserPlaylistStatus.objects.all()[0]
-    #     status_object_for_user_2 = UserPlaylistStatus.objects.all()[3]
-    #
-    #     self.assertIsNotNone(status_for_user_1)
-    #     self.assertIsNotNone(status_for_user_2)
-    #     self.assertNotEqual(status_for_user_1, status_for_user_2)
-    #     self.assertEqual(status_object_for_user_1, status_for_user_1)
-    #     self.assertEqual(status_object_for_user_2, status_for_user_2)
-    #     self.assertFalse(status_is_created_for_user_1)
-    #     self.assertTrue(status_is_created_for_user_2)
-
 
 # todo Read and enable tests: https://www.django-rest-framework.org/api-guide/testing/
 #

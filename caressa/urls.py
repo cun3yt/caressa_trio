@@ -15,7 +15,7 @@ from django.urls import include, path
 from django.conf.urls.static import static
 from django.conf import settings
 from alexa.views import main_view
-from streaming.views import stream_io_wrapper, playlist_replication
+from streaming.views import stream_io_wrapper
 
 from actions.urls import register_nested_routes as register_nested_action_urls, \
     register_flat_routes as register_flat_action_routes
@@ -53,7 +53,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('streaming', stream_io_wrapper),
     path('speech-to-text', speech_to_text),
-    path('replicate/', playlist_replication),
     path('api-auth/', include('rest_framework.urls')),
     path('like_joke/', like_at_joke),
     path('like_news/', like_at_news),

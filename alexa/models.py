@@ -250,15 +250,6 @@ class User(AbstractCaressaUser, TimeStampedModel):
 
         return self.devices.all()[0]
 
-    @property
-    def get_audio(self):
-        user_settings, _ = UserSettings.objects.get_or_create(user=self)
-        user_genres_id_list = user_settings.genres
-        if len(user_genres_id_list) == 0:
-            user_genres_id_list = Tag.default_tags_list()
-
-        return Tag.tag_list_to_audio_file(user_genres_id_list)
-
 
 class Circle(TimeStampedModel):
     class Meta:

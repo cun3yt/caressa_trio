@@ -1,3 +1,4 @@
+from alexa import models as alexa_models
 from caressa.settings import AUTH_USER_MODEL as User
 from django.db import models
 from model_utils.models import TimeStampedModel
@@ -36,10 +37,7 @@ class Tag(TimeStampedModel):
                                                ), )
 
     @staticmethod
-    def tag_list_to_audio_file(tag_list: list) -> ['AudioFile']:
-
-        tag_list = list(map(int, tag_list))
-
+    def tag_list_to_audio_file(tag_list: list) -> 'AudioFile':
         if len(tag_list) < 1:
             tag_list = Tag.default_tags_list()
         tags = Tag.objects.all().filter(pk__in=tag_list)
@@ -52,11 +50,7 @@ class Tag(TimeStampedModel):
 
     @staticmethod
     def default_tags_list():
-        tag_qs = Tag.objects.all().filter(is_setting_available=True)
-        lst = []
-        for tag in tag_qs:
-            lst.append(tag.id)
-        return lst
+        return list(Tag.objects.all().filter(is_setting_available=True).values_list('id', flat=True))
 
 
 class AudioFile(TimeStampedModel):
@@ -121,10 +115,22 @@ class AudioFile(TimeStampedModel):
 
     @property
     def tag_list(self):
-        if self.tags.all().count() > 0:
-            return [tag.name for tag in self.tags.all()]
+        return list(self.tags.all().values_list('name', flat=True))
 
-        return []
+    @staticmethod
+    def get_main_content_to_play(user):
+        assert user.user_type == User.CARETAKER, (
+            "Main Content Audio Play is only available for user_type: senior. "
+            "It is {user_type} for user.id: {user_id}".format(user_type=user.user_type,
+                                                              user_id=user.id)
+        )
+
+        user_settings, _ = alexa_models.UserSettings.objects.get_or_create(user=user)
+        user_genres_id_list = user_settings.genres
+        if len(user_genres_id_list) == 0:
+            user_genres_id_list = Tag.default_tags_list()
+
+        return Tag.tag_list_to_audio_file(user_genres_id_list)
 
 
 AudioFile._meta.get_field('modified').db_index = True
@@ -143,7 +149,7 @@ signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
                          sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
 
 
-class Playlist(CacheMixin, TimeStampedModel):
+class Playlist(CacheMixin, TimeStampedModel):  # todo no use, delete?
     class Meta:
         db_table = 'playlist'
         ordering = ['id', ]
@@ -222,7 +228,7 @@ class Playlist(CacheMixin, TimeStampedModel):
                                                                            num_files=self.number_of_audio, )
 
 
-class PlaylistHasAudio(TimeStampedModel):
+class PlaylistHasAudio(TimeStampedModel): # todo no use, delete?
     class Meta:
         db_table = 'playlist_has_audio'
         ordering = ['order_id', ]
@@ -320,7 +326,7 @@ signals.pre_delete.connect(receiver=invalidate_playlist_caches,
                            sender=PlaylistHasAudio)
 
 
-class UserPlaylistStatus(TimeStampedModel):
+class UserPlaylistStatus(TimeStampedModel):  # todo no use, delete?
     class Meta:
         db_table = 'user_playlist_status'
         ordering = ['id', ]
@@ -343,41 +349,18 @@ class UserPlaylistStatus(TimeStampedModel):
         qs = user.playlist_set.all()
         return user.playlist_set.all()[0] if qs.count() >= 1 else Playlist.get_default()
 
-    @classmethod
-    def get_user_playlist_status_for_user(cls, user: User): # todo not in use. delete?
-        playlist_entries_qs = cls.get_users_playlist(user).playlisthasaudio_set.all()
 
-        obj_instance, created = cls.objects.select_for_update().get_or_create(
-            user=user,
-            defaults={
-                'playlist_has_audio': playlist_entries_qs[0],
-                'current_active_audio': user.get_audio,
-            }
-        )
-        return obj_instance, created
-
-
-class UserAudioStatus(TimeStampedModel):
+class UserMainContentConsumption(TimeStampedModel):
     class Meta:
-        db_table = 'user_audio_status'
+        db_table = 'user_audio_consumption'
         ordering = ['id', ]
 
     user = models.ForeignKey(to=User,
                              on_delete=models.DO_NOTHING, )
 
-    current_active_audio = models.ForeignKey(to=AudioFile,
-                                             on_delete=models.DO_NOTHING,
-                                             null=True, )
-
-    @classmethod
-    def get_user_audio_status_for_user(cls, user: User):
-        obj_instance, created = cls.objects.select_for_update().get_or_create(
-            user=user,
-            defaults={
-                'current_active_audio': user.get_audio,
-            }
-        )
-        return obj_instance, created
+    played_main_content = models.ForeignKey(to=AudioFile,
+                                            on_delete=models.DO_NOTHING,
+                                            null=True, )
 
 
 class Messages(TimeStampedModel):
@@ -402,6 +385,7 @@ class Messages(TimeStampedModel):
                                      choices=PROCESS_SET,
                                      default=PROCESS_QUEUED,
                                      db_index=True, )
+
 
 Messages._meta.get_field('created').db_index = True
 
