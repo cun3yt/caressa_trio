@@ -1,5 +1,5 @@
 from django.contrib import admin
-from streaming.models import AudioFile, Playlist, PlaylistHasAudio, UserPlaylistStatus
+from streaming.models import AudioFile, Playlist, PlaylistHasAudio, UserPlaylistStatus, Tag
 from streaming.forms import AudioFileForm
 from django.utils.html import format_html
 from admin_ordering.admin import OrderableAdmin
@@ -8,6 +8,17 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from utilities.time import seconds_to_minutes
 
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    fields = ('name',
+              'label',
+              'is_setting_available', )
+
+    list_display = ('id',
+                    'name',
+                    'label',
+                    'is_setting_available', )
+
 
 @admin.register(AudioFile)
 class AudioFileAdmin(admin.ModelAdmin):
@@ -15,7 +26,8 @@ class AudioFileAdmin(admin.ModelAdmin):
               'duration_in_minutes',
               'name',
               'description',
-              'url', )
+              'url',
+              'tags', )
 
     list_display = ('id',
                     'audio_type',
@@ -23,7 +35,8 @@ class AudioFileAdmin(admin.ModelAdmin):
                     'duration_in_minutes',
                     'url_public_status',
                     'name',
-                    'description', )
+                    'description',
+                    'audio_tags', )
 
     readonly_fields = ('url_hyperlink',
                        'duration_in_minutes', )
@@ -46,6 +59,11 @@ class AudioFileAdmin(admin.ModelAdmin):
         return obj.is_publicly_accessible()
 
     url_public_status.allow_tags = True
+
+    def audio_tags(self, obj):
+        return [tag.name for tag in obj.tags.all()] if obj.tags.all().count() > 0 else \
+            format_html('<div style="width:100%%; height:100%%; background-color:red; color:white;">No Tag Found</div>')
+
 
 
 @admin.register(Playlist)

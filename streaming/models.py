@@ -22,12 +22,16 @@ class Tag(TimeStampedModel):
         db_table = 'tag'
 
     name = models.TextField(null=False,
-                            blank=False, )
+                            blank=False,
+                            help_text= (
+                                "Name is how server use the tags. This is used for backend processes."
+                                "Use '-' (dash) instead of spaces and all lower case. E.g. 'song-jazz'"
+                            ), )
     label = models.TextField(null=False,
                              blank=False,
                              help_text=(
-                                 "Label is the text that is readable by the users. Tags are exposed as settings "
-                                 "for end user if `is_setting_available` set for the tag. An example for label is "
+                                 "Label is the text that is readable by the users. Tags are exposed as settings"
+                                 "for end user if `is_setting_available` set for the tag. An example for label is"
                                  "'Classical Music' for classical songs, where name may be 'song-classical'."
                              ), )
     is_setting_available = models.BooleanField(null=False,
@@ -63,6 +67,9 @@ class Tag(TimeStampedModel):
     def string_to_audio_file(tag_string: str, context={}) -> 'AudioFile':
         tag_list = Tag._tag_string_to_list(tag_string)
         return Tag._tag_list_to_audio_file(tag_list, context)
+
+    def __str__(self):
+        return self.name
 
 
 class AudioFile(TimeStampedModel):
