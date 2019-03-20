@@ -24,14 +24,14 @@ class Tag(TimeStampedModel):
     name = models.TextField(null=False,
                             blank=False,
                             help_text= (
-                                "Name is how server use the tags. This is used for backend processes."
+                                "Name is how server use the tags. This is used for backend processes. "
                                 "Use '-' (dash) instead of spaces and all lower case. E.g. 'song-jazz'"
                             ), )
     label = models.TextField(null=False,
                              blank=False,
                              help_text=(
-                                 "Label is the text that is readable by the users. Tags are exposed as settings"
-                                 "for end user if `is_setting_available` set for the tag. An example for label is"
+                                 "Label is the text that is readable by the users. Tags are exposed as settings "
+                                 "for end user if `is_setting_available` set for the tag. An example for label is "
                                  "'Classical Music' for classical songs, where name may be 'song-classical'."
                              ), )
     is_setting_available = models.BooleanField(null=False,
