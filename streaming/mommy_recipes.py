@@ -1,6 +1,5 @@
-from model_mommy.recipe import Recipe, seq, foreign_key
-from streaming.models import AudioFile, Playlist, PlaylistHasAudio, UserPlaylistStatus
-from alexa.mommy_recipes import user, user2
+from model_mommy.recipe import Recipe, seq
+from streaming.models import AudioFile
 
 audio_file_recipe = Recipe(
     AudioFile,
@@ -9,30 +8,4 @@ audio_file_recipe = Recipe(
     duration=seq(12),
     name=seq('song'),
     description=seq('some description')
-)
-
-playlist_recipe = Recipe(
-    Playlist,
-    user=foreign_key(user),
-    name='cold-start',
-)
-
-playlist_recipe_2 = Recipe(
-    Playlist,
-    user=foreign_key(user2),
-    name='non_default_playlist',
-)
-
-playlist_has_audio_recipe = Recipe(
-    PlaylistHasAudio,
-    playlist=foreign_key(playlist_recipe),
-    order_id=seq(10.0),
-    audio=foreign_key(audio_file_recipe)
-)
-
-user_playlist_status_recipe = Recipe(
-    UserPlaylistStatus,
-    user=foreign_key(user),
-    playlist_has_audio=foreign_key(playlist_has_audio_recipe),
-    current_active_audio=foreign_key(audio_file_recipe),
 )
