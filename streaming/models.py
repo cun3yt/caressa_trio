@@ -15,6 +15,7 @@ from django.db.models import Q
 from random import randint
 from uuid import uuid4
 from typing import Optional
+from django.contrib.auth import get_user_model
 
 
 class Tag(TimeStampedModel):
@@ -383,6 +384,7 @@ class Messages(TimeStampedModel):
                                      default=PROCESS_QUEUED,
                                      db_index=True, )
 
+
 Messages._meta.get_field('created').db_index = True
 
 
@@ -415,3 +417,52 @@ class VoiceMessageStatus(TimeStampedModel):
                                    choices=VOICE_STATUS_SET,
                                    default=VOICE_STATUS_WAITING,
                                    )
+
+
+class UserContentRepository(TimeStampedModel):
+    """
+    UserContentRepository is the user (senior-only) related states related the audio content, including:
+        * injected_content_repository: JSON representing the state of Caressa device of the senior
+
+    Use `get_for_user` function to fetch the entry for the user.
+    Use `save_for_user` function to save an entry for the user.
+    """
+
+    class Meta:
+        db_table = 'user_content_repository'
+
+    user = models.OneToOneField(to=User,
+                                primary_key=True,
+                                null=False,
+                                on_delete=models.CASCADE, )
+
+    injected_content_repository = JSONField(default=[])
+
+    @classmethod
+    def save_for_user(cls, user: User, **kwargs) -> 'UserContentRepository':
+        """
+        Save an entry partially for the given user (senior-only).
+        It is a partial update, meaning that provide as little as you need.
+        Example:
+
+        UserContentRepository.save_for_user(user, field_one={'some': 'thing'}, field_three={'another': 'thing'})
+
+        :param user: User
+        :param kwargs:
+        :return: UserContentRepository
+        """
+        user_model = get_user_model()
+        assert user.user_type == user_model.CARETAKER, (
+            "UserContentRepository is only available for senior user type"
+        )
+        obj, _ = cls.objects.update_or_create(user=user, defaults=kwargs)
+        return obj
+
+    @classmethod
+    def get_for_user(cls, user: User) -> 'UserContentRepository':
+        user_model = get_user_model()
+        assert user.user_type == user_model.CARETAKER, (
+            "UserContentRepository is only available for senior user type"
+        )
+        obj, _ = cls.objects.get_or_create(user=user)
+        return obj

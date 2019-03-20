@@ -2,15 +2,62 @@ from django.test import TestCase
 from mock import patch
 from model_mommy import mommy
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, Playlist, PlaylistHasAudio,\
-    UserPlaylistStatus
-# from streaming.views import stream_io
+    UserPlaylistStatus, UserContentRepository
 from django.db.models import signals
 import datetime
 import boto3
 from random import randint
-# from streaming.test_helper_functions import request_body_creator_for_next_command, request_body_creator_for_intent, \
-#     request_body_creator, request_body_creator_for_audio_player, request_body_creator_for_pause_command
-# import botocore
+from alexa.models import User
+
+
+class UserContentRepositoryTests(TestCase):
+    def test_save_for_user(self):
+        user_one = mommy.make_recipe('alexa.user', user_type=User.CARETAKER)
+        user_two = mommy.make_recipe('alexa.user2', user_type=User.CARETAKER)
+
+        UserContentRepository.save_for_user(user_one, injected_content_repository=[{'a': 1, 'b': 2}])
+        UserContentRepository.save_for_user(user_two)
+
+        repository1 = UserContentRepository.objects.filter(user=user_one).all()[0]
+        repository2 = UserContentRepository.objects.filter(user=user_two).all()[0]
+
+        self.assertEqual(repository1.injected_content_repository, [{'a': 1, 'b': 2}])
+        self.assertEqual(repository2.injected_content_repository, [])
+
+        UserContentRepository.save_for_user(user_one, injected_content_repository=[{'a': 3}])
+
+        repository3 = UserContentRepository.objects.filter(user=user_one).all()[0]
+        self.assertEqual(repository3.injected_content_repository, [{'a': 3}])
+
+    def test_assert_save_for_non_senior(self):
+        user_one = mommy.make_recipe('alexa.user', user_type=User.FAMILY)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.save_for_user(user_one, injected_content_repository=[])
+
+        user_two = mommy.make_recipe('alexa.user', user_type=User.CAREGIVER)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.save_for_user(user_two, injected_content_repository=[])
+
+        user_three = mommy.make_recipe('alexa.user', user_type=User.CAREGIVER_ORG)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.save_for_user(user_three, injected_content_repository=[])
+
+    def test_get_for_user(self):
+        user_one = mommy.make_recipe('alexa.user', user_type=User.CARETAKER)
+        self.assertEqual(UserContentRepository.get_for_user(user_one).injected_content_repository, [])
+
+    def test_assert_get_for_non_senior(self):
+        user_one = mommy.make_recipe('alexa.user', user_type=User.FAMILY)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.get_for_user(user_one)
+
+        user_two = mommy.make_recipe('alexa.user', user_type=User.CAREGIVER)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.get_for_user(user_two,)
+
+        user_three = mommy.make_recipe('alexa.user', user_type=User.CAREGIVER_ORG)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.get_for_user(user_three)
 
 
 class TagModelTestCase(TestCase):
@@ -386,6 +433,11 @@ class UserPlaylistStatusModelTestCase(TestCase):
 
 
 # todo Read and enable tests: https://www.django-rest-framework.org/api-guide/testing/
+#
+# from streaming.views import stream_io
+# from streaming.test_helper_functions import request_body_creator_for_next_command, request_body_creator_for_intent, \
+#     request_body_creator, request_body_creator_for_audio_player, request_body_creator_for_pause_command
+# import botocore
 #
 # class StreamingPlayTestCase(TestCase):
 #     @classmethod
