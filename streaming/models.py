@@ -8,13 +8,9 @@ from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
 from urllib.error import HTTPError
 from django.utils.html import format_html
-from django.db.models import Sum
-from utilities.models.mixins import CacheMixin, CacheMiss
+from utilities.models.mixins import CacheMixin
 from utilities.time import seconds_to_minutes
-from datetime import datetime
-from django.db.models import Q
 from random import randint
-from uuid import uuid4
 
 
 class Tag(TimeStampedModel):
@@ -119,7 +115,7 @@ class AudioFile(TimeStampedModel):
 
     @staticmethod
     def get_main_content_to_play(user):
-        assert user.user_type == User.CARETAKER, (
+        assert user.user_type == alexa_models.User.CARETAKER, (
             "Main Content Audio Play is only available for user_type: senior. "
             "It is {user_type} for user.id: {user_id}".format(user_type=user.user_type,
                                                               user_id=user.id)
