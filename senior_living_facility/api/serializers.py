@@ -1,4 +1,8 @@
 from rest_framework import serializers
+
+from alexa.api.serializers import FamilyProspectSerializer, FamilyMemberSerializer
+from alexa.models import User, FamilyProspect
+from alexa.api.serializers import SeniorSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog
 from utilities.logger import log
 
@@ -32,6 +36,37 @@ class FacilitySerializer(serializers.ModelSerializer):
     def get_photo_gallery_url(self, facility: SeniorLivingFacility):  # todo hardcode
         log(facility)
         return 'https://www.caressa.herokuapp.com/gallery_url'
+
+
+class AdminAppSeniorListSerializer(SeniorSerializer):
+    class Meta:
+        model = User
+        fields = ('name', 'surname', 'room_number', 'device_status', 'message_thread_url')
+
+    device_status = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    surname = serializers.SerializerMethodField()
+    room_number = serializers.SerializerMethodField()
+    message_thread_url = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_name(senior: User):
+        return senior.first_name
+
+    @staticmethod
+    def get_surname(senior: User):
+        return senior.last_name
+
+    @staticmethod
+    def get_room_number(senior: User):
+        return senior.room_no
+
+    @staticmethod
+    def get_message_thread_url(senior: User):  # todo hardcode
+        return 'https://caressa.herokuapp.com/senior-id-{id}-message-thread-url'.format(id=senior.id)
+
+
+# class AdminAppMorningCheckInSerializer(serializers.ModelSerializer)
 
 
 class SeniorDeviceUserActivityLogSerializer(serializers.ModelSerializer):
