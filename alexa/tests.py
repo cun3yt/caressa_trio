@@ -127,7 +127,6 @@ class UserModelTestCase(TestCase):
         circle_family_str = 'channel.family.circle.{circle_id}'
         circle_slf_str = 'channel.slf.{facility_id}'
 
-
         comm_ch1 = self.user_one.communication_channels()     # senior's communication channels
         facility1 = self.user_one.senior_living_facility
         self.assertListEqual(comm_ch1, [circle_family_str.format(circle_id=self.user_one.senior_circle.id),

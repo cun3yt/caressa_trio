@@ -30,7 +30,6 @@ from django.urls import reverse
 from caressa.settings import WEB_BASE_URL, S3_PRODUCTION_BUCKET, S3_REGION
 from utilities.email import send_email
 from utilities.sms import send_sms
-from streaming.models import Tag
 
 
 class CaressaUserManager(BaseUserManager):

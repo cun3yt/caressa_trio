@@ -3,8 +3,6 @@ from uuid import uuid4
 from django.test import TestCase, RequestFactory
 from mock import patch
 from model_mommy import mommy
-from model_mommy.recipe import seq
-
 from utilities.logger import log
 from alexa.models import User, UserSettings
 from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, UserMainContentConsumption
@@ -180,12 +178,14 @@ class StreamingPlayTestCase(TestCase):
     def setUpTestData(cls):
         cls.factory = RequestFactory()
         cls.user = mommy.make('alexa.User', user_type=User.CARETAKER)
+        cls.user2 = mommy.make('alexa.User', user_type=User.CARETAKER)
 
         cls.tag1 = mommy.make('streaming.Tag')
         cls.tag2 = mommy.make('streaming.Tag')
+        cls.tag3 = mommy.make('streaming.Tag', is_setting_available=True)
+
         cls.user_settings = mommy.make(UserSettings, user=cls.user, data={"genres": [cls.tag1.id, cls.tag2.id]})
 
-        # Create 3 different AudioFiles with different number of tags (0, 1, 2)
         cls.audio_file_1 = mommy.make('streaming.AudioFile',
                                       make_m2m=False,
                                       url='http://www.example.com/audio/song1.mp3',
@@ -200,6 +200,11 @@ class StreamingPlayTestCase(TestCase):
                                       tags=[cls.tag1, cls.tag2],
                                       url='http://www.example.com/audio/song3.mp3',
                                       )
+        cls.audio_file_4 = mommy.make('streaming.AudioFile',
+                                      make_m2m=True,
+                                      tags=[cls.tag3],
+                                      url='http://www.example.com/audio/song4.mp3',
+                                      )
 
     def test_launch_request(self):
         request_body = request_body_creator('LaunchRequest')
@@ -211,6 +216,17 @@ class StreamingPlayTestCase(TestCase):
         possible_audio_url_list = [self.audio_file_2.url, self.audio_file_3.url]
 
         self.assertIn(response_audio_url, possible_audio_url_list)
+
+    def test_launch_request_without_settings(self):
+        request_body = request_body_creator('LaunchRequest')
+        request = self.factory.get('/streaming')
+        request.user = self.user2
+
+        data = stream_io(request_body, request)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        audio_url = [self.audio_file_4.url]
+
+        self.assertIn(response_audio_url, audio_url)
         self.assertNotEqual(response_audio_url, self.audio_file_1.url)
 
     def test_play_command(self):
@@ -225,8 +241,32 @@ class StreamingPlayTestCase(TestCase):
         self.assertIn(response_audio_url, possible_audio_url_list)
         self.assertNotEqual(response_audio_url, self.audio_file_1.url)
 
-    def test_start_resume_intent(self):
+    def test_next_command(self):
+        request_body = request_body_creator('PlaybackController.NextCommandIssued')
+        request = self.factory.get('/streaming')
+        request.user = self.user
+
+        data = stream_io(request_body, request)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        possible_audio_url_list = [self.audio_file_2.url, self.audio_file_3.url]
+
+        self.assertIn(response_audio_url, possible_audio_url_list)
+        self.assertNotEqual(response_audio_url, self.audio_file_1.url)
+
+    def test_resume_intent(self):
         request_body = request_body_creator_for_intent('AMAZON.ResumeIntent')
+        request = self.factory.get('/streaming')
+        request.user = self.user
+
+        data = stream_io(request_body, request)
+        response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
+        possible_audio_url_list = [self.audio_file_2.url, self.audio_file_3.url]
+
+        self.assertIn(response_audio_url, possible_audio_url_list)
+        self.assertNotEqual(response_audio_url, self.audio_file_1.url)
+
+    def test_next_intent(self):
+        request_body = request_body_creator_for_intent('AMAZON.NextIntent')
         request = self.factory.get('/streaming')
         request.user = self.user
 
@@ -256,268 +296,87 @@ class StreamingPlayTestCase(TestCase):
         self.assertEqual(umcc_count_after_save_state, 1)
         self.assertTrue(response)
 
-# class StreamingNextAndQueueTestCase(TestCase):
-#     @classmethod
-#     def setUpTestData(cls):
-#         cls.play_list_has_audio_1 = mommy.make('streaming.playlist_has_audio_recipe')
-#         cls.playlist_2 = mommy.make('streaming.playlist_recipe_2')  # second time user2 recipe runs
-#
-#         cls.auser_2 = mommy.make(AUser,
-#                                  user=cls.playlist_2.user,
-#                                  alexa_user_id='TestAlexaUserId2',
-#                                  alexa_device_id='TestAlexaDeviceId2',
-#                                  engine_schedule='TestEngineSchedule', )
-#
-#         cls.audio_file_1 = mommy.make('streaming.audio_file_recipe')
-#         cls.audio_file_2 = mommy.make('streaming.audio_file_recipe')
-#         cls.audio_file_3 = mommy.make('streaming.audio_file_recipe')
-#         cls.playlist_2.add_audio_file(cls.audio_file_1)
-#         cls.playlist_2.add_audio_file(cls.audio_file_2)
-#         cls.play_list_has_audio_1.playlist.add_audio_file(cls.audio_file_3)
-#         u = Playlist.objects.all()[0]  # to make sure default playlist have no user assigned
-#         u.user_id = None
-#         u.save()
-#
-#     def test_cold_start_next_command(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[1]
-#         token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(True, 'AudioPlayer.PlaybackStarted', token)
-#         stream_io(request_body_playback_start)
-#
-#         request_body_playback_next_command = request_body_creator_for_next_command(True, token)
-#         data = stream_io(request_body_playback_next_command)
-#
-#         expected_url = PlaylistHasAudio.objects.all()[3].audio.url
-#         response_url = data['response']['directives'][0]['audioItem']['stream']['url']
-#
-#         expected_next_token = str(
-#             PlaylistHasAudio.objects.all()[3].hash) + ',' + str(PlaylistHasAudio.objects.all()[3].audio_id)
-#         response_token = data['response']['directives'][0]['audioItem']['stream']['token']
-#
-#         self.assertEqual(expected_url, response_url)
-#         self.assertEqual(expected_next_token, response_token)
-#
-#     def test_user_playlist_next_command(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[0]
-#         token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(False, 'AudioPlayer.PlaybackStarted', token)
-#         stream_io(request_body_playback_start)
-#
-#         request_body_playback_next_command = request_body_creator_for_next_command(False, token)
-#         data = stream_io(request_body_playback_next_command)
-#
-#         expected_url = PlaylistHasAudio.objects.all()[2].audio.url
-#         response_url = data['response']['directives'][0]['audioItem']['stream']['url']
-#
-#         expected_next_token = str(
-#             PlaylistHasAudio.objects.all()[2].hash) + ',' + str(PlaylistHasAudio.objects.all()[2].audio_id)
-#         response_token = data['response']['directives'][0]['audioItem']['stream']['token']
-#
-#         self.assertEqual(expected_url, response_url)
-#         self.assertEqual(expected_next_token, response_token)
-#
-#     def test_cold_start_next_intent(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[1]
-#         token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(True, 'AudioPlayer.PlaybackStarted', token)
-#         stream_io(request_body_playback_start)
-#
-#         request_body_playback_next_command = request_body_creator_for_intent(True, 'AMAZON.NextIntent')
-#         data = stream_io(request_body_playback_next_command)
-#
-#         expected_url = PlaylistHasAudio.objects.all()[3].audio.url
-#         response_url = data['response']['directives'][0]['audioItem']['stream']['url']
-#
-#         expected_next_token = str(
-#             PlaylistHasAudio.objects.all()[3].hash) + ',' + str(PlaylistHasAudio.objects.all()[3].audio_id)
-#         response_token = data['response']['directives'][0]['audioItem']['stream']['token']
-#
-#         self.assertEqual(expected_url, response_url)
-#         self.assertEqual(expected_next_token, response_token)
-#
-#     def test_user_playlist_next_intent(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[0]
-#         token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(False, 'AudioPlayer.PlaybackStarted', token)
-#         stream_io(request_body_playback_start)
-#
-#         request_body_playback_next_command = request_body_creator_for_intent(False, 'AMAZON.NextIntent')
-#         data = stream_io(request_body_playback_next_command)
-#
-#         expected_url = PlaylistHasAudio.objects.all()[2].audio.url
-#         response_url = data['response']['directives'][0]['audioItem']['stream']['url']
-#
-#         expected_next_token = str(
-#             PlaylistHasAudio.objects.all()[2].hash) + ',' + str(PlaylistHasAudio.objects.all()[2].audio_id)
-#         response_token = data['response']['directives'][0]['audioItem']['stream']['token']
-#
-#         self.assertEqual(expected_url, response_url)
-#         self.assertEqual(expected_next_token, response_token)
-#
-#     def test_cold_start_nearly_finished_request(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[1]
-#         expected_previous_token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(True,
-#                                                                             'AudioPlayer.PlaybackStarted',
-#                                                                             expected_previous_token
-#                                                                             )
-#         stream_io(request_body_playback_start)
-#
-#         request_body_playback_nearly_finished = \
-#             request_body_creator_for_audio_player(True,
-#                                                   'AudioPlayer.PlaybackNearlyFinished',
-#                                                   expected_previous_token
-#                                                   )
-#         data = stream_io(request_body_playback_nearly_finished)
-#
-#         expected_url = PlaylistHasAudio.objects.all()[3].audio.url
-#         response_url = data['response']['directives'][0]['audioItem']['stream']['url']
-#         expected_next_token = str(
-#             PlaylistHasAudio.objects.all()[3].hash) + ',' + str(PlaylistHasAudio.objects.all()[3].audio_id)
-#         response_next_token = data['response']['directives'][0]['audioItem']['stream']['token']
-#         response_previous_token = data['response']['directives'][0]['audioItem']['stream']['expectedPreviousToken']
-#
-#         self.assertEqual(expected_url, response_url)
-#         self.assertEqual(expected_next_token,  response_next_token)
-#         self.assertEqual(response_previous_token, expected_previous_token)
-#
-#     def test_user_playlist_nearly_finished_request(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[0]
-#         expected_previous_token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = \
-#             request_body_creator_for_audio_player(False,
-#                                                   'AudioPlayer.PlaybackStarted',
-#                                                   expected_previous_token
-#                                                   )
-#         stream_io(request_body_playback_start)
-#
-#         request_body_playback_nearly_finished = \
-#             request_body_creator_for_audio_player(False,
-#                                                   'AudioPlayer.PlaybackNearlyFinished',
-#                                                   expected_previous_token
-#                                                   )
-#         data = stream_io(request_body_playback_nearly_finished)
-#
-#         expected_url = PlaylistHasAudio.objects.all()[2].audio.url
-#         response_url = data['response']['directives'][0]['audioItem']['stream']['url']
-#         expected_next_token = str(
-#             PlaylistHasAudio.objects.all()[2].hash) + ',' + str(PlaylistHasAudio.objects.all()[2].audio_id)
-#         response_next_token = data['response']['directives'][0]['audioItem']['stream']['token']
-#         response_previous_token = data['response']['directives'][0]['audioItem']['stream']['expectedPreviousToken']
-#
-#         self.assertEqual(expected_url, response_url)
-#         self.assertEqual(expected_next_token, response_next_token)
-#         self.assertEqual(response_previous_token, expected_previous_token)
-#
-#
-# class StreamingPauseAndFillerTestCase(TestCase):
-#     @classmethod
-#     def setUpTestData(cls):
-#         cls.play_list_has_audio_1 = mommy.make('streaming.playlist_has_audio_recipe')
-#         cls.playlist_2 = mommy.make('streaming.playlist_recipe_2')  # second time user2 recipe runs
-#
-#         cls.auser_2 = mommy.make(AUser,
-#                                  user=cls.playlist_2.user,
-#                                  alexa_user_id='TestAlexaUserId2',
-#                                  alexa_device_id='TestAlexaDeviceId2',
-#                                  engine_schedule='TestEngineSchedule', )
-#
-#         cls.audio_file_1 = mommy.make('streaming.audio_file_recipe')
-#         cls.audio_file_2 = mommy.make('streaming.audio_file_recipe')
-#         cls.audio_file_3 = mommy.make('streaming.audio_file_recipe')
-#         cls.playlist_2.add_audio_file(cls.audio_file_1)
-#         cls.playlist_2.add_audio_file(cls.audio_file_2)
-#         cls.play_list_has_audio_1.playlist.add_audio_file(cls.audio_file_3)
-#         u = Playlist.objects.all()[0]  # to make sure default playlist have no user assigned
-#         u.user_id = None
-#         u.save()
-#
-#     def test_cold_start_pause_command(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[1]
-#         token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(True, 'AudioPlayer.PlaybackStarted', token)
-#         stream_io(request_body_playback_start)
-#
-#         request_body_pause_command = request_body_creator_for_pause_command(True, token)
-#         data = stream_io(request_body_pause_command)
-#
-#         response = data['response']['shouldEndSession']
-#         expected_ups_audio = PlaylistHasAudio.objects.all()[3].audio
-#         next_ups_audio = UserPlaylistStatus.objects.all()[0].current_active_audio
-#
-#         self.assertTrue(response)
-#         self.assertEqual(next_ups_audio, expected_ups_audio)
-#
-#     def test_user_playlist_pause_command(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[0]
-#         token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(False, 'AudioPlayer.PlaybackStarted', token)
-#         stream_io(request_body_playback_start)
-#
-#         request_body_pause_command = request_body_creator_for_pause_command(False, token)
-#         data = stream_io(request_body_pause_command)
-#
-#         response = data['response']['shouldEndSession']
-#         expected_ups_audio = PlaylistHasAudio.objects.all()[2].audio
-#         next_ups_audio = UserPlaylistStatus.objects.all()[0].current_active_audio
-#
-#         self.assertTrue(response)
-#         self.assertEqual(next_ups_audio, expected_ups_audio)
-#
-#     def test_cold_start_pause_intent(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[1]
-#         token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(True, 'AudioPlayer.PlaybackStarted', token)
-#         stream_io(request_body_playback_start)
-#
-#         request_body_pause_command = request_body_creator_for_intent(True, 'AMAZON.PauseIntent')
-#         data = stream_io(request_body_pause_command)
-#
-#         response = data['response']['shouldEndSession']
-#         expected_ups_audio = PlaylistHasAudio.objects.all()[3].audio
-#         next_ups_audio = UserPlaylistStatus.objects.all()[0].current_active_audio
-#
-#         self.assertTrue(response)
-#         self.assertEqual(next_ups_audio, expected_ups_audio)
-#
-#     def test_user_playlist_pause_intent(self):
-#         pha_object = type(self.play_list_has_audio_1).objects.all()[0]
-#         token = str(pha_object.hash) + ',' + str(pha_object.audio_id)
-#
-#         request_body_playback_start = request_body_creator_for_audio_player(False, 'AudioPlayer.PlaybackStarted', token)
-#         stream_io(request_body_playback_start)
-#
-#         request_body_pause_command = request_body_creator_for_intent(False, 'AMAZON.PauseIntent')
-#         data = stream_io(request_body_pause_command)
-#
-#         response = data['response']['shouldEndSession']
-#         expected_ups_audio = PlaylistHasAudio.objects.all()[2].audio
-#         next_ups_audio = UserPlaylistStatus.objects.all()[0].current_active_audio
-#
-#         self.assertTrue(response)
-#         self.assertEqual(next_ups_audio, expected_ups_audio)
-#
-#     def test_none_intent(self):
-#         none_intent = request_body_creator_for_intent(False, 'None_Intent')
-#         data = stream_io(none_intent)
-#         is_session_ended = data['response']['shouldEndSession']
-#         audio_player_directive = data['response']['directives'][0]['type']
-#
-#         self.assertTrue(is_session_ended)
-#         self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
-#
-#     def test_fallback_filler(self):
-#         fallback_request = request_body_creator(False, 'fallback')
-#         data = stream_io(fallback_request)
-#         is_session_ended = data['response']['shouldEndSession']
-#
-#         self.assertTrue(is_session_ended)
+
+class StreamingNextAndQueueTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = RequestFactory()
+        cls.user = mommy.make('alexa.User', user_type=User.CARETAKER)
+        cls.tag1 = mommy.make('streaming.Tag')
+
+        cls.user_settings = mommy.make(UserSettings, user=cls.user, data={"genres": [cls.tag1.id]})
+
+        cls.audio_file_1 = mommy.make('streaming.AudioFile',
+                                      make_m2m=True,
+                                      tags=[cls.tag1],
+                                      url='http://www.example.com/audio/song2.mp3',
+                                      )
+
+    def test_nearly_finished_request(self):
+        token = self.audio_file_1.id
+        request_nearly_finished = request_body_creator_for_audio_player('AudioPlayer.PlaybackNearlyFinished', token)
+        request = self.factory.get('/streaming')
+
+        request.user = self.user
+        data = stream_io(request_nearly_finished, request)
+
+        expected_url = self.audio_file_1.url
+        response_url = data['response']['directives'][0]['audioItem']['stream']['url']
+
+        self.assertEqual(expected_url, response_url)
+
+
+class StreamingPauseAndFillerTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.factory = RequestFactory()
+        cls.user = mommy.make('alexa.User', user_type=User.CARETAKER)
+        cls.tag1 = mommy.make('streaming.Tag')
+        cls.audio_file_1 = mommy.make('streaming.AudioFile',
+                                      make_m2m=True,
+                                      tags=[cls.tag1],
+                                      url='http://www.example.com/audio/song2.mp3',
+                                      )
+
+    def test_pause_command(self):
+        token = self.audio_file_1
+        request_body_pause_command = request_body_creator_for_pause_command(token)
+        request = self.factory.get('/streaming')
+        request.user = self.user
+        data = stream_io(request_body_pause_command, request)
+        response = data['response']['shouldEndSession']
+        audio_player_directive = data['response']['directives'][0]['type']
+
+        self.assertTrue(response)
+        self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
+
+    def test_pause_intent(self):
+        request_body_pause_intent = request_body_creator_for_intent('AMAZON.PauseIntent')
+        request = self.factory.get('/streaming')
+        request.user = self.user
+        data = stream_io(request_body_pause_intent, request)
+        response = data['response']['shouldEndSession']
+        audio_player_directive = data['response']['directives'][0]['type']
+
+        self.assertTrue(response)
+        self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
+
+    def test_none_intent(self):
+        none_intent = request_body_creator_for_intent('None_Intent')
+        request = self.factory.get('/streaming')
+        request.user = self.user
+        data = stream_io(none_intent, request)
+        is_session_ended = data['response']['shouldEndSession']
+        audio_player_directive = data['response']['directives'][0]['type']
+
+        self.assertTrue(is_session_ended)
+        self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
+
+    def test_fallback_filler(self):
+        fallback_request = request_body_creator('fallback')
+        request = self.factory.get('/streaming')
+        request.user = self.user
+        data = stream_io(fallback_request, request)
+        is_session_ended = data['response']['shouldEndSession']
+
+        self.assertTrue(is_session_ended)

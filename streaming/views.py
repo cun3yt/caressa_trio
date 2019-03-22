@@ -33,18 +33,18 @@ def stream_io(req_body, request):
     if req_type == 'SessionEndedRequest':
         return stop_session()
 
-    if req_type in ['LaunchRequest', 'PlaybackController.PlayCommandIssued', ] \
-            or intent_name in ['AMAZON.ResumeIntent', ]:
+    if req_type in ['LaunchRequest',
+                    'PlaybackController.PlayCommandIssued',
+                    'PlaybackController.NextCommandIssued', ] \
+            or intent_name in ['AMAZON.ResumeIntent', 'AMAZON.NextIntent', ]:
         return resume_session(user)
-    elif req_type in ['PlaybackController.NextCommandIssued', ] or intent_name in ['AMAZON.NextIntent', ]:
-        return next_intent_response(user)
     elif req_type in ['AudioPlayer.PlaybackNearlyFinished', ]:
         return enqueue_next_song(user)
     elif req_type in ['AudioPlayer.PlaybackStarted', ]:
         save_played_main_content(user, req_body)
         return filler()
     elif req_type in ['PlaybackController.PauseCommandIssued', ] or intent_name in ['AMAZON.PauseIntent', ]:
-        return pause_session(user)
+        return pause_session()
     elif intent is not None:
         return stop_session()
 
@@ -70,8 +70,8 @@ def save_played_main_content(user: User, req_body):
     main_content = AudioFile.objects.get(pk=token)
     UserMainContentConsumption.objects.create(user=user, played_main_content=main_content)
 
-    log(' >> LOG: SAVE_STATE_BY_NEXT_TAGGED_AUDIO: \nAudio{} \nTags: {} \n'.format(main_content.name,
-                                                                                   main_content.tag_list))
+    log(' >> LOG: SAVE_STATE_BY_NEXT_TAGGED_AUDIO: \nAudio: {} \nTags: {} \n'.format(main_content.name,
+                                                                                     main_content.tag_list))
 
 
 @transaction.atomic()
@@ -84,7 +84,7 @@ def pause_session():
 def resume_session(user: User):
     log(' >> LOG: RESUME_SESSION')
     main_content_to_be_played = AudioFile.get_main_content_to_play(user)
-    return start_session(main_content_to_be_played, offset=0)
+    return start_session(main_content_to_be_played)
 
 
 def stop_session():
@@ -105,7 +105,7 @@ def stop_session():
     return data
 
 
-def start_session(main_content_to_be_played: AudioFile, offset=0):
+def start_session(main_content_to_be_played: AudioFile):
 
     data = {
         "version": "1.0",
@@ -119,7 +119,7 @@ def start_session(main_content_to_be_played: AudioFile, offset=0):
                         "stream": {
                             "url": main_content_to_be_played.url,
                             "token": main_content_to_be_played.id,
-                            "offsetInMilliseconds": offset
+                            "offsetInMilliseconds": 0
                         },
                     }
                 }
@@ -132,12 +132,6 @@ def start_session(main_content_to_be_played: AudioFile, offset=0):
                                                                         main_content_to_be_played.tag_list))
 
     return data
-
-
-@transaction.atomic()
-def next_intent_response(user: User):
-    audio_to_be_played = AudioFile.get_main_content_to_play(user)
-    return start_session(audio_to_be_played)
 
 
 @transaction.atomic()

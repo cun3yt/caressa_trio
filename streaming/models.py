@@ -8,6 +8,7 @@ from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
 from urllib.error import HTTPError
 from django.utils.html import format_html
+from utilities.models.abstract_models import CreatedTimeStampedModel
 from utilities.models.mixins import CacheMixin
 from utilities.time import seconds_to_minutes
 from random import randint
@@ -145,7 +146,7 @@ signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
                          sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
 
 
-class UserMainContentConsumption(TimeStampedModel):
+class UserMainContentConsumption(CreatedTimeStampedModel):
     class Meta:
         db_table = 'user_audio_consumption'
         ordering = ['id', ]
