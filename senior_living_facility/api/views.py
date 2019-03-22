@@ -4,7 +4,8 @@ from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from alexa.api.permissions import IsSenior
 from senior_living_facility.api.permissions import IsFacilityOrgMember
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog
-from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, SeniorDeviceUserActivityLogSerializer
+from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
+    SeniorDeviceUserActivityLogSerializer, FacilitySerializer
 
 
 class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -12,6 +13,13 @@ class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelM
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
     queryset = SeniorLivingFacility.objects.all()
     serializer_class = SeniorLivingFacilitySerializer
+
+
+class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
+    queryset = SeniorLivingFacility.objects.all()
+    serializer_class = FacilitySerializer
 
 
 class SeniorDeviceUserActivityLogCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
