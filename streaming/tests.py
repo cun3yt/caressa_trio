@@ -180,8 +180,8 @@ class StreamingPlayTestCase(TestCase):
         cls.user = mommy.make('alexa.User', user_type=User.CARETAKER)
         cls.user2 = mommy.make('alexa.User', user_type=User.CARETAKER)
 
-        cls.tag1 = mommy.make('streaming.Tag')
-        cls.tag2 = mommy.make('streaming.Tag')
+        cls.tag1 = mommy.make('streaming.Tag', is_setting_available=False)
+        cls.tag2 = mommy.make('streaming.Tag', is_setting_available=False)
         cls.tag3 = mommy.make('streaming.Tag', is_setting_available=True)
 
         cls.user_settings = mommy.make(UserSettings, user=cls.user, data={"genres": [cls.tag1.id, cls.tag2.id]})
@@ -224,9 +224,9 @@ class StreamingPlayTestCase(TestCase):
 
         data = stream_io(request_body, request)
         response_audio_url = data['response']['directives'][0]['audioItem']['stream']['url']
-        audio_url = [self.audio_file_4.url]
+        audio_url = self.audio_file_4.url
 
-        self.assertIn(response_audio_url, audio_url)
+        self.assertEqual(response_audio_url, audio_url)
         self.assertNotEqual(response_audio_url, self.audio_file_1.url)
 
     def test_play_command(self):

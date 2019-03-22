@@ -19,7 +19,11 @@ class Tag(TimeStampedModel):
         db_table = 'tag'
 
     name = models.TextField(null=False,
-                            blank=False, )
+                            blank=False,
+                            help_text= (
+                                "Name is how server use the tags. This is used for backend processes. "
+                                "Use '-' (dash) instead of spaces and all lower case. E.g. 'song-jazz'"
+                            ), )
     label = models.TextField(null=False,
                              blank=False,
                              help_text=(
@@ -48,6 +52,9 @@ class Tag(TimeStampedModel):
     @staticmethod
     def default_tags_list():
         return list(Tag.objects.all().filter(is_setting_available=True).values_list('id', flat=True))
+
+    def __str__(self):
+        return self.name
 
 
 class AudioFile(TimeStampedModel):
