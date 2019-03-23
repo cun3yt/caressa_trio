@@ -1,9 +1,11 @@
-from utilities.logger import log, log_debug, log_error
+from utilities.logger import log, log_error
 from senior_living_facility.models import SeniorLivingFacility, SeniorDevice, SeniorLivingFacilityContent, \
     SeniorLivingFacilityMessageLog as MsgLog
 from caressa.settings import pusher_client
 from alexa.models import User
 from datetime import datetime, timedelta
+from django.utils import timezone
+from utilities.time import time_today_in_tz
 from typing import Union
 import pytz
 
@@ -67,10 +69,13 @@ def send_check_in_call_for_one_facility(facility: Union[SeniorLivingFacility, in
 
     channel = User.get_facility_channel(facility.facility_id)
 
-    text = SeniorDevice.call_for_action_text()
+    text = SeniorDevice.call_for_check_in_text()
 
-    content = SeniorLivingFacilityContent.find(senior_living_facility=facility,
-                                               content_type='Check-In-Call',
+    content = SeniorLivingFacilityContent.find(start=time_today_in_tz(facility.timezone, 3, 0),
+                                               end=time_today_in_tz(facility.timezone, 11, 0),
+                                               frequency=0,
+                                               senior_living_facility=facility,
+                                               content_type=SeniorLivingFacilityContent.TYPE_CHECK_IN_CALL,
                                                text_content=text)
 
     log("Running Check In Call to Action: `send_check_in_call` with: ")
