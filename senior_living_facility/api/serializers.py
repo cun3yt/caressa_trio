@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog
+from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
+    SeniorLivingFacilityContent, ContentDeliveryRule
 
 
 class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
@@ -21,3 +22,22 @@ class SeniorDeviceUserActivityLogSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         validated_data['user'] = user
         return super(SeniorDeviceUserActivityLogSerializer, self).create(validated_data)
+
+
+class ContentDeliveryRuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContentDeliveryRule
+        fields = ('start', 'end', 'frequency', )
+
+
+class SeniorLivingFacilityContentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SeniorLivingFacilityContent
+        fields = ('hash', 'audio_url', 'delivery_rule', )
+
+    hash = serializers.SerializerMethodField()
+    delivery_rule = ContentDeliveryRuleSerializer()
+
+    @staticmethod
+    def get_hash(content: SeniorLivingFacilityContent):
+        return content.text_content_hash

@@ -237,6 +237,9 @@ class SeniorDeviceUserActivityLog(CreatedTimeStampedModel):
 SeniorDeviceUserActivityLog._meta.get_field('created').db_index = True
 
 
+from django.contrib.postgres.fields import ArrayField
+
+
 class ContentDeliveryRule(models.Model):
     class Meta:
         db_table = 'content_delivery_rule'
@@ -247,6 +250,14 @@ class ContentDeliveryRule(models.Model):
     DEFAULT_CONTENT_TTL = 604800  # one week in seconds
     FREQUENCY_ONE_TIME = 'one-time'
 
+    TYPE_INJECTABLE = 'injectable'
+    TYPE_VOICE_MAIL = 'voice-mail'
+    TYPE_URGENT_MAIL = 'urgent-mail'
+
+    TYPES = Choices(TYPE_INJECTABLE, TYPE_VOICE_MAIL, TYPE_URGENT_MAIL, )
+
+    type = StatusField(choices_name='TYPES', null=False, blank=False, default=TYPE_INJECTABLE)
+    recipient_ids = ArrayField(models.IntegerField(), null=True, default=None) # None is the largest possible set (e.g. whole facility)
     start = models.DateTimeField(default=timezone.now, null=False, blank=False, )
     end = models.DateTimeField(null=False, blank=False, )
     frequency = models.IntegerField(help_text="Frequency in seconds. If the field is set to 0 "
@@ -255,9 +266,10 @@ class ContentDeliveryRule(models.Model):
                                     null=False, )
 
     @classmethod
-    def find(cls, start, end, frequency=FREQUENCY_ONE_TIME) -> 'ContentDeliveryRule':
+    def find(cls, delivery_type, start, end, frequency=FREQUENCY_ONE_TIME, recipient_ids=None) -> 'ContentDeliveryRule':
         frequency = 0 if frequency == cls.FREQUENCY_ONE_TIME else frequency
-        inst, _ = cls.objects.get_or_create(start=start, end=end, frequency=frequency)
+        inst, _ = cls.objects.get_or_create(type=delivery_type, start=start, end=end, frequency=frequency,
+                                            recipient_ids=recipient_ids)
         return inst
 
     def __str__(self):
@@ -273,6 +285,7 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel):
         indexes = [
             models.Index(fields=['senior_living_facility', 'text_content', 'content_type', ])
         ]
+        ordering = ('pk', )
 
     TYPE_DAILY_CALENDAR = 'Daily-Calendar'
     TYPE_CHECK_IN_CALL = 'Check-In-Call'
@@ -291,7 +304,7 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel):
     text_content = models.TextField(null=False,
                                     blank=True,
                                     default='', )
-    text_content_hash = models.TextField(null=False,
+    text_content_hash = models.TextField(null=False,    # todo the name better be changed to `hash`
                                          blank=True,
                                          default='',
                                          db_index=True, )
@@ -303,8 +316,9 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel):
                                       on_delete=models.DO_NOTHING, )
 
     @staticmethod
-    def find(start, end, frequency, **kwargs) -> 'SeniorLivingFacilityContent':
-        delivery_rule = ContentDeliveryRule.find(start, end, frequency)
+    def find(delivery_type, start, end, frequency=ContentDeliveryRule.FREQUENCY_ONE_TIME,
+             recipient_ids=None, **kwargs) -> 'SeniorLivingFacilityContent':
+        delivery_rule = ContentDeliveryRule.find(delivery_type, start, end, frequency, recipient_ids)
         inst, _ = SeniorLivingFacilityContent.objects.get_or_create(delivery_rule=delivery_rule, **kwargs)
         return inst
 

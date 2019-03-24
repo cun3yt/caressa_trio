@@ -28,9 +28,13 @@ def deliver_daily_calendar(facility: Union[SeniorLivingFacility, int, str]):
 
     events_summary = facility.today_events_summary_in_text()
 
-    content = SeniorLivingFacilityContent.find(start=time_today_in_tz(facility.timezone, 1, 0),
+    from senior_living_facility.models import ContentDeliveryRule
+
+    content = SeniorLivingFacilityContent.find(delivery_type=ContentDeliveryRule.TYPE_INJECTABLE,
+                                               start=time_today_in_tz(facility.timezone, 1, 0),
                                                end=time_today_in_tz(facility.timezone, 16, 0),
                                                frequency=0,
+                                               recipient_ids=None,
                                                senior_living_facility=facility,
                                                content_type=SeniorLivingFacilityContent.TYPE_DAILY_CALENDAR,
                                                text_content=events_summary)

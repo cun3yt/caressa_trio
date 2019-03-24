@@ -4,7 +4,7 @@ from senior_living_facility.models import SeniorLivingFacility, SeniorDevice, Se
 from caressa.settings import pusher_client
 from alexa.models import User
 from datetime import datetime, timedelta
-from django.utils import timezone
+from senior_living_facility.models import ContentDeliveryRule
 from utilities.time import time_today_in_tz
 from typing import Union
 import pytz
@@ -39,7 +39,8 @@ def _can_send_for_facility(facility: SeniorLivingFacility) -> 'bool':
     now = datetime.now(pytz.utc)
     reminder_limit_after_deadline_in_minutes = 45
     if now - timedelta(minutes=reminder_limit_after_deadline_in_minutes) > facility.deadline_in_time_today_in_tz:
-        log("Check in reminder is not available after {} minutes from deadline. Passing it".format(reminder_limit_after_deadline_in_minutes))
+        log("Check in reminder is not available after {} minutes "
+            "from deadline. Passing it".format(reminder_limit_after_deadline_in_minutes))
         return False
 
     message_log_qs = MsgLog.objects.filter(senior_living_facility=facility,
@@ -71,9 +72,11 @@ def send_check_in_call_for_one_facility(facility: Union[SeniorLivingFacility, in
 
     text = SeniorDevice.call_for_check_in_text()
 
-    content = SeniorLivingFacilityContent.find(start=time_today_in_tz(facility.timezone, 3, 0),
+    content = SeniorLivingFacilityContent.find(delivery_type=ContentDeliveryRule.TYPE_URGENT_MAIL,
+                                               start=time_today_in_tz(facility.timezone, 3, 0),
                                                end=time_today_in_tz(facility.timezone, 11, 0),
                                                frequency=0,
+                                               recipient_ids=recipient_ids,
                                                senior_living_facility=facility,
                                                content_type=SeniorLivingFacilityContent.TYPE_CHECK_IN_CALL,
                                                text_content=text)
