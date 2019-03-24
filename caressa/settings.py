@@ -215,6 +215,7 @@ REST_FRAMEWORK = {
     },
     'DEFAULT_PAGINATION_CLASS': 'alexa.api.configuration.pagination.ExtendedPageNumberPagination',
     'PAGE_SIZE': 5,
+    'DATETIME_ZONE_FORMAT': '%Y-%m-%d %H:%M:%S%z',      # todo: Should we unify all time ops with this or epoch?
 }
 
 DB_DEBUG = environ.get('DB_DEBUG', False)

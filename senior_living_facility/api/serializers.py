@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
     SeniorLivingFacilityContent, ContentDeliveryRule
+from caressa.settings import REST_FRAMEWORK
 
 
 class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
@@ -28,6 +29,9 @@ class ContentDeliveryRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContentDeliveryRule
         fields = ('start', 'end', 'frequency', )
+
+    start = serializers.DateTimeField(REST_FRAMEWORK['DATETIME_ZONE_FORMAT'])
+    end = serializers.DateTimeField(REST_FRAMEWORK['DATETIME_ZONE_FORMAT'])
 
 
 class SeniorLivingFacilityContentSerializer(serializers.ModelSerializer):
