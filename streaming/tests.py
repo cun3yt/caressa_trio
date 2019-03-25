@@ -1,16 +1,67 @@
-from uuid import uuid4
-
-from django.test import TestCase, RequestFactory
-from mock import patch
-from model_mommy import mommy
-from utilities.logger import log
-from alexa.models import User, UserSettings
-from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, UserMainContentConsumption
-from streaming.views import stream_io
-from django.db.models import signals
 import boto3
-from streaming.test_helper_functions import request_body_creator_for_next_command, request_body_creator_for_intent, \
+
+from uuid import uuid4
+from django.test import TestCase, RequestFactory
+from model_mommy import mommy
+from alexa.models import UserSettings, User
+from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, UserMainContentConsumption, \
+    UserContentRepository
+from streaming.views import stream_io
+from streaming.test_helper_functions import request_body_creator_for_intent, \
     request_body_creator, request_body_creator_for_audio_player, request_body_creator_for_pause_command
+from django.db.models import signals
+
+
+class UserContentRepositoryTests(TestCase):
+    def test_save_for_user(self):
+        user_one = mommy.make('alexa.user', user_type=User.CARETAKER,
+                              email='user@example.com', )
+        user_two = mommy.make('alexa.user', user_type=User.CARETAKER,
+                              email='user2@example.com', )
+
+        UserContentRepository.save_for_user(user_one, injected_content_repository=[{'a': 1, 'b': 2}])
+        UserContentRepository.save_for_user(user_two)
+
+        repository1 = UserContentRepository.objects.filter(user=user_one).all()[0]
+        repository2 = UserContentRepository.objects.filter(user=user_two).all()[0]
+
+        self.assertEqual(repository1.injected_content_repository, [{'a': 1, 'b': 2}])
+        self.assertEqual(repository2.injected_content_repository, [])
+
+        UserContentRepository.save_for_user(user_one, injected_content_repository=[{'a': 3}])
+
+        repository3 = UserContentRepository.objects.filter(user=user_one).all()[0]
+        self.assertEqual(repository3.injected_content_repository, [{'a': 3}])
+
+    def test_assert_save_for_non_senior(self):
+        user_one = mommy.make('alexa.user', email='user@example.com', user_type=User.FAMILY)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.save_for_user(user_one, injected_content_repository=[])
+
+        user_two = mommy.make('alexa.user', email='user2@example.com', user_type=User.CAREGIVER)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.save_for_user(user_two, injected_content_repository=[])
+
+        user_three = mommy.make('alexa.user', email='user3@example.com', user_type=User.CAREGIVER_ORG)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.save_for_user(user_three, injected_content_repository=[])
+
+    def test_get_for_user(self):
+        user_one = mommy.make('alexa.user', email='user@example.com', user_type=User.CARETAKER)
+        self.assertEqual(UserContentRepository.get_for_user(user_one).injected_content_repository, [])
+
+    def test_assert_get_for_non_senior(self):
+        user_one = mommy.make('alexa.user', email='user@example.com', user_type=User.FAMILY)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.get_for_user(user_one)
+
+        user_two = mommy.make('alexa.user', email='user2@example.com', user_type=User.CAREGIVER)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.get_for_user(user_two,)
+
+        user_three = mommy.make('alexa.user', email='user3@example.com', user_type=User.CAREGIVER_ORG)
+        with self.assertRaises(AssertionError):
+            UserContentRepository.get_for_user(user_three)
 
 
 class TagModelTestCase(TestCase):
