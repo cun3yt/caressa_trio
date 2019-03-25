@@ -1,2 +1,0 @@
-class PlaylistAlreadyExistException(BaseException):
-    pass
