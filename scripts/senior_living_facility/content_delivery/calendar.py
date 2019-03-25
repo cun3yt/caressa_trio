@@ -1,5 +1,5 @@
 from utilities.logger import log, log_error
-from senior_living_facility.models import SeniorLivingFacility, SeniorLivingFacilityContent
+from senior_living_facility.models import SeniorLivingFacility, SeniorLivingFacilityContent, ContentDeliveryRule
 from alexa.models import User
 from typing import Union
 from caressa.settings import pusher_client
@@ -27,8 +27,6 @@ def deliver_daily_calendar(facility: Union[SeniorLivingFacility, int, str]):
         facility = SeniorLivingFacility.objects.get(id=facility)
 
     events_summary = facility.today_events_summary_in_text()
-
-    from senior_living_facility.models import ContentDeliveryRule
 
     content = SeniorLivingFacilityContent.find(delivery_type=ContentDeliveryRule.TYPE_INJECTABLE,
                                                start=time_today_in_tz(facility.timezone, 1, 0),

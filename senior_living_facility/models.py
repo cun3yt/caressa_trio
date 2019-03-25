@@ -3,6 +3,7 @@ import pytz
 import re
 
 from django.contrib.auth import get_user_model
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import signals
 from django.utils import timezone
@@ -237,9 +238,6 @@ class SeniorDeviceUserActivityLog(CreatedTimeStampedModel):
 SeniorDeviceUserActivityLog._meta.get_field('created').db_index = True
 
 
-from django.contrib.postgres.fields import ArrayField
-
-
 class ContentDeliveryRule(models.Model):
     class Meta:
         db_table = 'content_delivery_rule'
@@ -247,7 +245,6 @@ class ContentDeliveryRule(models.Model):
             models.Index(fields=['start', 'end', 'frequency', ])
         ]
 
-    DEFAULT_CONTENT_TTL = 604800  # one week in seconds
     FREQUENCY_ONE_TIME = 'one-time'
 
     TYPE_INJECTABLE = 'injectable'
