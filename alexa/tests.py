@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.db import models
 from model_mommy import mommy
+
 from alexa.models import User, Circle, CaressaUserManager, FamilyProspect
 from caressa.settings import HOSTED_ENV
 from django.db.models import signals
@@ -15,18 +16,29 @@ daiquiri.setup(level=logging.WARNING)
 class UserModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user_one = mommy.make_recipe('alexa.user', email='user1@example.com')
+        senior_living_facility = mommy.make('senior_living_facility.SeniorLivingFacility')
+        cls.user_one = mommy.make('alexa.User',
+                                  first_name='TestFirstName1',
+                                  last_name='TestLastName1',
+                                  email='user1@example.com',
+                                  senior_living_facility=senior_living_facility)
 
-        cls.user_two = mommy.make_recipe('alexa.user', user_type='FAMILY',
-                                         email='user2@example.com')
+        cls.user_two = mommy.make('alexa.user', user_type='FAMILY',
+                                  email='user2@example.com',
+                                  )
 
         cls.user_one.senior_circle.add_member(cls.user_two, False)
 
-        cls.user_three = mommy.make_recipe('alexa.user', user_type='CAREGIVER',
-                                           email='user3@example.com')
+        cls.user_three = mommy.make('alexa.user', user_type='CAREGIVER',
+                                    email='user3@example.com',
+                                    senior_living_facility=senior_living_facility,
+                                    )
 
-        cls.user_four = mommy.make_recipe('alexa.user', user_type='CAREGIVER_ORG',
-                                          email='user4@example.com')
+        cls.user_four = mommy.make('alexa.user',
+                                   user_type='CAREGIVER_ORG',
+                                   email='user4@example.com',
+                                   senior_living_facility=senior_living_facility,
+                                   )
 
     def test_get_profile_object(self):
         self.assertEqual(self.user_one.get_profile_pic(),
@@ -166,8 +178,8 @@ class CaressaUserManagerTest(TestCase):
 class CircleModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.user_one = mommy.make_recipe('alexa.user', email='user@example.com')    # this is a senior user
-        cls.user_two = mommy.make_recipe('alexa.user2', email='user2@example.com')
+        cls.user_one = mommy.make('alexa.User', email='user@example.com')    # this is a senior user
+        cls.user_two = mommy.make('alexa.User', email='user2@example.com')
         cls.circle = mommy.make(Circle)
 
     def test_add_member(self):
@@ -194,19 +206,19 @@ class CircleModelTestCase(TestCase):
         self.assertEqual(repr(_circle), 'Circle of [{}] with 2 member(s)'.format(poi_user_str))
 
     def test_admins(self):
-        senior = mommy.make_recipe('alexa.user', email='super_senior@example.com')
+        senior = mommy.make('alexa.user', email='super_senior@example.com')
         _circle = senior.senior_circle
         self.assertEqual(_circle.admins.count(), 0)
 
-        admin_user1 = mommy.make_recipe('alexa.user2', email='admin1@admin.com')
+        admin_user1 = mommy.make('alexa.User', email='admin1@admin.com')
         _circle.add_member(member=admin_user1, is_admin=True)
         self.assertEqual(_circle.admins.count(), 1)
 
-        admin_user2 = mommy.make_recipe('alexa.user2', email='admin2@admin.com')
+        admin_user2 = mommy.make('alexa.User', email='admin2@admin.com')
         _circle.add_member(member=admin_user2, is_admin=True)
         self.assertEqual(_circle.admins.count(), 2)
 
-        admin_user3 = mommy.make_recipe('alexa.user2', email='user@regular.com')
+        admin_user3 = mommy.make('alexa.User', email='user@regular.com')
         _circle.add_member(member=admin_user3, is_admin=False)
         self.assertEqual(_circle.admins.count(), 2)
 
@@ -214,7 +226,7 @@ class CircleModelTestCase(TestCase):
 class SongModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.song = mommy.make_recipe('alexa.song')
+        cls.song = mommy.make('alexa.Song')
         cls.url = HOSTED_ENV + cls.song.file_name
 
     def test_url(self):
@@ -224,7 +236,7 @@ class SongModelTestCase(TestCase):
 class FamilyProspectTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.senior = mommy.make_recipe('alexa.user', email='senior_dunkin@donuts.com')
+        cls.senior = mommy.make('alexa.User', email='senior_dunkin@donuts.com')
 
     def test_clean(self):
         prospect_dunkin = mommy.make(FamilyProspect, name='Dunkin Donuts', email='', senior=self.senior)
@@ -240,7 +252,7 @@ class FamilyProspectTestCase(TestCase):
 
     def test_reach_prospect_with_admin(self):
         self.senior.senior_circle.add_member(member=self.senior, is_admin=False)
-        family_user = mommy.make_recipe('alexa.family_user')
+        family_user = mommy.make('alexa.User', user_type=User.FAMILY)
         self.senior.senior_circle.add_member(family_user, is_admin=True)
         prospect_sister = mommy.make(FamilyProspect, name='Sister Donuts',
                                      email='prospect_dunkin@donuts.com', senior=self.senior)
