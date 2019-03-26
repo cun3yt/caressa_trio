@@ -32,7 +32,7 @@ api_urls = [
          SeniorLivingFacilityViewSet.as_view({'get': 'retrieve', 'patch': 'partial_update', })),
     path('api/user-activity-log/',
          SeniorDeviceUserActivityLogCreateViewSet.as_view({'post': 'create'})),
-    path('api/facility/<int:senior_living_facility_id>/',
+    path('api/facility/<int:pk>/',
          FacilityViewSet.as_view({'get': 'retrieve', })),
     path('api/facility/<int:senior_living_facility_id>/residents/',
          FacilityListViewSet.as_view({'get': 'list', })),
