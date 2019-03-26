@@ -1,0 +1,39 @@
+Today is {{ today }}.
+
+{% if zero_state %}
+    Have a nice day at {{ facility_name }}.
+{% else %}
+    Here is today's schedule at {{ facility_name }}:
+
+    {# Hourly Events #}
+    {% for hourly_event in events.hourly_events.set %}
+        At {{ hourly_event.start_spoken }}:
+
+        {% if hourly_event.location %}
+            {{ hourly_event.summary }} in {{ hourly_event.location }}.
+        {% else %}
+            {{ hourly_event.summary }}.
+        {% endif %}
+    {% endfor %}
+
+    {# All-day Events #}
+    {% if events.all_day.count == 1 %}
+        There is one special thing for today:
+
+        {% if events.all_day.set.0.location %}
+            {{ events.all_day.set.0.summary }} in {{ events.all_day.set.0.location }}
+        {% else %}
+            {{ events.all_day.set.0.summary }}.
+        {% endif %}
+
+    {% elif events.all_day.count > 1 %}
+        There are {{ events.all_day.count }} special things for today:
+
+        {% for all_day_event in events.all_day.set %}
+            {{ forloop.counter }}: {{ all_day_event.summary }}.
+            {% if all_day_event.location %}
+                Its place is {{ all_day_event.location }}.
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endif %}
