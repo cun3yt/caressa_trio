@@ -5,6 +5,7 @@ from alexa.models import User, FamilyProspect
 from alexa.api.serializers import SeniorSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog
 from utilities.logger import log
+from utilities.views.mixins import MockStatusMixin, ForAdminMixin
 
 
 class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
@@ -15,10 +16,15 @@ class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
         read_only_fields = ('facility_id', 'calendar_url', 'timezone', )
 
 
-class FacilitySerializer(serializers.ModelSerializer):
+class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin):
     class Meta:
         model = SeniorLivingFacility
-        fields = ('name', 'number_of_residents', 'number_of_unread_notifications', 'timezone', 'photo_gallery_url', )
+        fields = ('name',
+                  'number_of_residents',
+                  'number_of_unread_notifications',
+                  'timezone',
+                  'photo_gallery_url',
+                  'mock_status', )
         read_only_fields = ('name', 'timezone', )
 
     number_of_residents = serializers.SerializerMethodField()
@@ -38,35 +44,42 @@ class FacilitySerializer(serializers.ModelSerializer):
         return 'https://www.caressa.herokuapp.com/gallery_url'
 
 
-class AdminAppSeniorListSerializer(SeniorSerializer):
+class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminMixin):
     class Meta:
         model = User
-        fields = ('name', 'surname', 'room_number', 'device_status', 'message_thread_url')
+        fields = ('first_name', 'last_name', 'room_no', 'device_status', 'message_thread_url', 'mock_status')
 
     device_status = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    surname = serializers.SerializerMethodField()
-    room_number = serializers.SerializerMethodField()
     message_thread_url = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_name(senior: User):
-        return senior.first_name
-
-    @staticmethod
-    def get_surname(senior: User):
-        return senior.last_name
-
-    @staticmethod
-    def get_room_number(senior: User):
-        return senior.room_no
 
     @staticmethod
     def get_message_thread_url(senior: User):  # todo hardcode
         return 'https://caressa.herokuapp.com/senior-id-{id}-message-thread-url'.format(id=senior.id)
 
 
-# class AdminAppMorningCheckInSerializer(serializers.ModelSerializer)
+class MorningCheckingUserNotifiedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'room_no', 'device_status', 'message_thread_url', 'mock_status', 'notified')
+
+    notified = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_notified(senior: User):
+        log(senior)
+        return 'Notified!'
+
+
+class MorningCheckingUserStaffCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
+    pass
+
+
+class MorningCheckingUserSelfCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
+    pass
+
+
+class MorningCheckingUserPendingSerializer(AdminAppSeniorListSerializer):
+    pass
 
 
 class SeniorDeviceUserActivityLogSerializer(serializers.ModelSerializer):
