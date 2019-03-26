@@ -87,7 +87,7 @@ def deliver_upcoming_hourly_events(facility: Union[SeniorLivingFacility, int, st
                                                        frequency=0,
                                                        recipient_ids=None,
                                                        senior_living_facility=facility,
-                                                       content_type=SeniorLivingFacilityContent.TYPE_DAILY_CALENDAR,
+                                                       content_type=SeniorLivingFacilityContent.TYPE_UPCOMING_INDIVIDUAL_EVENT,
                                                        text_content=text_content)
             _send_realtime_message(facility, content)
 
