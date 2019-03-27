@@ -4,7 +4,7 @@ from django.urls import path, reverse_lazy
 from senior_living_facility.views import facility_home, facility_settings, family_prospect_invitation, sign_up, \
     app_downloads
 from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet, \
-    FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet
+    FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -36,6 +36,8 @@ api_urls = [
          FacilityViewSet.as_view({'get': 'retrieve', })),
     path('api/facility/<int:senior_living_facility_id>/residents/',
          FacilityListViewSet.as_view({'get': 'list', })),
+    path('api/facility/<int:pk>/messages/',
+         FacilityMessagesViewSet.as_view({'get': 'list', })),
     path('api/users/me/contents/',
          SeniorLivingFacilityContentViewSet.as_view({'get': 'list'})),
 ]
