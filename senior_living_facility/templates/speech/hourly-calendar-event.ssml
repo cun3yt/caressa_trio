@@ -1,0 +1,7 @@
+Hi!
+
+There is an upcoming event in {{ in_minutes_offset }} minutes.
+
+It is "{{ summary }}" {% if location %} in {{ location }} {% endif %} at {{ start_spoken }}.
+
+Enjoy it!

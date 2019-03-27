@@ -1,6 +1,5 @@
 import hashlib
 import pytz
-import re
 
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
@@ -17,8 +16,9 @@ from model_utils import Choices
 from utilities.views.mixins import ForAdminMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from icalevents.icalevents import events as query_events
+from utilities.speech import ssml_post_process
 
 from utilities.time import time_today_in_tz as time_in_tz
 
@@ -101,13 +101,11 @@ class SeniorLivingFacility(TimeStampedModel):
                            .values_list('id', flat=True))
         return result_list
 
-    def today_events_summary_in_text(self):
-        spoken_date_format = "%B %d %A"     # e.g. 'March 21 Thursday'
-        spoken_time_format = "%I:%M %p"     # e.g. '06:30 PM'
+    def get_today_events(self):
+        spoken_time_format = "%I:%M %p"  # e.g. '06:30 PM'
 
         tz = pytz.timezone(self.timezone)
         now = datetime.now(tz)
-        today_formatted = now.strftime(spoken_date_format)
         events = {
             'count': 0,
             'all_day': {
@@ -141,6 +139,17 @@ class SeniorLivingFacility(TimeStampedModel):
             events['hourly_events']['count'] = len(events['hourly_events']['set'])
             events['count'] = events['all_day']['count'] + events['hourly_events']['count']
 
+        return events
+
+    def today_events_summary_in_text(self) -> str:
+        spoken_date_format = "%B %d %A"     # e.g. 'March 21 Thursday'
+
+        tz = pytz.timezone(self.timezone)
+        now = datetime.now(tz)
+        today_formatted = now.strftime(spoken_date_format)
+
+        events = self.get_today_events()
+
         context = {
             'today': today_formatted,
             'events': events,
@@ -149,13 +158,39 @@ class SeniorLivingFacility(TimeStampedModel):
         }
 
         template_with_context = template_to_str('speech/whole-calendar-today.ssml', context)
-
-        # no whitespaces
-        template_with_context = re.sub(r' +', ' ', re.sub(r'[\s+]', ' ', template_with_context)).strip()
-        return template_with_context
+        return ssml_post_process(template_with_context)
 
     def __str__(self):
         return self.name
+
+    @staticmethod
+    def get_text_for_hourly_event(event: dict, in_minutes_offset: int) -> str:
+        """
+        For a given dictionary of event it generated the text to be announced.
+
+        :param event: Dictionary with 'summary', 'location', 'start', 'start_spoken' (e.g. "06:30 PM")
+        :param in_minutes_offset: This is for announcement, e.g. "in 30 minutes"
+        :return: str (the text to be announced)
+        """
+
+        summary = event.get('summary')
+        start = event.get('start')
+        start_spoken = event.get('start_spoken')
+        location = event.get('location')
+        assert all([summary, start, start_spoken]), (
+            "`summary`, `start` and `start_spoken` must exist in the event dictionary"
+        )
+
+        context = {
+            'summary': summary,
+            'start': start,
+            'start_spoken': start_spoken,
+            'location': location,
+            'in_minutes_offset': in_minutes_offset,
+        }
+
+        template_with_context = template_to_str('speech/hourly-calendar-event.ssml', context)
+        return ssml_post_process(template_with_context)
 
 
 class SeniorDevice(TimeStampedModel):
@@ -288,9 +323,11 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel):
 
     TYPE_DAILY_CALENDAR = 'Daily-Calendar'
     TYPE_CHECK_IN_CALL = 'Check-In-Call'
-    TYPE_EVENT = 'Event'
+    TYPE_UPCOMING_INDIVIDUAL_EVENT = 'Upcoming-Individual-Event'
 
-    CONTENT_TYPES = Choices(TYPE_DAILY_CALENDAR, TYPE_CHECK_IN_CALL, TYPE_EVENT, )
+    CONTENT_TYPES = Choices(TYPE_DAILY_CALENDAR,
+                            TYPE_CHECK_IN_CALL,
+                            TYPE_UPCOMING_INDIVIDUAL_EVENT, )
 
     senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
                                                null=False,
