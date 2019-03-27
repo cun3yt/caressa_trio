@@ -13,6 +13,8 @@ from jsonfield import JSONField
 from typing import Optional
 from utilities.template import template_to_str
 from model_utils import Choices
+
+from utilities.views.mixins import ForAdminMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
 from datetime import datetime, time
@@ -394,3 +396,35 @@ class SeniorLivingFacilityMessageLog(CreatedTimeStampedModel):
 
 
 SeniorLivingFacilityMessageLog._meta.get_field('created').db_index = True
+
+
+class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
+    class Meta:
+        db_table = 'mock_user_data'
+
+    NOTIFIED = 'NOTIFIED'
+    PENDING = 'PENDING'
+    STAFF_CHECKED = 'STAFF_CHECKED'
+    SELF_CHECKED = 'SELF_CHECKED'
+
+    TYPE_SET = (
+        (NOTIFIED, 'Notified'),
+        (PENDING, 'Pending'),
+        (STAFF_CHECKED, 'Staff Checked'),
+        (SELF_CHECKED, 'Self Checked'),
+    )
+
+    checkin_status = models.TextField(
+        choices=TYPE_SET,
+        default=PENDING,
+    )
+
+    senior = models.OneToOneField(to='alexa.User',
+                                  primary_key=True,
+                                  null=False,
+                                  on_delete=models.DO_NOTHING,
+                                  )
+
+    checkin_info = JSONField(default={})
+
+    device_status = JSONField(default={})

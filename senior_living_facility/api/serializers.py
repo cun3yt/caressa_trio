@@ -5,6 +5,7 @@ from caressa.settings import REST_FRAMEWORK
 from alexa.models import User
 from alexa.api.serializers import SeniorSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog
+from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from utilities.logger import log
 from utilities.views.mixins import MockStatusMixin, ForAdminMixin
 
@@ -32,55 +33,136 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin):
     number_of_unread_notifications = serializers.SerializerMethodField()
     photo_gallery_url = serializers.SerializerMethodField()
 
-    def get_number_of_residents(self, facility: SeniorLivingFacility):  # todo hardcode
-        log(facility)
+    @staticmethod
+    def get_number_of_residents(facility: SeniorLivingFacility):  # todo hardcode
         return 142
 
-    def get_number_of_unread_notifications(self, facility: SeniorLivingFacility):  # todo hardcode
-        log(facility)
+    @staticmethod
+    def get_number_of_unread_notifications(facility: SeniorLivingFacility):  # todo hardcode
         return 3
 
-    def get_photo_gallery_url(self, facility: SeniorLivingFacility):  # todo hardcode
-        log(facility)
+    @staticmethod
+    def get_photo_gallery_url(facility: SeniorLivingFacility):  # todo hardcode
         return 'https://www.caressa.herokuapp.com/gallery_url'
 
 
 class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminMixin):
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'room_no', 'device_status', 'message_thread_url', 'mock_status')
+        fields = ('first_name',
+                  'last_name',
+                  'room_no',
+                  'device_status',
+                  'message_thread_url',
+                  'profile_picture',
+                  'mock_status',
+                  )
 
     device_status = serializers.SerializerMethodField()
     message_thread_url = serializers.SerializerMethodField()
+    profile_picture = serializers.SerializerMethodField()
 
     @staticmethod
     def get_message_thread_url(senior: User):  # todo hardcode
         return 'https://caressa.herokuapp.com/senior-id-{id}-message-thread-url'.format(id=senior.id)
 
-
-class MorningCheckingUserNotifiedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
-    class Meta:
-        model = User
-        fields = ('first_name', 'last_name', 'room_no', 'device_status', 'message_thread_url', 'mock_status', 'notified')
-
-    notified = serializers.SerializerMethodField()
+    @staticmethod
+    def get_profile_picture(senior: User):  # todo hardcode
+        return senior.get_profile_pic()
 
     @staticmethod
-    def get_notified(senior: User):
-        log(senior)
-        return 'Notified!'
+    def get_device_status(senior: User):
+        mock_device_status = MockUserData.objects.all().filter(senior=senior)[0].device_status
+        if mock_device_status == {}:
+            return None
+        return mock_device_status
 
 
-class MorningCheckingUserStaffCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
-    pass
+class MorningCheckinUserNotifiedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
+    class Meta:
+        model = User
+        fields = ('first_name',
+                  'last_name',
+                  'room_no',
+                  'device_status',
+                  'message_thread_url',
+                  'mock_status',
+                  'check_in_info',
+                  )
+
+    check_in_info = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_check_in_info(senior: User):
+        return {
+            'check_in_url': 'https://caressa.herokuapp.com/senior-id-{id}-check-in-url'.format(id=senior.id)
+        }
 
 
-class MorningCheckingUserSelfCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
-    pass
+class MorningCheckinUserPendingSerializer(AdminAppSeniorListSerializer):
+    class Meta:
+        model = User
+        fields = ('first_name',
+                  'last_name',
+                  'room_no',
+                  'device_status',
+                  'message_thread_url',
+                  'mock_status',
+                  'check_in_info',
+                  )
+
+    check_in_info = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_check_in_info(senior: User):
+        return {
+            'check_in_url': 'https://caressa.herokuapp.com/senior-id-{id}-check-in-url'.format(id=senior.id)
+        }
 
 
-class MorningCheckingUserPendingSerializer(AdminAppSeniorListSerializer):
-    pass
+class MorningCheckinUserStaffCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
+    class Meta:
+        model = User
+        fields = ('first_name',
+                  'last_name',
+                  'room_no',
+                  'device_status',
+                  'message_thread_url',
+                  'mock_status',
+                  'check_in_info',
+                  )
+
+    check_in_info = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_check_in_info(senior: User):
+        return {
+            'checked_by': 'Staff Joe',
+            'check_in_time': '2019-02-02T23:37:43.811630Z',
+            'remove_check_in_url': 'https://caressa.herokuapp.com/senior-id-{id}-remove-check-in-url'.format(id=senior.id)
+        }
+
+
+class MorningCheckinUserSelfCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminMixin):
+    class Meta:
+        model = User
+        fields = ('first_name',
+                  'last_name',
+                  'room_no',
+                  'device_status',
+                  'message_thread_url',
+                  'mock_status',
+                  'check_in_info',
+                  )
+
+    check_in_info = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_check_in_info(senior: User):
+        return {
+            'checked_by': 'self',
+            'check_in_time': '2019-02-02T23:37:43.811630Z'
+        }
 
 
 class SeniorDeviceUserActivityLogSerializer(serializers.ModelSerializer):

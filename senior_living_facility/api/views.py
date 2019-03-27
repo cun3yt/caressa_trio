@@ -7,14 +7,17 @@ from alexa.api.views import SeniorListViewSet
 from alexa.models import User
 from senior_living_facility.api.permissions import IsFacilityOrgMember
 from senior_living_facility.api.serializers import FacilitySerializer, AdminAppSeniorListSerializer, \
-    MorningCheckingUserPendingSerializer, MorningCheckingUserNotifiedSerializer, \
-    MorningCheckingUserStaffCheckedSerializer, MorningCheckingUserSelfCheckedSerializer
+    MorningCheckinUserPendingSerializer, MorningCheckinUserNotifiedSerializer, \
+    MorningCheckinUserStaffCheckedSerializer, MorningCheckinUserSelfCheckedSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
     SeniorLivingFacilityContent, ContentDeliveryRule
+from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
     SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer
 from django.utils import timezone
 from datetime import datetime
+
+from utilities.views.mixins import ForAdminMixin
 
 
 class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -24,50 +27,60 @@ class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelM
     serializer_class = SeniorLivingFacilitySerializer
 
 
-class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdminMixin):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
     queryset = SeniorLivingFacility.objects.all()
     serializer_class = FacilitySerializer
 
 
-class FacilityListViewSet(SeniorListViewSet):
+class FacilityListViewSet(SeniorListViewSet, ForAdminMixin):
     pagination_class = None
 
     def get_serializer_class(self, *args, **kwargs):
         param = self.request.query_params.get('status', None)
 
         if param is None:
-            return AdminAppSeniorListSerializer(*args, **kwargs)
+            return AdminAppSeniorListSerializer
         elif param == 'notified':
-            return MorningCheckingUserNotifiedSerializer
+            return MorningCheckinUserNotifiedSerializer
         elif param == 'pending':
-            return MorningCheckingUserPendingSerializer
+            return MorningCheckinUserPendingSerializer
         elif param == 'staff-checked':
-            return MorningCheckingUserStaffCheckedSerializer
+            return MorningCheckinUserStaffCheckedSerializer
         elif param == 'self-checked':
-            return MorningCheckingUserSelfCheckedSerializer
+            return MorningCheckinUserSelfCheckedSerializer
 
     def get_queryset(self):
         user = self.request.user
-        slf_id = self.kwargs.get('senior_living_facility_id')
         param = self.request.query_params.get('status', None)
         if not user.is_provider():
             return []
 
-        queryset = User.objects.filter(user_type__exact=User.CARETAKER,
-                                       senior_living_facility=slf_id,
-                                       is_active=True)
+        qs = MockUserData.objects.all()
+        queryset = User.objects.filter(id__in=qs)
 
         if param is None:
             return queryset
         elif param == 'notified':
+            qs = MockUserData.objects.all().filter(
+                checkin_status=MockUserData.NOTIFIED)
+            queryset = User.objects.all().filter(id__in=qs)
             return queryset
         elif param == 'pending':
+            qs = MockUserData.objects.all().filter(
+                checkin_status=MockUserData.PENDING)
+            queryset = User.objects.all().filter(id__in=qs)
             return queryset
         elif param == 'staff-checked':
+            qs = MockUserData.objects.all().filter(
+                checkin_status=MockUserData.STAFF_CHECKED)
+            queryset = User.objects.all().filter(id__in=qs)
             return queryset
         elif param == 'self-checked':
+            qs = MockUserData.objects.all().filter(
+                checkin_status=MockUserData.SELF_CHECKED)
+            queryset = User.objects.all().filter(id__in=qs)
             return queryset
 
 
