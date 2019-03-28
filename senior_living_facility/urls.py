@@ -1,10 +1,11 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
+from senior_living_facility.mock.views import message_thread
 from senior_living_facility.views import facility_home, facility_settings, family_prospect_invitation, sign_up, \
     app_downloads
 from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet, \
-    FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet, message_thread, \
+    FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet,\
     MessageThreadMessagesViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
@@ -39,8 +40,8 @@ api_urls = [
          FacilityListViewSet.as_view({'get': 'list', })),
     path('api/facility/<int:pk>/messages/',
          FacilityMessagesViewSet.as_view({'get': 'list', })),
-    path('api/message-threads/<int:id>/', message_thread, name='mock_message_thread',),
-    path('api/message-threads/1/messages/',
+    path('api/message-threads/<int:pk>/', message_thread, name='mock_message_thread',),
+    path('api/message-threads/<int:pk>/messages/',
          MessageThreadMessagesViewSet.as_view({'get': 'list', })),
     path('api/users/me/contents/',
          SeniorLivingFacilityContentViewSet.as_view({'get': 'list'})),
