@@ -473,6 +473,8 @@ class SeniorLivingFacilityMockMessageData(TimeStampedModel, ForAdminMixin):
 
     senior = models.ForeignKey(to='alexa.User',
                                on_delete=models.DO_NOTHING,
-                               null=True
+                               null=True,
                                )
-    last_message = JSONField(default={})
+    message = JSONField(default={})
+
+    message_from = JSONField(default={})

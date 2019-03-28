@@ -1,4 +1,5 @@
 from django.db.models import Q
+from django.http import JsonResponse
 from rest_framework import viewsets, mixins
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -9,7 +10,8 @@ from alexa.models import User
 from senior_living_facility.api.permissions import IsFacilityOrgMember
 from senior_living_facility.api.serializers import FacilitySerializer, AdminAppSeniorListSerializer, \
     MorningCheckinUserPendingSerializer, MorningCheckinUserNotifiedSerializer, \
-    MorningCheckinUserStaffCheckedSerializer, MorningCheckinUserSelfCheckedSerializer, FacilityMessagesSerializer
+    MorningCheckinUserStaffCheckedSerializer, MorningCheckinUserSelfCheckedSerializer, FacilityMessagesSerializer, \
+    MessageThreadMessagesSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
     SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
@@ -103,6 +105,46 @@ class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, Fo
         page_size = 5
 
     pagination_class = _Pagination
+
+
+def message_thread(request, **kwargs):
+    response = {
+        "resident": {
+                "first_name": "Edward",
+                "last_name": "Hofferton",
+                "room_no": "106",
+                "device_status": {
+                    "is_online": True,
+                    "status_checked": "2019-02-02T23:37:43.811630Z",
+                    "last_activity_time": "2019-03-22T03:59:08.302690Z",
+                    "is_today_checked_in": True
+                },
+                "message_thread_url": "https://caressa.herokuapp.com/senior-id-94-message-thread-url",
+                "profile_picture": "https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_250.jpg",
+                "mock_status": True
+            },
+        "messages": {
+            "url": "https://caressa.herokuapp.com/api/message-threads/1/messages/"
+        }
+    }
+
+    return JsonResponse(response)
+
+
+class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminMixin):
+    authentication_classes = (OAuth2Authentication,)
+    permission_classes = (IsAuthenticated,)
+    serializer_class = MessageThreadMessagesSerializer
+
+    class _Pagination(PageNumberPagination):
+        max_page_size = 20
+        page_size_query_param = 'page_size'
+        page_size = 5
+
+    pagination_class = _Pagination
+
+    def get_queryset(self):
+        return SeniorLivingFacilityMockMessageData.objects.filter(senior=94).order_by('-id')
 
 
 class SeniorDeviceUserActivityLogCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
