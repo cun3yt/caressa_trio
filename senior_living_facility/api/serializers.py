@@ -1,11 +1,12 @@
 from rest_framework import serializers
-from senior_living_facility.models import SeniorLivingFacilityContent, ContentDeliveryRule
 from caressa.settings import REST_FRAMEWORK
 
 from alexa.models import User
 from alexa.api.serializers import SeniorSerializer
-from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog
+from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
+    SeniorLivingFacilityContent, ContentDeliveryRule
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
+from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from utilities.logger import log
 from utilities.views.mixins import MockStatusMixin, ForAdminMixin
 
@@ -18,7 +19,7 @@ class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
         read_only_fields = ('facility_id', 'calendar_url', 'timezone', )
 
 
-class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin):
+class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminMixin):
     class Meta:
         model = SeniorLivingFacility
         fields = ('name',
@@ -99,6 +100,30 @@ class MorningCheckinUserNotifiedSerializer(AdminAppSeniorListSerializer, MockSta
         }
 
 
+class FacilityMessagesSerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminMixin):
+    class Meta:
+        model = MockMessageData
+        fields = ('id', 'resident', 'last_message', 'mock_status', 'message_from')
+
+    resident = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+    message_from = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_resident(mock_message_data: MockMessageData):
+        if not mock_message_data.senior:
+            return 'All Residents'
+        return AdminAppSeniorListSerializer(mock_message_data.senior).data
+
+    @staticmethod
+    def get_last_message(mock_message_data: MockMessageData):
+        return mock_message_data.message
+
+    @staticmethod
+    def get_message_from(mock_message_data: MockMessageData):
+        return mock_message_data.message_from
+
+
 class MorningCheckinUserPendingSerializer(AdminAppSeniorListSerializer):
     class Meta:
         model = User
@@ -163,6 +188,40 @@ class MorningCheckinUserSelfCheckedSerializer(AdminAppSeniorListSerializer, Mock
             'checked_by': 'self',
             'check_in_time': '2019-02-02T23:37:43.811630Z'
         }
+
+    @staticmethod
+    def get_resident(obj):
+        return {
+                "first_name": "Edward",
+                "last_name": "Hofferton",
+                "room_no": "106",
+                "device_status": {
+                    "is_online": True,
+                    "status_checked": "2019-02-02T23:37:43.811630Z",
+                    "last_activity_time": "2019-03-22T03:59:08.302690Z",
+                    "is_today_checked_in": True
+                },
+                "message_thread_url": "https://caressa.herokuapp.com/senior-id-94-message-thread-url",
+                "profile_picture": "https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_250.jpg",
+                "mock_status": True
+            }
+
+
+class MessageThreadMessagesSerializer(serializers.ModelSerializer, MockStatusMixin):
+    class Meta:
+        model = MockMessageData
+        fields = ('id', 'message', 'mock_status', 'message_from')
+
+    message = serializers.SerializerMethodField()
+    message_from = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_message(mock_message_data: MockMessageData):
+        return mock_message_data.message
+
+    @staticmethod
+    def get_message_from(mock_message_data: MockMessageData):
+        return mock_message_data.message_from
 
 
 class SeniorDeviceUserActivityLogSerializer(serializers.ModelSerializer):

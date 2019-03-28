@@ -1,5 +1,7 @@
 from django.db.models import Q
+from django.http import JsonResponse
 from rest_framework import viewsets, mixins
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from alexa.api.permissions import IsSenior
@@ -8,9 +10,10 @@ from alexa.models import User
 from senior_living_facility.api.permissions import IsFacilityOrgMember
 from senior_living_facility.api.serializers import FacilitySerializer, AdminAppSeniorListSerializer, \
     MorningCheckinUserPendingSerializer, MorningCheckinUserNotifiedSerializer, \
-    MorningCheckinUserStaffCheckedSerializer, MorningCheckinUserSelfCheckedSerializer
+    MorningCheckinUserStaffCheckedSerializer, MorningCheckinUserSelfCheckedSerializer, FacilityMessagesSerializer, \
+    MessageThreadMessagesSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule
+    SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
     SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer
@@ -38,7 +41,7 @@ class FacilityListViewSet(SeniorListViewSet, ForAdminMixin):
     pagination_class = None
 
     def get_serializer_class(self, *args, **kwargs):
-        param = self.request.query_params.get('status', None)
+        param = self.request.query_params.get('status', None) or self.request.query_params.get('starts_with', None)
 
         if param is None:
             return AdminAppSeniorListSerializer
@@ -50,10 +53,12 @@ class FacilityListViewSet(SeniorListViewSet, ForAdminMixin):
             return MorningCheckinUserStaffCheckedSerializer
         elif param == 'self-checked':
             return MorningCheckinUserSelfCheckedSerializer
+        else:
+            return AdminAppSeniorListSerializer
 
     def get_queryset(self):
         user = self.request.user
-        param = self.request.query_params.get('status', None)
+        param = self.request.query_params.get('status', None) or self.request.query_params.get('starts_with', None)
         if not user.is_provider():
             return []
 
@@ -82,6 +87,40 @@ class FacilityListViewSet(SeniorListViewSet, ForAdminMixin):
                 checkin_status=MockUserData.SELF_CHECKED)
             queryset = User.objects.all().filter(id__in=qs)
             return queryset
+        else:  # param = starts_with parameter
+            qs = MockUserData.objects.filter(senior__first_name__istartswith=param)
+            queryset = User.objects.all().filter(id__in=qs)
+            return queryset
+
+
+class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminMixin):
+    authentication_classes = (OAuth2Authentication,)
+    permission_classes = (IsAuthenticated, IsFacilityOrgMember,)
+    queryset = SeniorLivingFacilityMockMessageData.objects.all()
+    serializer_class = FacilityMessagesSerializer
+
+    class _Pagination(PageNumberPagination):
+        max_page_size = 20
+        page_size_query_param = 'page_size'
+        page_size = 5
+
+    pagination_class = _Pagination
+
+
+class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminMixin):
+    authentication_classes = (OAuth2Authentication,)
+    permission_classes = (IsAuthenticated,)
+    serializer_class = MessageThreadMessagesSerializer
+
+    class _Pagination(PageNumberPagination):
+        max_page_size = 20
+        page_size_query_param = 'page_size'
+        page_size = 5
+
+    pagination_class = _Pagination
+
+    def get_queryset(self):
+        return SeniorLivingFacilityMockMessageData.objects.filter(senior=94).order_by('-id')
 
 
 class SeniorDeviceUserActivityLogCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):

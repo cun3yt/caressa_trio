@@ -465,3 +465,16 @@ class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
     checkin_info = JSONField(default={})
 
     device_status = JSONField(default={})
+
+
+class SeniorLivingFacilityMockMessageData(TimeStampedModel, ForAdminMixin):
+    class Meta:
+        db_table = 'mock_facility_messages'
+
+    senior = models.ForeignKey(to='alexa.User',
+                               on_delete=models.DO_NOTHING,
+                               null=True,
+                               )
+    message = JSONField(default={})
+
+    message_from = JSONField(default={})
