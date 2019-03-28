@@ -3,6 +3,7 @@ from senior_living_facility.models import SeniorLivingFacility, ServiceRequest
 from model_mommy import mommy
 from unittest.mock import patch
 import pytz
+import re
 
 
 class TestSeniorLivingFacility(TestCase):
@@ -28,8 +29,8 @@ class TestSeniorLivingFacility(TestCase):
         family1 = mommy.make('alexa.user', user_type='FAMILY', email='family1@example.com',
                              phone_number='+1 842-123-4829')
 
-        phone_numbers = set(number.as_international for number in facility.phone_numbers)
-        self.assertSetEqual(set(['+1 123-456-7889', '+1 987-788-4561']), phone_numbers)
+        phone_numbers = set(re.sub(r'-', '', number.as_international) for number in facility.phone_numbers)
+        self.assertSetEqual(set(['+1 1234567889', '+1 9877884561']), phone_numbers)
 
 
 class TestServiceRequest(TestCase):
