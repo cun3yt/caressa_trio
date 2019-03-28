@@ -6,7 +6,7 @@ from senior_living_facility.views import facility_home, facility_settings, famil
     app_downloads
 from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet, \
     FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet,\
-    MessageThreadMessagesViewSet
+    MessageThreadMessagesViewSet, ServiceRequestViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -45,4 +45,6 @@ api_urls = [
          MessageThreadMessagesViewSet.as_view({'get': 'list', })),
     path('api/users/me/contents/',
          SeniorLivingFacilityContentViewSet.as_view({'get': 'list'})),
+    path('api/users/me/service-requests/',
+         ServiceRequestViewSet.as_view({'post': 'create'})),
 ]

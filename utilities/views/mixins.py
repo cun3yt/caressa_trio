@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+
 class SerializerRequestViewSetMixin:
     def get_serializer_context(self):
         return {
