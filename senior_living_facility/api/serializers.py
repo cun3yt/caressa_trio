@@ -4,7 +4,7 @@ from caressa.settings import REST_FRAMEWORK
 from alexa.models import User
 from alexa.api.serializers import SeniorSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule
+    SeniorLivingFacilityContent, ContentDeliveryRule, ServiceRequest
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from utilities.logger import log
@@ -257,3 +257,18 @@ class SeniorLivingFacilityContentSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_hash(content: SeniorLivingFacilityContent):
         return content.text_content_hash
+
+
+class ServiceRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceRequest
+        fields = ('requester', 'receiver', )
+        read_only_fields = ('requester', 'receiver', )
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['requester'] = user
+        validated_data['receiver'] = user.senior_living_facility
+        instance = super(ServiceRequestSerializer, self).create(validated_data)     # type: ServiceRequest
+        instance.process()
+        return instance

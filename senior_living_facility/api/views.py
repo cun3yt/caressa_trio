@@ -15,10 +15,10 @@ from senior_living_facility.api.serializers import FacilitySerializer, AdminAppS
     MorningCheckinUserStaffCheckedSerializer, MorningCheckinUserSelfCheckedSerializer, FacilityMessagesSerializer, \
     MessageThreadMessagesSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData
+    SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData, ServiceRequest
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
-    SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer
+    SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer, ServiceRequestSerializer
 from django.utils import timezone
 from datetime import datetime
 
@@ -32,6 +32,13 @@ class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelM
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
     queryset = SeniorLivingFacility.objects.all()
     serializer_class = SeniorLivingFacilitySerializer
+
+
+class ServiceRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsSenior, )
+    queryset = ServiceRequest.objects.all()
+    serializer_class = ServiceRequestSerializer
 
 
 class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdminMixin):

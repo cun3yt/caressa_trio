@@ -16,11 +16,12 @@ from model_utils import Choices
 from utilities.views.mixins import ForAdminMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
-from datetime import datetime, time, timedelta
+from datetime import datetime, time
 from icalevents.icalevents import events as query_events
 from utilities.speech import ssml_post_process
 
 from utilities.time import time_today_in_tz as time_in_tz
+from utilities.sms import send_sms
 
 
 class SeniorLivingFacility(TimeStampedModel):
@@ -48,6 +49,13 @@ class SeniorLivingFacility(TimeStampedModel):
                                          default='10:00:00', )
     check_in_reminder = models.TimeField(null=True,
                                          default=None, )    # todo check business value of having default value
+
+    @property
+    def phone_numbers(self) -> list:
+        User = get_user_model()
+        users = User.objects.all().filter(senior_living_facility=self,
+                                          user_type__in=(User.CAREGIVER, User.CAREGIVER_ORG, ), )
+        return [user.phone_number for user in users if user.phone_number]
 
     @property
     def admins(self):
@@ -433,6 +441,33 @@ class SeniorLivingFacilityMessageLog(CreatedTimeStampedModel):
 
 
 SeniorLivingFacilityMessageLog._meta.get_field('created').db_index = True
+
+
+class ServiceRequest(CreatedTimeStampedModel):
+    class Meta:
+        db_table = 'service_request'
+
+    requester = models.ForeignKey(to='alexa.User',
+                                  help_text="The user who requested the service "
+                                            "(i.e. pressed the request button on the hardware)",
+                                  on_delete=models.DO_NOTHING, )
+    receiver = models.ForeignKey(to=SeniorLivingFacility,
+                                 help_text="The facility that is in charge of fulfilling the service request",
+                                 on_delete=models.DO_NOTHING, )
+
+    def process(self):
+        facility = self.receiver
+        phone_numbers = facility.phone_numbers
+        time_format = "%I:%M %p"  # e.g. '06:30 PM'
+        tz = pytz.timezone(facility.timezone)
+        request_time = self.created.astimezone(tz).strftime(time_format)
+        context = {
+            'name': self.requester.full_name,
+            'room_no': self.requester.room_no,
+            'time': request_time,
+        }
+        for number in phone_numbers:
+            send_sms(number.as_international, context, 'sms/service-request.txt')
 
 
 class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
