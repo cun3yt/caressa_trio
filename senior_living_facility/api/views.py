@@ -1,12 +1,14 @@
 from django.db.models import Q
-from django.http import JsonResponse
 from rest_framework import viewsets, mixins
+from rest_framework.response import Response
+from rest_framework.decorators import authentication_classes, permission_classes, api_view
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from alexa.api.permissions import IsSenior
 from alexa.api.views import SeniorListViewSet
 from alexa.models import User
+from caressa import settings
 from senior_living_facility.api.permissions import IsFacilityOrgMember
 from senior_living_facility.api.serializers import FacilitySerializer, AdminAppSeniorListSerializer, \
     MorningCheckinUserPendingSerializer, MorningCheckinUserNotifiedSerializer, \
@@ -20,6 +22,8 @@ from senior_living_facility.api.serializers import SeniorLivingFacilitySerialize
 from django.utils import timezone
 from datetime import datetime
 
+from utilities.file_operations import generate_versioned_picture_name, download_to_tmp_from_s3, \
+    profile_picture_resizing_wrapper, upload_to_s3_from_tmp
 from utilities.views.mixins import ForAdminMixin
 
 
@@ -149,3 +153,39 @@ class SeniorLivingFacilityContentViewSet(mixins.ListModelMixin, viewsets.Generic
                                                           delivery_rule__end__gte=now,
                                                           delivery_rule__type=ContentDeliveryRule.TYPE_INJECTABLE)\
             .filter(Q(delivery_rule__recipient_ids__isnull=True) | Q(delivery_rule__recipient_ids__contains=[user.id]))
+
+
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
+@api_view(['POST'])
+def uploaded_new_profile_picture(request, **kwargs):
+    user_id = kwargs.get('id', None)
+
+    user = User.objects.filter(pk=user_id)[0]
+    file_name = request.data.get('key')
+
+    current_user_profile_pic = user.profile_pic
+
+    new_profile_pic_hash_version = generate_versioned_picture_name(current_user_profile_pic)
+
+    download_to_tmp_from_s3(file_name, settings.S3_RAW_UPLOAD_BUCKET)
+
+    save_picture_format = 'jpg'
+    picture_set = profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version, save_picture_format)
+    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
+
+    user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
+    user.save()
+    profile_picture_url = 'https://s3-us-west-1.amazonaws.com/' \
+                          'caressa-prod/images/user/{user_id}/' \
+                          '{profile_pic_hash}_w_250.jpg'.format(user_id=user_id,
+                                                                profile_pic_hash=user.profile_pic)
+    thumbnail_url = 'https://s3-us-west-1.amazonaws.com/' \
+                    'caressa-prod/images/user/{user_id}/' \
+                    '{profile_pic_hash}_w_25.jpg'.format(user_id=user_id,
+                                                         profile_pic_hash=user.profile_pic)
+    return Response({
+        'message': 'Profile Picture Updated',
+        'profile_picture_url': profile_picture_url,
+        'thumbnail_url': thumbnail_url,
+    })
