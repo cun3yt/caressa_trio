@@ -1,5 +1,7 @@
 from django.http import JsonResponse
 
+from alexa.models import User
+
 
 def message_thread(request, **kwargs):
     response = {
@@ -27,11 +29,14 @@ def message_thread(request, **kwargs):
 
 
 def user_profile(request, **kwargs):
+    pics = User.objects.filter(pk=100)[0].get_profile_pictures()
+
     response = {
+        "id": 100,
         "first_name": "Pamela",
         "last_name": "Emeryville",
-        "profile_picture_url": "",
-        "thumbnail_url": "",
+        'profile_picture_url': pics.get('w_250'),
+        'thumbnail_url': pics.get('w_25'),
         "online_status": "Online",
         "message_thread_url": "https://caressa.heroku.app/message-threads/16/messages",
         "phone_number": "+14154395638",
