@@ -3,7 +3,6 @@ from django.db import models
 from model_mommy import mommy
 
 from alexa.models import User, Circle, CaressaUserManager, FamilyProspect
-from caressa.settings import HOSTED_ENV
 from django.db.models import signals
 import daiquiri
 import logging
@@ -223,16 +222,6 @@ class CircleModelTestCase(TestCase):
         self.assertEqual(_circle.admins.count(), 2)
 
 
-class SongModelTestCase(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.song = mommy.make('alexa.Song')
-        cls.url = HOSTED_ENV + cls.song.file_name
-
-    def test_url(self):
-        self.assertEqual(self.song.url, self.url)
-
-
 class FamilyProspectTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -258,7 +247,3 @@ class FamilyProspectTestCase(TestCase):
                                      email='prospect_dunkin@donuts.com', senior=self.senior)
         ret_val = prospect_sister.reach_prospect()
         self.assertFalse(ret_val, "We don't reach the prospect if there is already an admin in the circle")
-
-
-class FetchRandomMixinTestCase(TestCase):   # todo: alexa.mixins
-    pass
