@@ -176,16 +176,10 @@ def uploaded_new_profile_picture(request, **kwargs):
 
     user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     user.save()
-    profile_picture_url = 'https://s3-us-west-1.amazonaws.com/' \
-                          'caressa-prod/images/user/{user_id}/' \
-                          '{profile_pic_hash}_w_250.jpg'.format(user_id=user_id,
-                                                                profile_pic_hash=user.profile_pic)
-    thumbnail_url = 'https://s3-us-west-1.amazonaws.com/' \
-                    'caressa-prod/images/user/{user_id}/' \
-                    '{profile_pic_hash}_w_25.jpg'.format(user_id=user_id,
-                                                         profile_pic_hash=user.profile_pic)
+    pics = user.get_profile_pictures()
+
     return Response({
         'message': 'Profile Picture Updated',
-        'profile_picture_url': profile_picture_url,
-        'thumbnail_url': thumbnail_url,
+        'profile_picture_url': pics.get('w_250'),
+        'thumbnail_url': pics.get('w_25'),
     })
