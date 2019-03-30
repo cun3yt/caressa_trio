@@ -58,10 +58,10 @@ class Comment(TimeStampedModel):
                                 on_delete=models.DO_NOTHING,
                                 related_name='action_comments', )
 
-    def __repr__(self):
+    def __repr__(self):     # todo does this work? Doesn't `comment_backers` create a problem?
         return "Comment({}) by {}: {}".format(self.id, self.comment_backers, self.comment)
 
-    def __str__(self):
+    def __str__(self):     # todo does this work? Doesn't `comment_backers` create a problem?
         return "{} commented on {}: {}".format(self.comment_backers, self.content, self.comment)
 
 
@@ -103,93 +103,6 @@ class UserReaction(TimeStampedModel):
 
     def __str__(self):
         return "{} did reaction '{}' on {}".format(self.owner, self.reaction, self.content)
-
-
-class ManualUserPost(TimeStampedModel):
-    class Meta:
-        db_table = 'manual_user_post'
-
-    user = models.ForeignKey(to=User,
-                             on_delete=models.DO_NOTHING,
-                             related_name='manual_posts',
-                             db_index=True,
-                             help_text='Who (the circle member) is the content about?', )
-    content_to_be_spoken = models.TextField(null=False,
-                                            blank=False,
-                                            help_text='The content to be spoken on Alexa. Put {timeago} '
-                                                      'for time past since `Content Creation Time`', )
-    content_creation_time = models.DateTimeField(null=False,
-                                                 blank=False,
-                                                 help_text='The date/time that the user content was created '
-                                                           '(e.g. Facebook post time)', )
-    yes_no_question = models.TextField(null=False,
-                                       blank=False,
-                                       help_text='Yes/No question that is presented after the content is spoken on '
-                                                 'Alexa.', )
-    yes_reflection_on_circle = models.TextField(null=False,
-                                                blank=False,
-                                                help_text='The presentation of the Alexa user\'s yes response '
-                                                          'to the circle if "Yes" is said. ', )
-    is_published = models.BooleanField(default=False,
-                                       help_text='The post will not be presented on Alexa until it is published', )
-    listened_time = models.DateTimeField(null=True,
-                                         default=None,
-                                         db_index=True,
-                                         help_text='When the central person (e.g. senior) listened the content. '
-                                                   'Once the content is listened, it will not be spoken again. '
-                                                   'If you\'d like to re-publish a spoken content, '
-                                                   'create a new manual post instead of re-publishing it', )
-
-    def delete_related_activities(self):
-        user_post_ct = ContentType.objects.get_for_model(ManualUserPost)
-        actions = UserAction.objects.filter(Q(action_object_content_type=user_post_ct)
-                                            & Q(action_object_object_id=self.id)).all()
-        actions.delete()
-
-    def __repr__(self):
-        return 'ManualUserPost({}) by {}'.format(self.id, self.user)
-
-    def __str__(self):
-        time_ago_str = timeago.format(self.content_creation_time, timezone.now())
-        return self.content_to_be_spoken.format(timeago=time_ago_str)
-
-
-def manual_user_activity_save(sender, instance, created, **kwargs):
-    post = instance     # type: ManualUserPost
-    user = post.user    # type: User
-
-    # todo if listened better disable for edit!!
-    if post.listened_time:
-        log('ManualUserPost::{id} is already listened, so NO new activity stream'.format(id=instance.id))
-        return
-
-    if not created:
-        post.delete_related_activities()
-
-    if not post.is_published:
-        log('ManualUserPost::{id} is saved but not published yet, so NO activity stream'.format(id=instance.id))
-        return
-
-    circle = user.circle_set.all()[0]
-    action.send(user,
-                verb='created a post',
-                description=kwargs.get('description', ''),
-                action_object=post,
-                target=circle, )
-
-
-def manual_user_pre_delete(sender, instance, using, **kwargs):
-    post = instance     # type: ManualUserPost
-    post.delete_related_activities()
-
-
-signals.post_save.connect(receiver=manual_user_activity_save,
-                          sender=ManualUserPost, )
-
-
-# There is a database model truncation in actstream but we have manual deletion in case.
-signals.pre_delete.connect(receiver=manual_user_pre_delete,
-                           sender=ManualUserPost, )
 
 
 class UserPost(TimeStampedModel):
