@@ -2,6 +2,7 @@ import pytz
 import unittest
 
 from unittest.mock import patch
+from utilities.email import send_email
 from utilities.speech import ssml_post_process
 from utilities.sms import send_sms
 from utilities.time import time_today_in_tz
@@ -60,3 +61,23 @@ class TestTime(unittest.TestCase):
         self.assertEqual(t_la.second, 3)
         self.assertEqual(t_la.month, current_la.month)
         self.assertEqual(t_la.day, current_la.day)
+
+
+class EmailTestCases(unittest.TestCase):
+    @patch('utilities.email.EmailMultiAlternatives')
+    def test_send_email(self, mock_email_multi_alternatives):
+        def _attach_alternative(*args, **kwargs):
+            return args, kwargs
+
+        def _send():
+            return True
+
+        mock_email_multi_alternatives.return_value = _Response(attach_alternative=_attach_alternative,
+                                                               send=_send)
+        send_res, html_content, text_content, to_email_addresses = \
+            send_email(['cuneyt@caressa.ai', 'info@caressa.ai'], 'Welcome Email', 'test/email.html',
+                       'test/email.txt', context={'var1': 1, 'var2': 'Interesting'})
+        self.assertTrue(send_res)
+        self.assertEqual(html_content, "<div>Sample email content with <span>1</span> and Interesting</div>")
+        self.assertEqual(text_content, "Sample email content with 1 and Interesting")
+        self.assertListEqual(to_email_addresses, ['cuneyt@caressa.ai', 'info@caressa.ai'])
