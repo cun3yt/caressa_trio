@@ -1,7 +1,11 @@
+import pytz
 import unittest
+
 from unittest.mock import patch
 from utilities.speech import ssml_post_process
 from utilities.sms import send_sms
+from utilities.time import time_today_in_tz
+from django.utils.timezone import localtime
 
 
 class _Response:
@@ -35,3 +39,24 @@ class TestSms(unittest.TestCase):
                                'from': 'some-from'})
         self.assertEqual(text_content, "Hello this is an sms with variable 1: hey and variable 2: 222")
         self.assertEqual(phone_no, '+1 415-533-7523')
+
+
+class TestTime(unittest.TestCase):
+    def test_time_today_in_tz(self):
+        t_utc = time_today_in_tz('UTC', 15)
+        current_utc = localtime(timezone=pytz.timezone('UTC'))
+        self.assertEqual(t_utc.tzinfo.zone, 'UTC')
+        self.assertEqual(t_utc.hour, 15)
+        self.assertEqual(t_utc.minute, 0)
+        self.assertEqual(t_utc.second, 0)
+        self.assertEqual(t_utc.month, current_utc.month)
+        self.assertEqual(t_utc.day, current_utc.day)
+
+        t_la = time_today_in_tz('America/Los_Angeles', 1, 2, 3)
+        current_la = localtime(timezone=pytz.timezone('America/Los_Angeles'))
+        self.assertEqual(t_la.tzinfo.zone, 'America/Los_Angeles')
+        self.assertEqual(t_la.hour, 1)
+        self.assertEqual(t_la.minute, 2)
+        self.assertEqual(t_la.second, 3)
+        self.assertEqual(t_la.month, current_la.month)
+        self.assertEqual(t_la.day, current_la.day)
