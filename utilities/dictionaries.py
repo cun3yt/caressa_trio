@@ -24,7 +24,7 @@ def deep_set(dict_, key, val):
 
     last_key = keys[-1]
     iterative_dict[last_key] = val
-    return dict_merge(dict_, to_merge)
+    dict_merge(dict_, to_merge)
 
 
 def dict_merge(dct, merge_dct):
