@@ -1,4 +1,4 @@
-from streaming.models import Messages, AudioFile, Tag, VoiceMessageStatus
+from streaming.models import Messages, AudioFile, Tag
 from alexa.models import User
 from caressa.settings import S3_RAW_UPLOAD_BUCKET, S3_REGION, S3_PRODUCTION_BUCKET
 import boto3
@@ -85,16 +85,12 @@ def audio_worker(publisher, next_queued_job: Messages):
         channels = source.communication_channels()
         assert len(channels) == 1, "Provider is supposed to have only one channel, which is a SLF channel"
         _realtime_message(channels[0], mail_type, {'url': url})
-        destination = None
     else:
         assert source.is_family(), (
             "Source must be family if not a provider since senior cannot trigger a message (at the moment)"
         )
         destination = source.circle_set.all()[0].person_of_interest
         _realtime_message(destination.senior_communication_channel, mail_type, {'url': url})
-
-    new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
-    new_voice_message_status.save()
 
     return 'Job Finished...'
 
@@ -131,9 +127,6 @@ def text_worker(publisher, next_queued_job: Messages):
 
     destination = source.circle_set.all()[0].person_of_interest
     _realtime_message(destination.senior_communication_channel, mail_type, {'url': url})
-
-    new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
-    new_voice_message_status.save()
 
     return 'Job Finished...'
 
@@ -175,9 +168,6 @@ def personalization_worker(publisher, next_queued_job: Messages):
     destination = source.circle_set.all()[0].person_of_interest
 
     _realtime_message(destination.senior_communication_channel, mail_type, {'url': url})
-
-    new_voice_message_status = VoiceMessageStatus(source=source, destination=destination, key=file_key)
-    new_voice_message_status.save()
 
     log('Job Finished...')
 
