@@ -59,30 +59,30 @@ class Tag(TimeStampedModel):
 
 
 class AudioFile(TimeStampedModel):
+    """
+    Purpose: Keep an entry for all audio (mp3) files.
+    """
     class Meta:
         db_table = 'audio_file'
         verbose_name_plural = 'Audio Files'
 
     TYPE_SONG = 'song'
-    TYPE_PODCAST = 'podcast'
-    TYPE_JOKE = 'joke'
     TYPE_FAMILY_UPDATE = 'family_update'
     TYPE_MISC = 'miscellaneous'
 
     TYPE_SET = (
         (TYPE_SONG, 'Song'),
-        (TYPE_PODCAST, 'Podcast'),
-        (TYPE_JOKE, 'Joke'),
         (TYPE_FAMILY_UPDATE, 'Family Update'),
         (TYPE_MISC, 'Miscellaneous'),
     )
 
     audio_type = models.CharField(max_length=50,
                                   choices=TYPE_SET, )
-    url = models.TextField(blank=False,
-                           null=False,
-                           db_index=True,
-                           help_text='File URL, it must be publicly accessible', )
+    url = models.URLField(blank=False,
+                          null=False,
+                          db_index=True,
+                          verbose_name='File URL',
+                          help_text='File URL, it must be publicly accessible', )
     duration = models.IntegerField(blank=False,
                                    null=False,
                                    default=0,
@@ -133,8 +133,33 @@ class AudioFile(TimeStampedModel):
 
         return Tag.tag_list_to_audio_file(user_genres_id_list)
 
+    def __init__(self, *args, **kwargs):
+        if hasattr(self, 'type'):
+            self._meta.get_field('audio_type').default = self.type
+
+            kwargs_type = kwargs.get('audio_type', None)
+            if not kwargs_type:
+                kwargs['audio_type'] = self.type
+
+        super().__init__(*args, **kwargs)
+
 
 AudioFile._meta.get_field('modified').db_index = True
+
+
+class Song(AudioFile):
+    """
+    This is a proxy model, just setting `type` to AudioFile.TYPE_SONG
+    """
+    class Meta:
+        proxy = True
+
+    class _Manager(models.Manager):
+        def get_queryset(self):
+            return super().get_queryset().filter(audio_type=AudioFile.TYPE_SONG)
+
+    type = AudioFile.TYPE_SONG
+    objects = _Manager()
 
 
 def audio_file_accessibility_and_duration(sender, instance, raw, using, update_fields, **kwargs):
@@ -146,11 +171,25 @@ def audio_file_accessibility_and_duration(sender, instance, raw, using, update_f
         instance.duration = -1
 
 
-signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
-                         sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
+audio_duration_signals = [
+    {'sender': AudioFile,
+     'uid': 'audio_file_accessibility_and_duration', },
+    {'sender': Song,
+     'uid': 'song_accessibility_and_duration', },
+]
+
+# All models (including proxy models) need their own signal-function connection.
+for duration_signal in audio_duration_signals:
+    signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
+                             sender=duration_signal['sender'], dispatch_uid=duration_signal['uid'])
 
 
 class UserMainContentConsumption(CreatedTimeStampedModel):
+    """
+    Purpose: Keeping track of audio file consumption for all users.
+    It is a unary entry, meaning that if there is an entry
+    it means that it is assumed to be consumed.
+    """
     class Meta:
         db_table = 'user_audio_consumption'
         ordering = ['id', ]
@@ -164,6 +203,9 @@ class UserMainContentConsumption(CreatedTimeStampedModel):
 
 
 class Messages(TimeStampedModel):
+    """
+    Purpose: Message Queue for actual messages, e.g. for text-to-speech and voice-mail
+    """
     class Meta:
         db_table = 'message_queue'
 
@@ -188,37 +230,6 @@ class Messages(TimeStampedModel):
 
 
 Messages._meta.get_field('created').db_index = True
-
-
-class VoiceMessageStatus(TimeStampedModel):
-    class Meta:
-        db_table = 'voice_message_status'
-
-    VOICE_STATUS_LISTENED = 'listened'
-    VOICE_STATUS_WAITING = 'waiting'
-
-    VOICE_STATUS_SET = (
-        (VOICE_STATUS_LISTENED, 'Listened'),
-        (VOICE_STATUS_WAITING, 'Waiting')
-    )
-    source = models.ForeignKey(to=User,
-                               null=False,
-                               help_text='Voice Source User',
-                               on_delete=models.DO_NOTHING,
-                               related_name='voice_source_user'
-                               )
-    destination = models.ForeignKey(to=User,
-                                    null=True,
-                                    help_text='Voice Destination User (None means facility-wide message)',
-                                    on_delete=models.DO_NOTHING,
-                                    related_name='voice_destination_user'
-                                    )
-    key = models.TextField(null=False,
-                           help_text='File name that will be listened by destination', )
-    list_status = models.CharField(max_length=50,
-                                   choices=VOICE_STATUS_SET,
-                                   default=VOICE_STATUS_WAITING,
-                                   )
 
 
 class UserContentRepository(TimeStampedModel):

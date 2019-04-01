@@ -1,7 +1,8 @@
 from django.contrib import admin
-from streaming.models import AudioFile, Tag
-from streaming.forms import AudioFileForm
+from streaming.models import Song, Tag
+from streaming.forms import AudioForm
 from django.utils.html import format_html
+
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
@@ -14,18 +15,18 @@ class TagAdmin(admin.ModelAdmin):
                     'label',
                     'is_setting_available', )
 
+    search_fields = ['name', ]
 
-@admin.register(AudioFile)
-class AudioFileAdmin(admin.ModelAdmin):
-    fields = ('audio_type',
-              'duration_in_minutes',
+
+@admin.register(Song)
+class AudioAdmin(admin.ModelAdmin):
+    fields = ('duration_in_minutes',
               'name',
               'description',
               'url',
               'tags', )
 
     list_display = ('id',
-                    'audio_type',
                     'url_hyperlink',
                     'duration_in_minutes',
                     'url_public_status',
@@ -37,10 +38,11 @@ class AudioFileAdmin(admin.ModelAdmin):
                        'duration_in_minutes', )
 
     ordering = ['-modified', ]
-
     search_fields = ['name', ]
 
-    form = AudioFileForm
+    autocomplete_fields = ['tags', ]
+
+    form = AudioForm
 
     def get_fields(self, request, obj=None):
         if obj:
@@ -61,5 +63,3 @@ class AudioFileAdmin(admin.ModelAdmin):
     def audio_tags(self, obj):
         return [tag.name for tag in obj.tags.all()] if obj.tags.all().count() > 0 else \
             format_html('<div style="width:100%%; height:100%%; background-color:red; color:white;">No Tag Found</div>')
-
-
