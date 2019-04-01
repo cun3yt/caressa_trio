@@ -65,18 +65,14 @@ class AudioFile(TimeStampedModel):
 
     TYPE_SONG = 'song'
     TYPE_PODCAST = 'podcast'
-    TYPE_NEWS = 'news'
     TYPE_JOKE = 'joke'
-    TYPE_FACT = 'fact'
     TYPE_FAMILY_UPDATE = 'family_update'
     TYPE_MISC = 'miscellaneous'
 
     TYPE_SET = (
         (TYPE_SONG, 'Song'),
         (TYPE_PODCAST, 'Podcast'),
-        (TYPE_NEWS, 'News'),
         (TYPE_JOKE, 'Joke'),
-        (TYPE_FACT, 'Fact'),
         (TYPE_FAMILY_UPDATE, 'Family Update'),
         (TYPE_MISC, 'Miscellaneous'),
     )

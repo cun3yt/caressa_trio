@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from alexa.models import Joke, News, User, FamilyProspect, Circle, UserSettings, CircleInvitation, CircleReinvitation
+from alexa.models import Joke, User, FamilyProspect, Circle, UserSettings, CircleInvitation, CircleReinvitation
 from actions.models import UserAction
 from senior_living_facility.models import SeniorDeviceUserActivityLog
 from streaming.models import Tag
@@ -8,8 +8,6 @@ from actstream.models import action_object_stream
 from random import randint
 from django.core.exceptions import ValidationError
 from rest_framework.serializers import ValidationError as RestFrameworkValidationError
-
-from utilities.logger import log
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -324,29 +322,5 @@ class JokeSerializer(serializers.ModelSerializer):
 
         user = self.context['request'].user
         actions = action_object_stream(joke).filter(actor_object_id=user.id)
-        user_actions = UserAction.objects.all().filter(id__in=[action.id for action in actions])
-        return ActionSerializer(user_actions, many=True, context={'request': self.context['request']}).data
-
-
-class NewsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = News
-        fields = ('id',
-                  'headline',
-                  'content',
-                  'user_actions', )
-
-    user_actions = serializers.SerializerMethodField()
-
-    def get_user_actions(self, news: News):
-        """
-        This is the actions on the News object from the user in the request.
-
-        :param news:
-        :return:
-        """
-
-        user = self.context['request'].user
-        actions = action_object_stream(news).filter(actor_object_id=user.id)
         user_actions = UserAction.objects.all().filter(id__in=[action.id for action in actions])
         return ActionSerializer(user_actions, many=True, context={'request': self.context['request']}).data

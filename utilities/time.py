@@ -1,5 +1,6 @@
 import pytz
 from django.utils.timezone import localtime
+from datetime import datetime
 
 
 def seconds_to_minutes(seconds) -> str:
@@ -9,7 +10,7 @@ def seconds_to_minutes(seconds) -> str:
     return formatted_str
 
 
-def time_today_in_tz(timezone, hour, minute=0, second=0):
+def time_today_in_tz(timezone: str, hour, minute=0, second=0) -> datetime:
     now_in_tz = localtime(timezone=pytz.timezone(timezone))
     return now_in_tz.replace(hour=hour,
                              minute=minute,

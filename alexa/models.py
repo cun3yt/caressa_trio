@@ -502,7 +502,7 @@ class CircleReinvitation(TimeStampedModel):
 
 
 class Joke(TimeStampedModel, FetchRandomMixin):
-    # todo 1. Joke, News, Facts and others need to be moved to a separate app, e.g. named "content",
+    # todo 1. Joke and other content related ones need to be moved to a separate app, e.g. named "content",
     # todo 2. then alexa app renamed as "user"
     class Meta:
         db_table = 'joke'
@@ -517,75 +517,6 @@ class Joke(TimeStampedModel, FetchRandomMixin):
 
     def __str__(self):
         return "a joke"
-
-
-class News(TimeStampedModel, FetchRandomMixin):
-    class Meta:
-        db_table = 'news'
-
-    headline = models.TextField(null=False, blank=False)
-    content = models.TextField(null=False, blank=False)
-
-    def __repr__(self):
-        return "News({id}, {headline})".format(id=self.id, headline=self.headline)
-
-    def __str__(self):
-        return "sample news"
-
-
-class FactType(TimeStampedModel):
-    class Meta:
-        db_table = 'fact_type'
-
-    name = models.TextField(null=False,
-                            blank=False,
-                            db_index=True)
-
-    def __str__(self):
-        return "{}".format(self.name)
-
-
-class Fact(TimeStampedModel, FetchRandomMixin):
-    class Meta:
-        db_table = 'fact'
-
-    fact_type = models.ForeignKey(db_column='type',
-                                  to=FactType,
-                                  null=True,
-                                  on_delete=models.DO_NOTHING,
-                                  related_name='facts')
-    entry_text = models.TextField(null=False, blank=False)
-    fact_list = JSONField(default=[])
-    ending_yes_no_question = models.TextField(null=False, blank=False)
-
-    def get_random_content(self):
-        return sample(self.fact_list, 1)[0]
-
-    def __str__(self):
-        return "({}) {} - entry text: '{}'".format(self.id,
-                                                   self.fact_type.name,
-                                                   self.entry_text)
-
-
-class Song(TimeStampedModel, FetchRandomMixin):
-    class Meta:
-        db_table = 'song'
-
-    title = models.TextField(null=False, blank=False)
-    artist = models.TextField(null=False, blank=False)
-    duration = models.PositiveIntegerField(null=False, blank=False)
-    genre = models.TextField(null=False, blank=False)
-    file_name = models.TextField(null=False, blank=False)
-
-    @property
-    def url(self):
-        return HOSTED_ENV + self.file_name
-
-    def __repr__(self):
-        return "Song({id}, {title} by {artist})".format(id=self.id, title=self.title, artist=self.artist)
-
-    def __str__(self):  # pragma: no cover
-        return "test song"
 
 
 class UserActOnContent(TimeStampedModel):
