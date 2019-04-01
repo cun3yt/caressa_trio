@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models import signals
 from django.utils import timezone
 from model_utils.models import TimeStampedModel, StatusField
-from caressa.settings import TIME_ZONE as DEFAULT_TIMEZONE
+from caressa.settings import DATETIME_FORMATS, TIME_ZONE as DEFAULT_TIMEZONE
 from jsonfield import JSONField
 from typing import Optional
 from utilities.template import template_to_str
@@ -110,7 +110,7 @@ class SeniorLivingFacility(TimeStampedModel):
         return result_list
 
     def get_today_events(self):
-        spoken_time_format = "%I:%M %p"  # e.g. '06:30 PM'
+        spoken_time_format = DATETIME_FORMATS['spoken']['time']
 
         tz = pytz.timezone(self.timezone)
         now = datetime.now(tz)
@@ -244,6 +244,8 @@ class SeniorDeviceUserActivityLog(CreatedTimeStampedModel):
     """
     This class represents users' interaction with his/her device.
 
+    Purpose: Keeping the analytic logs of all interface of the senior device.
+
     Example activity log:
         activity: click.main-button
         data (extra/notes/payload): { 'device-response': 'pause.content' }
@@ -284,6 +286,15 @@ SeniorDeviceUserActivityLog._meta.get_field('created').db_index = True
 
 
 class ContentDeliveryRule(models.Model):
+    """
+    Purpose: Content Delivery Rule for Senior Device
+
+    It includes:
+        * Type: How the content is delivered, e.g. injectable (to main player), voice-mail, urgent-mail
+        * Recipients: Which users to get the message
+        * Start/End Datetime: The time interval the content is valid
+        * Delivery Frequency: How often the related content is going to be delivered
+    """
     class Meta:
         db_table = 'content_delivery_rule'
         indexes = [
@@ -320,6 +331,8 @@ class ContentDeliveryRule(models.Model):
 
 class SeniorLivingFacilityContent(CreatedTimeStampedModel):
     """
+    Purpose: Keeping the TTS-generated content from the Senior Living Facility to the senior devices
+
     All text (tts) contents that are sent from SeniorLivingFacility to seniors are saved here.
     """
     class Meta:
@@ -385,6 +398,8 @@ class SeniorLivingFacilityMessageLog(CreatedTimeStampedModel):
     Content Type: Definition of the content, e.g. 'Call for Morning Check In'
     Medium Type: Text-to-Speech, Voice
     Delivery Type: Urgent Mail, Voice Mail
+
+    Example usage: Checking if the morning check in is sent in the last X hours.
     """
     class Meta:
         db_table = 'senior_living_facility_message_log'
@@ -444,6 +459,9 @@ SeniorLivingFacilityMessageLog._meta.get_field('created').db_index = True
 
 
 class ServiceRequest(CreatedTimeStampedModel):
+    """
+    Purpose: Keeping The Logs of Service Button Press on Senior Device
+    """
     class Meta:
         db_table = 'service_request'
 
@@ -458,7 +476,7 @@ class ServiceRequest(CreatedTimeStampedModel):
     def process(self):
         facility = self.receiver
         phone_numbers = facility.phone_numbers
-        time_format = "%I:%M %p"  # e.g. '06:30 PM'
+        time_format = DATETIME_FORMATS['spoken']['time']
         tz = pytz.timezone(facility.timezone)
         request_time = self.created.astimezone(tz).strftime(time_format)
         context = {
@@ -468,6 +486,23 @@ class ServiceRequest(CreatedTimeStampedModel):
         }
         for number in phone_numbers:
             send_sms(number.as_international, context, 'sms/service-request.txt')
+
+
+#                 ______      _                 _        ___  _ _
+#                 | ___ \    | |               (_)      / _ \| | |
+#  ______ ______  | |_/ / ___| | _____      __  _ ___  / /_\ | | |  ______ ______
+# |______|______| | ___ \/ _ | |/ _ \ \ /\ / / | / __| |  _  | | | |______|______|
+#                 | |_/ |  __| | (_) \ V  V /  | \__ \ | | | | | |
+#                 \____/ \___|_|\___/ \_/\_/   |_|___/ \_| |_|_|_|
+#
+#                 ___  ___           _     ______      _
+#                 |  \/  |          | |    |  _  \    | |
+#  ______ ______  | .  . | ___   ___| | __ | | | |__ _| |_ __ _ ______ ______
+# |______|______| | |\/| |/ _ \ / __| |/ / | | | / _` | __/ _` |______|______|
+#                 | |  | | (_) | (__|   <  | |/ | (_| | || (_| |
+#                 \_|  |_/\___/ \___|_|\_\ |___/ \__,_|\__\__,_|
+#
+#
 
 
 class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
