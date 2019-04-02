@@ -147,7 +147,7 @@
             style="background:white; color:#de5866"
             class="full-width"
             label="Sign Out Caressa"
-            @click="signOut"
+            to="/logout"
           />
         </q-item>
     </div>
@@ -401,9 +401,6 @@ export default {
         .then(res => {
           console.log(res.body)
         })
-    },
-    signOut: function () {
-      this.logOut()
     },
     getPresignedUrl (fileName, contentType) {
       this.profilePictureData.isLoading = true

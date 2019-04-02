@@ -163,7 +163,7 @@ class FamilyProspectSerializer(serializers.ModelSerializer):
         model = FamilyProspect
         fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'phone_number', 'is_temporary', )
 
-    is_temporary = serializers.SerializerMethodField() # Being temporary means that it is editable on form.
+    is_temporary = serializers.SerializerMethodField()  # Being temporary means that it is editable on form.
     first_name = serializers.SerializerMethodField()
     last_name = serializers.SerializerMethodField()
     user_type = serializers.SerializerMethodField()
