@@ -2,9 +2,9 @@ from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from utilities.views.mixins import SerializerRequestViewSetMixin
-from alexa.models import Joke, News, User, UserSettings, Circle, CircleInvitation
+from alexa.models import Joke, User, UserSettings, Circle, CircleInvitation
 from alexa.api.serializers import UserSerializer, SeniorSerializer, JokeSerializer, \
-    NewsSerializer, ChannelSerializer, CircleSerializer, UserSettingsSerializer, CircleInvitationSerializer, \
+    ChannelSerializer, CircleSerializer, UserSettingsSerializer, CircleInvitationSerializer, \
     CircleReinvitationSerializer
 from alexa.api.permissions import IsSameUser, IsFacilityOrgMemberAndCanSeeSenior, IsInCircle, CanAccessUserSettings
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
@@ -119,27 +119,3 @@ class JokeViewSet(SerializerRequestViewSetMixin, viewsets.ReadOnlyModelViewSet):
             if len(x) > 0
         ]
         return Joke.fetch_random(exclusion_list)
-
-
-class NewsViewSet(SerializerRequestViewSetMixin, viewsets.ReadOnlyModelViewSet):
-    authentication_classes = (OAuth2Authentication,)
-    permission_classes = (IsAuthenticated,)
-    serializer_class = NewsSerializer
-    queryset = News.objects.all()
-
-    def retrieve(self, request, *args, **kwargs):
-        if kwargs['pk'] == '0':
-            news = self.fetch_random_news(request)
-            serializer = NewsSerializer(news, context={'request': request})
-            return Response(serializer.data)
-        else:
-            return super(NewsViewSet, self).retrieve(request, args, kwargs)
-
-    @classmethod
-    def fetch_random_news(cls, request):
-        exclusion_list = [
-            int(x) for x
-            in request.query_params.get('exclude', '').split(',')
-            if len(x) > 0
-        ]
-        return News.fetch_random(exclusion_list)

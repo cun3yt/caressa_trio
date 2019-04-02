@@ -1,4 +1,3 @@
-# todo OSS this
 import collections
 
 
@@ -9,9 +8,7 @@ def deep_get(dict_, key, default_value=None):
         for k in keys:
             iterative_dict = iterative_dict[k]
         return iterative_dict
-    except KeyError:
-        return default_value
-    except AttributeError:
+    except (KeyError, AttributeError, TypeError,):
         return default_value
 
 
@@ -27,7 +24,7 @@ def deep_set(dict_, key, val):
 
     last_key = keys[-1]
     iterative_dict[last_key] = val
-    return dict_merge(dict_, to_merge)
+    dict_merge(dict_, to_merge)
 
 
 def dict_merge(dct, merge_dct):

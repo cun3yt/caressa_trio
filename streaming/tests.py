@@ -155,6 +155,10 @@ class TagModelTestCase(TestCase):
         self.assertGreater(len(default_tag_list), 0)
         self.assertEqual(default_tag_list, created_default_tags)
 
+    def test_string_representation(self):
+        self.assertEqual(str(self.tag1), 'song-classical')
+        self.assertEqual(str(self.tag_multi1), 'song-tag-1')
+
 
 class AudioFileModelTestCase(TestCase):
     @classmethod

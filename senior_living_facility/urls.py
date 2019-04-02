@@ -5,8 +5,8 @@ from senior_living_facility.mock.views import message_thread
 from senior_living_facility.views import facility_home, facility_settings, family_prospect_invitation, sign_up, \
     app_downloads
 from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet, \
-    FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet, \
-    MessageThreadMessagesViewSet, uploaded_new_profile_picture
+    FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet,\
+    MessageThreadMessagesViewSet, ServiceRequestViewSet, uploaded_new_profile_picture
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -47,4 +47,6 @@ api_urls = [
          SeniorLivingFacilityContentViewSet.as_view({'get': 'list'})),
     path('api/users/<int:id>/uploaded_new_profile_picture/',
          uploaded_new_profile_picture, name='uploaded_new_profile_picture',),
+    path('api/users/me/service-requests/',
+         ServiceRequestViewSet.as_view({'post': 'create'})),
 ]

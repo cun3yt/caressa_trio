@@ -1,0 +1,1 @@
+Sample email content with {{var1}} and {{var2}}

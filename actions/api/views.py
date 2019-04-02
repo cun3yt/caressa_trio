@@ -5,7 +5,7 @@ from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated
 from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer, QuerySerializer
-from actions.models import UserAction, Comment, UserReaction, Joke, News, UserPost, Song, CommentResponse, UserQuery
+from actions.models import UserAction, Comment, UserReaction, Joke, UserPost, CommentResponse, UserQuery
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 from streaming.models import Messages
@@ -79,26 +79,6 @@ def like_at_joke(request):
 @authentication_classes((OAuth2Authentication, ))
 @permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
-def like_at_news(request):
-    news_id = request.data['news_id']
-    set_to = request.data.get('set_to', 'true').lower() != 'false'
-
-    user = request.user
-    news = News.objects.get(id=news_id)
-    action = action_object_stream(news).filter(actor_object_id=user.id)
-
-    if set_to and action.count() < 1:
-        act = UserActOnContent(user=user, verb='found interesting', object=news)
-        act.save()
-    elif not set_to and action.count() > 0:
-        action.delete()
-
-    return Response({"message": "Something went wrong.."})
-
-
-@authentication_classes((OAuth2Authentication, ))
-@permission_classes((IsAuthenticated, ))
-@api_view(['POST'])
 def comment_response(request):
     comment_id = request.data['comment_id']
     response = request.data['response']
@@ -158,26 +138,6 @@ def comment_response_delete(request):
         raise PermissionDenied()
 
     CommentResponse.objects.filter(id=response_id).delete()
-
-    return Response({"message": "Something went wrong.."})
-
-
-@authentication_classes((OAuth2Authentication, ))
-@permission_classes((IsAuthenticated, ))
-@api_view(['POST'])
-def like_the_song(request):
-    song_id = request.data.get('song_id')
-    set_to = request.data.get('set_to', 'true').lower() != 'false'
-
-    user = request.user
-    song = Song.objects.get(id=song_id)
-    action = action_object_stream(song).filter(actor_object_id=user.id)
-
-    if set_to and action.count() < 1:
-        act = UserActOnContent(user=user, verb='liked', object=song)
-        act.save()
-    elif not set_to and action.count() > 0:
-        action.delete()
 
     return Response({"message": "Something went wrong.."})
 
