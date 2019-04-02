@@ -30,6 +30,7 @@ from django.urls import reverse
 from caressa.settings import WEB_BASE_URL, S3_PRODUCTION_BUCKET, S3_REGION
 from utilities.email import send_email
 from utilities.sms import send_sms
+from utilities.views.mixins import ProfilePictureMixin
 
 
 class CaressaUserManager(BaseUserManager):
@@ -106,7 +107,7 @@ class AbstractCaressaUser(AbstractBaseUser, PermissionsMixin):
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
 
-class User(AbstractCaressaUser, TimeStampedModel):
+class User(AbstractCaressaUser, TimeStampedModel, ProfilePictureMixin):
     CARETAKER = 'SENIOR'
     FAMILY = 'FAMILY'
     CAREGIVER = 'CAREGIVER'
@@ -142,27 +143,6 @@ class User(AbstractCaressaUser, TimeStampedModel):
                                                       'set this field to `False`', )
 
     objects = CaressaUserManager()
-
-    def get_profile_picture_url(self, dimensions, file_format):
-        upper_dir = self.id if self.profile_pic else 'no_user'
-        profile_picture = self.profile_pic if self.profile_pic else 'default_profile_pic'
-        format_string = '{region}/{bucket}/images/user/{upper_dir}/{profile_picture}_{dimensions}.{file_format}'
-        return format_string.format(region=S3_REGION,
-                                    bucket=S3_PRODUCTION_BUCKET,
-                                    profile_picture=profile_picture,
-                                    upper_dir=upper_dir,
-                                    dimensions=dimensions,
-                                    file_format=file_format)
-
-    def get_profile_pic(self):
-        return self.get_profile_picture_url('w_250', 'jpg')
-
-    def get_profile_pictures(self):
-        return {
-            'w_250': self.get_profile_picture_url('w_250', 'jpg'),
-            'w_25': self.get_profile_picture_url('w_25', 'jpg'),
-            'raw': self.get_profile_picture_url('raw', 'png'),
-        }
 
     def is_senior(self):
         return self.user_type == self.CARETAKER

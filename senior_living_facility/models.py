@@ -13,7 +13,7 @@ from typing import Optional
 from utilities.template import template_to_str
 from model_utils import Choices
 
-from utilities.views.mixins import ForAdminMixin
+from utilities.views.mixins import ForAdminApplicationMixin, ProfilePictureMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
 from datetime import datetime, time, timedelta
@@ -23,7 +23,7 @@ from utilities.speech import ssml_post_process
 from utilities.time import time_today_in_tz as time_in_tz
 
 
-class SeniorLivingFacility(TimeStampedModel):
+class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
     class Meta:
         db_table = 'senior_living_facility'
         verbose_name = 'Senior Living Facility'
@@ -48,6 +48,7 @@ class SeniorLivingFacility(TimeStampedModel):
                                          default='10:00:00', )
     check_in_reminder = models.TimeField(null=True,
                                          default=None, )    # todo check business value of having default value
+    profile_pic = models.TextField(blank=True, default='')
 
     @property
     def admins(self):
@@ -435,7 +436,7 @@ class SeniorLivingFacilityMessageLog(CreatedTimeStampedModel):
 SeniorLivingFacilityMessageLog._meta.get_field('created').db_index = True
 
 
-class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
+class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
         db_table = 'mock_user_data'
 
@@ -467,7 +468,7 @@ class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
     device_status = JSONField(default={})
 
 
-class SeniorLivingFacilityMockMessageData(TimeStampedModel, ForAdminMixin):
+class SeniorLivingFacilityMockMessageData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
         db_table = 'mock_facility_messages'
 

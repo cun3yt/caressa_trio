@@ -24,7 +24,7 @@ from datetime import datetime
 
 from utilities.file_operations import generate_versioned_picture_name, download_to_tmp_from_s3, \
     profile_picture_resizing_wrapper, upload_to_s3_from_tmp
-from utilities.views.mixins import ForAdminMixin
+from utilities.views.mixins import ForAdminApplicationMixin
 
 
 class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -34,14 +34,14 @@ class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelM
     serializer_class = SeniorLivingFacilitySerializer
 
 
-class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdminMixin):
+class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
     queryset = SeniorLivingFacility.objects.all()
     serializer_class = FacilitySerializer
 
 
-class FacilityListViewSet(SeniorListViewSet, ForAdminMixin):
+class FacilityListViewSet(SeniorListViewSet, ForAdminApplicationMixin):
     pagination_class = None
 
     def get_serializer_class(self, *args, **kwargs):
@@ -97,7 +97,7 @@ class FacilityListViewSet(SeniorListViewSet, ForAdminMixin):
             return queryset
 
 
-class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminMixin):
+class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated, IsFacilityOrgMember,)
     queryset = SeniorLivingFacilityMockMessageData.objects.all()
@@ -111,7 +111,7 @@ class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, Fo
     pagination_class = _Pagination
 
 
-class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminMixin):
+class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated,)
     serializer_class = MessageThreadMessagesSerializer
