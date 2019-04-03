@@ -13,7 +13,8 @@ from typing import Optional
 from utilities.template import template_to_str
 from model_utils import Choices
 
-from utilities.views.mixins import ForAdminApplicationMixin, ProfilePictureMixin
+from utilities.views.mixins import ForAdminApplicationMixin
+from utilities.models.mixins import ProfilePictureMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
 from datetime import datetime, time

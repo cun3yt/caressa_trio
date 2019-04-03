@@ -44,7 +44,10 @@ def user_profile(request, **kwargs):
         "birthday:": "08/15/1932",
         "move_in data": "10/02/2017",
         "service_type": "independent",
-        "morning_status": "Self Checked",
+        "morning_status": {
+            "status": "self-checked-in",
+            "label": "Self Checked"
+        },
         "senior_specific": {
             "primary_contact": {
                 "first_name": "James",
