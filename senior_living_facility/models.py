@@ -13,7 +13,8 @@ from typing import Optional
 from utilities.template import template_to_str
 from model_utils import Choices
 
-from utilities.views.mixins import ForAdminMixin
+from utilities.views.mixins import ForAdminApplicationMixin
+from utilities.models.mixins import ProfilePictureMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
 from datetime import datetime, time
@@ -24,7 +25,7 @@ from utilities.time import time_today_in_tz as time_in_tz
 from utilities.sms import send_sms
 
 
-class SeniorLivingFacility(TimeStampedModel):
+class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
     class Meta:
         db_table = 'senior_living_facility'
         verbose_name = 'Senior Living Facility'
@@ -49,6 +50,7 @@ class SeniorLivingFacility(TimeStampedModel):
                                          default='10:00:00', )
     check_in_reminder = models.TimeField(null=True,
                                          default=None, )    # todo check business value of having default value
+    profile_pic = models.TextField(blank=True, default='')
 
     @property
     def phone_numbers(self) -> list:
@@ -470,7 +472,7 @@ class ServiceRequest(CreatedTimeStampedModel):
             send_sms(number.as_international, context, 'sms/service-request.txt')
 
 
-class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
+class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
         db_table = 'mock_user_data'
 
@@ -502,7 +504,7 @@ class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
     device_status = JSONField(default={})
 
 
-class SeniorLivingFacilityMockMessageData(TimeStampedModel, ForAdminMixin):
+class SeniorLivingFacilityMockMessageData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
         db_table = 'mock_facility_messages'
 
