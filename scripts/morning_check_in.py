@@ -85,7 +85,7 @@ def send_check_in_call_for_one_facility(facility: Union[SeniorLivingFacility, in
     log("  recipient user ids (not check in seniors' user IDs): {}".format(', '.join(map(str, recipient_ids))))
     log("  on channel: {}".format(channel))
     log("  text: {}".format(text))
-    log("  SeniorLivingFacilityContent.hash: {}".format(content.text_content_hash))
+    log("  SeniorLivingFacilityContent.hash: {}".format(content.hash))
 
     MsgLog.objects.create(senior_living_facility=facility,
                           content_type=MsgLog.CONTENT_TYPE_CALL_FOR_MORNING_CHECK_IN,
@@ -97,6 +97,7 @@ def send_check_in_call_for_one_facility(facility: Union[SeniorLivingFacility, in
                           'urgent_mail',
                           {
                               'url': content.audio_url,
+                              'hash': content.hash,
                               'is_selected_recipient_type': True,
                               'selected_recipient_ids': recipient_ids
                           })

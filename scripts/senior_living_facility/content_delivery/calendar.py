@@ -42,7 +42,7 @@ def _send_realtime_message(facility: SeniorLivingFacility, content: SeniorLiving
                           'injectable_content',
                           {
                               'url': content.audio_url,
-                              'hash': content.text_content_hash,  # to avoid repetition
+                              'hash': content.hash,
                               'start': rule.start.timestamp(),
                               'end': rule.end.timestamp(),
                           })

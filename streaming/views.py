@@ -119,6 +119,7 @@ def start_session(main_content_to_be_played: AudioFile):
                         "stream": {
                             "url": main_content_to_be_played.url,
                             "token": main_content_to_be_played.id,
+                            "hash": main_content_to_be_played.hash,
                             "offsetInMilliseconds": 0
                         },
                     }
@@ -149,6 +150,7 @@ def enqueue_next_song(user: User):
                         "stream": {
                             "url": main_content_to_be_played.url,
                             "token": main_content_to_be_played.id,
+                            "hash": main_content_to_be_played.hash,
                             "expectedPreviousToken": 0,
                             "offsetInMilliseconds": 0
                         },
