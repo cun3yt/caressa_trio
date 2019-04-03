@@ -472,6 +472,79 @@ class ServiceRequest(CreatedTimeStampedModel):
             send_sms(number.as_international, context, 'sms/service-request.txt')
 
 
+class Message(CreatedTimeStampedModel):
+    class Meta:
+        db_table = 'message'
+        ordering = ['-created']
+
+    message_thread = models.ForeignKey(to='MessageThread',
+                                       help_text='Collection of messages between related participants.',
+                                       on_delete=models.DO_NOTHING,
+                                       )
+    content = models.TextField(null=True,
+                               help_text='Content which will be processed with text to speech.',
+                               )
+    content_audio_file = models.TextField(null=True,
+                                          help_text='This field will be populated either from an '
+                                                    'voice record audio url or text to speech process.',
+                                          )
+    messsage_source_user = models.ForeignKey(to='alexa.User',
+                                             help_text='The user who sent the message.',
+                                             on_delete=models.DO_NOTHING,
+                                             )
+
+    delivery_rule = models.TextField(choices=ContentDeliveryRule.TYPES,
+                                     default=ContentDeliveryRule.TYPE_INJECTABLE,
+                                     )
+    is_response_expected = models.BooleanField(default=False,
+                                               )
+
+
+class MessageResponse(TimeStampedModel):
+    class Meta:
+        db_table = 'message_response'
+
+    from_user = models.ForeignKey(to='alexa.User',
+                                  help_text='User who responses the message',
+                                  on_delete=models.DO_NOTHING,
+                                  )
+    message = models.ForeignKey(to=Message,
+                                help_text='Response Requested Message',
+                                on_delete=models.DO_NOTHING,
+                                )
+
+    response = models.BooleanField(help_text='Message response True represents Yes, False Represents No',
+                                   )
+
+
+class MessageThread(CreatedTimeStampedModel):
+    class Meta:
+        db_table = 'message_thread'
+
+
+class MessageThreadParticipant(CreatedTimeStampedModel):
+    class Meta:
+        db_table = 'message_thread_participant'
+        unique_together = ('user', 'senior_living_facility')
+
+    message_thread = models.ForeignKey(to=MessageThread,
+                                       on_delete=models.DO_NOTHING,
+                                       )
+    user = models.ForeignKey(to='alexa.User',
+                             null=True,
+                             help_text='Message thread participating user',
+                             on_delete=models.DO_NOTHING,
+                             )
+
+    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
+                                               help_text='Message thread participating senior living facility',
+                                               on_delete=models.DO_NOTHING,
+                                               )
+    is_all_receipients = models.BooleanField(help_text='If true user field needs to be empty',
+                                             default=False
+                                             )
+
+
 class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
         db_table = 'mock_user_data'
