@@ -488,10 +488,10 @@ class Message(CreatedTimeStampedModel):
                                           help_text='This field will be populated either from an '
                                                     'voice record audio url or text to speech process.',
                                           )
-    messsage_source_user = models.ForeignKey(to='alexa.User',
-                                             help_text='The user who sent the message.',
-                                             on_delete=models.DO_NOTHING,
-                                             )
+    message_source_user = models.ForeignKey(to='alexa.User',
+                                            help_text='The user who sent the message.',
+                                            on_delete=models.DO_NOTHING,
+                                            )
 
     delivery_rule = models.TextField(choices=ContentDeliveryRule.TYPES,
                                      default=ContentDeliveryRule.TYPE_INJECTABLE,
@@ -513,13 +513,54 @@ class MessageResponse(TimeStampedModel):
                                 on_delete=models.DO_NOTHING,
                                 )
 
-    response = models.BooleanField(help_text='Message response True represents Yes, False Represents No',
-                                   )
+    response = models.NullBooleanField(help_text='Message response True represents Yes, '
+                                                 'False Represents No, '
+                                                 'Null represents No Reply',
+                                       default=None,
+                                       )
 
 
 class MessageThread(CreatedTimeStampedModel):
     class Meta:
         db_table = 'message_thread'
+
+    @staticmethod
+    def get_or_create_new_thread(sender_user_id, reciever_user_id):
+        user = get_user_model()
+
+        sender_user = user.objects.get(id=sender_user_id)
+
+        if reciever_user_id == 'all-residents':
+            reciever_user = None
+            is_all_receipients = True
+        else:
+            reciever_user = user.objects.get(id=reciever_user_id)
+            is_all_receipients = False
+
+        reciever_user_id = reciever_user_id if not reciever_user_id == 'all-residents' else None
+
+        assert sender_user.user_type == user.CAREGIVER_ORG, (
+            "Message Threads defined for Senior Living Facility Admin Users. "
+            "It is {user_type} for User id: {user_id}".format(user_type=sender_user.user_type,
+                                                              user_id=sender_user_id)
+        )
+
+        sender_user_facility = sender_user.senior_living_facility
+        qs = MessageThreadParticipant.objects.all().filter(user=reciever_user_id,
+                                                           senior_living_facility=sender_user_facility)
+        created = False
+        if qs.count() == 0:
+            message_thread = MessageThread.objects.create()
+            created = True
+            MessageThreadParticipant.objects.create(message_thread=message_thread,
+                                                    user=reciever_user,
+                                                    senior_living_facility=sender_user_facility,
+                                                    is_all_receipients=is_all_receipients,
+                                                    )
+        else:
+            message_thread = qs[0].message_thread
+
+        return message_thread, created
 
 
 class MessageThreadParticipant(CreatedTimeStampedModel):

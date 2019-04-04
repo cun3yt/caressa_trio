@@ -4,11 +4,13 @@ from caressa.settings import REST_FRAMEWORK
 from alexa.models import User
 from alexa.api.serializers import SeniorSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule, ServiceRequest
+    SeniorLivingFacilityContent, ContentDeliveryRule, ServiceRequest, Message, MessageThread
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
+from utilities.aws_operations import move_file_from_upload_to_prod_bucket
 from utilities.logger import log
 from utilities.views.mixins import MockStatusMixin, ForAdminApplicationMixin
+from voice_service.google import tts
 
 
 class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
@@ -52,6 +54,50 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
     @staticmethod
     def get_photo_gallery_url(facility: SeniorLivingFacility):  # todo hardcode
         return 'https://www.caressa.herokuapp.com/gallery_url'
+
+
+class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplicationMixin):
+    class Meta:
+        model = Message
+        fields = ('id',
+                  'content',
+                  'content_audio_file',
+                  'delivery_rule',
+                  'is_response_expected',
+                  )
+
+    def create(self, validated_data):
+        message_source_user = self.context['request'].user
+        sender_user_id = message_source_user.id
+        reciever_user_id = self.context['request'].data['to']
+        validated_data['message_thread'], _ = MessageThread.get_or_create_new_thread(sender_user_id, reciever_user_id)
+        validated_data['message_source_user'] = message_source_user
+
+        message_data = self.context['request'].data['message']
+        message_format = message_data.get('format')
+
+        if message_format == 'text':
+            text_content = message_data.get('content')
+            content_audio_file = tts.tts_to_s3(text=text_content, return_format='url')
+        else:
+            text_content = None
+            file_key = message_data.get('content')
+            content_audio_file = move_file_from_upload_to_prod_bucket(file_key)
+        validated_data['content'] = text_content
+        validated_data['content_audio_file'] = content_audio_file
+
+        message_types = {
+            "Message": 'voice-mail',
+            "Broadcast": 'urgent-mail',
+            "Announcement": 'injectable'
+        }
+        message_type = self.context['request'].data['message_type']
+        validated_data['delivery_rule'] = message_types.get(message_type)
+
+        validated_data['is_response_expected'] = self.context['request'].data['request_reply']
+
+        instance = super(FacilityMessageSerializer, self).create(validated_data)     # type: Message
+        return instance
 
 
 class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminApplicationMixin):
