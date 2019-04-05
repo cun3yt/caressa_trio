@@ -13,9 +13,9 @@ from senior_living_facility.api.permissions import IsFacilityOrgMember
 from senior_living_facility.api.serializers import FacilitySerializer, AdminAppSeniorListSerializer, \
     MorningCheckinUserPendingSerializer, MorningCheckinUserNotifiedSerializer, \
     MorningCheckinUserStaffCheckedSerializer, MorningCheckinUserSelfCheckedSerializer, FacilityMessagesSerializer, \
-    MessageThreadMessagesSerializer
+    MessageThreadMessagesSerializer, FacilityMessageSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData, ServiceRequest
+    SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData, ServiceRequest, Message
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
     SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer, ServiceRequestSerializer
@@ -102,6 +102,13 @@ class FacilityListViewSet(SeniorListViewSet, ForAdminApplicationMixin):
             qs = MockUserData.objects.filter(senior__first_name__istartswith=param)
             queryset = User.objects.all().filter(id__in=qs)
             return queryset
+
+
+class FacilityMessageViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication,)
+    permission_classes = (IsAuthenticated, IsFacilityOrgMember,)
+    queryset = Message.objects.all()
+    serializer_class = FacilityMessageSerializer
 
 
 class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):

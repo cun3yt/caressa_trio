@@ -2,6 +2,8 @@ from streaming.models import Messages, AudioFile, Tag
 from alexa.models import User
 from caressa.settings import S3_RAW_UPLOAD_BUCKET, S3_REGION, S3_PRODUCTION_BUCKET
 import boto3
+
+from utilities.aws_operations import move_file_from_upload_to_prod_bucket
 from utilities.logger import log, log_error
 from pydub import AudioSegment
 from caressa.settings import pusher_client
@@ -17,16 +19,6 @@ def _realtime_message(channel, event_name, data):
         "event_name: {event_name},\n "
         "data: {data}".format(channel=channel, event_name=event_name, data=data))
     pusher_client.trigger(channel, event_name, data)
-
-
-def _move_file_from_upload_to_prod_bucket(file_key):
-    s3 = boto3.resource('s3')
-    copy_source = {
-        'Bucket': S3_RAW_UPLOAD_BUCKET,
-        'Key': file_key
-    }
-    bucket = s3.Bucket(S3_PRODUCTION_BUCKET)
-    bucket.copy(copy_source, file_key)
 
 
 def _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key):
@@ -59,7 +51,7 @@ def audio_worker(publisher, next_queued_job: Messages):
         file_key = _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key)
     else:
         file_key = ios_file_key
-        _move_file_from_upload_to_prod_bucket(ios_file_key)
+        move_file_from_upload_to_prod_bucket(ios_file_key)
 
     audio_type = '{publisher}_voice_record'.format(publisher=publisher)
     description = 'Audio Record from {publisher}'.format(publisher=publisher)
