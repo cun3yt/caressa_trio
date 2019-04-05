@@ -30,6 +30,6 @@ class Migration(migrations.Migration):
             options={
                 'db_table': 'mock_user_data',
             },
-            bases=(models.Model, utilities.views.mixins.ForAdminMixin),
+            bases=(models.Model, utilities.views.mixins.ForAdminApplicationMixin),
         ),
     ]
