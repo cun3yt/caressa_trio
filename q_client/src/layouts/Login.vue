@@ -31,12 +31,10 @@ export default {
       }
       let vm = this
       auth.login(data)
-        .then(res => {
+        .then(_ => {
           vm.$router.replace(vm.$route.query.redirect || '/')
-          console.log('res loginvue', res)
-        }, err => {
+        }, _ => {
           vm.error = true
-          console.log('err loginvue', err)
         })
     }
   }

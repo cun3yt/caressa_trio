@@ -35,9 +35,10 @@ export default {
   },
   refreshToken: function () {
     console.log('token refresh processing')
+    let refreshToken = Cookies.get('refresh_token')
     let vm = this
-    if (this.refresh_token) {
-      Vue.http({
+    if (refreshToken) {
+      let promise = Vue.http({
         method: 'POST',
         url: vm.url('/o/token/'),
         emulateJSON: true,
@@ -62,9 +63,15 @@ export default {
         this.refresh_token = Cookies.get('refresh_token')
         return false
       })
+      return new Promise((resolve, reject) => {
+        if (promise) {
+          return resolve
+        } else {
+          return reject
+        }
+      })
     }
     console.log('no refresh token found!')
-    return false
   },
   logOut (cb) {
     Cookies.remove('access_token')

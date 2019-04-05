@@ -206,7 +206,7 @@ import {bus} from '../plugins/auth.js'
 export default {
   name: 'settings',
   components: {VueCropper},
-  props: ['setupContent', 'logOut'],
+  props: ['setupContent'],
   created () {
     this.setupContent({
       title: this.user
@@ -397,14 +397,14 @@ export default {
       this.profilePictureData.updateProfilePictureModal = !this.profilePictureData.updateProfilePictureModal
     },
     sendInterests () {
-      this.$auth.patch(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`, this.genres)
+      this.$http.patch(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`, this.genres)
         .then(res => {
           console.log(res.body)
         })
     },
     getPresignedUrl (fileName, contentType) {
       this.profilePictureData.isLoading = true
-      return this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
+      return this.$http.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
         'key': fileName,
         'content-type': contentType,
         'client-method': 'put_object',
@@ -419,7 +419,7 @@ export default {
       })
     },
     newProfilePicture () {
-      this.$auth.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
         'file_name': this.profilePictureData.fileName
       }).then(res => {
         this.profilePictureData.isLoading = false
@@ -439,13 +439,13 @@ export default {
       if (!this.senior || !this.senior.id) { return }
 
       let vm = this
-      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`)
+      this.$http.get(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`)
         .then(function (res) {
           vm.genres = res.body
           vm.genres.settings.genres.sort((item1, item2) => { return item1.label < item2.label ? -1 : 1 })
         })
 
-      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
+      this.$http.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
         .then(res => {
           this.circleId = res.body.pk
           this.circleMembership = {
@@ -459,7 +459,7 @@ export default {
         })
     },
     newCircleMember () {
-      this.$auth.post(`${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/invite/`, {'email': this.newMemberEmail})
+      this.$http.post(`${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/invite/`, {'email': this.newMemberEmail})
         .then(res => {
           this.showNotif({message: `An email was sent to ${this.newMemberEmail}`, icon: 'far fa-check-circle', color: 'tertiary'})
           this.circleMembership.pendings.push({email: this.newMemberEmail, is_admin: false})
@@ -474,7 +474,7 @@ export default {
         })
     },
     reInviteMember (invitationCode, contact) {
-      this.$auth.post(
+      this.$http.post(
         `${this.$root.$options.hosts.rest}/api/circle-invitation/${invitationCode}/reinvite/`, {'data': 'data'})
         .then(res => {
           this.showNotif({message: `Invitation was re-sent to ${contact}`, icon: 'far fa-check-circle', color: 'tertiary'})

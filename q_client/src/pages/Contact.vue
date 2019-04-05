@@ -72,7 +72,7 @@ export default {
         return
       }
       let vm = this
-      vm.$auth.post(`${vm.$root.$options.hosts.rest}/act/queries/`, {
+      vm.$http.post(`${vm.$root.$options.hosts.rest}/act/queries/`, {
         'title': this.form.contactFormTitle,
         'main': this.form.contactFormMain
       }).then(response => {
@@ -84,7 +84,7 @@ export default {
     },
     loadQueries: function () {
       let vm = this
-      vm.$auth.get(`${vm.$root.$options.hosts.rest}/act/queries/`)
+      vm.$http.get(`${vm.$root.$options.hosts.rest}/act/queries/`)
         .then(response => {
           console.log(response.data.results, 'get form response')
           this.queries = response.data['results']

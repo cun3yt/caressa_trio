@@ -109,7 +109,7 @@ export default {
       let vm = this
 
       if (apiCall && this.funnyState) {
-        this.$auth.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
+        this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
           'reaction': 'liked',
           'owner': this.$root.$options.user.id,
           'content': this.feed.id
@@ -122,7 +122,7 @@ export default {
       }
 
       if (apiCall && !this.funnyState) {
-        this.$auth.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.funnyId}/`, {
+        this.$http.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.funnyId}/`, {
           'reaction': 'liked',
           'owner': this.$root.$options.user.id,
           'content': this.feed.id
@@ -147,7 +147,7 @@ export default {
     markAdditionalJokeFunny (joke) {
       joke.funny = !joke.funny
 
-      this.$auth.post(`${this.$root.$options.hosts.rest}/like_joke/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/like_joke/`, {
         'joke_id': joke.id,
         'set_to': (joke.funny ? 'true' : 'false')
       }).then(response => {

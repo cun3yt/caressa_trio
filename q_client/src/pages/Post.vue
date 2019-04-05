@@ -114,7 +114,7 @@ export default {
 
       this.showNotif()
 
-      this.$auth.post(`${this.$root.$options.hosts.rest}/post/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/post/`, {
         'userId': this.$root.$options.user.id,
         'selections': selections
       }).then(response => {

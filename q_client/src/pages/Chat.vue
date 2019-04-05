@@ -131,7 +131,7 @@ export default {
       if (this.messageText !== '') {
         this.textMessageObj.text.push(this.messageText)
       }(this.messages.push(this.textMessageObj))
-      this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'type': 'family_ios_text',
         'key': key,
         'content': this.messageText
@@ -197,7 +197,7 @@ export default {
       myMedia.play()
     },
     uploadRecord: function () {
-      this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
+      this.$http.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
         'key': this.audioMessageObj.key,
         'content-type': 'audio/wav',
         'client-method': 'put_object',
@@ -224,7 +224,7 @@ export default {
             ft.upload(file.nativeURL, response.body,
               function (response) {
                 console.log(response)
-                vm.$auth.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
+                vm.$http.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
                   'userId': vm.$root.$options.user.id,
                   'type': 'family_ios_audio',
                   'key': vm.audioMessageObj.key
@@ -286,7 +286,7 @@ export default {
   },
   mounted () {
     let deviceCheckFn = () => {
-      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
+      this.$http.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
         .then(response => {
           this.isLoading = false
           this.senior = response.body.senior

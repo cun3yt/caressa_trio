@@ -47,7 +47,7 @@ export default {
       this.isOpen = !this.isOpen
     },
     post (newComment) {
-      this.$auth.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': newComment})
+      this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': newComment})
         .then(
           response => {
             console.log('success')
@@ -59,7 +59,7 @@ export default {
       console.log(this.comment.comment_backers.did_user_backed)
       let vm = this
       if (comment && !this.didUserBacked) {
-        this.$auth.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': comment})
+        this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': comment})
           .then(
             response => {
               console.log('success')
@@ -72,7 +72,7 @@ export default {
             })
       }
       if (comment && this.didUserBacked) {
-        this.$auth.delete(`${this.$root.$options.hosts.rest}/comment_backing_delete/`, {'comment_id': this.comment.id})
+        this.$http.delete(`${this.$root.$options.hosts.rest}/comment_backing_delete/`, {'comment_id': this.comment.id})
           .then(
             response => {
               console.log('success')
