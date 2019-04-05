@@ -1,3 +1,7 @@
+from datetime import timedelta
+from django.utils import timezone
+
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from caressa.settings import REST_FRAMEWORK
 
@@ -62,16 +66,17 @@ class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplication
         fields = ('id',
                   'content',
                   'content_audio_file',
-                  'delivery_rule',
                   'is_response_expected',
                   )
 
     def create(self, validated_data):
-        message_source_user = self.context['request'].user
-        sender_user_id = message_source_user.id
+        source_user = self.context['request'].user
         reciever_user_id = self.context['request'].data['to']
-        validated_data['message_thread'], _ = MessageThread.get_or_create_new_thread(sender_user_id, reciever_user_id)
-        validated_data['message_source_user'] = message_source_user
+
+        reciever_user = None if reciever_user_id == 'all-residents' else User.objects.get(id=reciever_user_id)
+
+        validated_data['message_thread'], _ = MessageThread.get_or_create_new_thread(source_user, reciever_user)
+        validated_data['source_user'] = source_user
 
         message_data = self.context['request'].data['message']
         message_format = message_data.get('format')
@@ -92,7 +97,15 @@ class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplication
             "Announcement": 'injectable'
         }
         message_type = self.context['request'].data['message_type']
-        validated_data['delivery_rule'] = message_types.get(message_type)
+        delivery_type = message_types.get(message_type)
+        in_seven_days = timezone.now() + timedelta(days=7)
+        recipient_ids = [reciever_user.id] if reciever_user is not None else None
+        delivery_rule = ContentDeliveryRule.find(delivery_type=delivery_type,
+                                                 start=timezone.now(),
+                                                 end=in_seven_days,
+                                                 recipient_ids=recipient_ids,
+                                                 )
+        validated_data['delivery_rule'] = delivery_rule
 
         validated_data['is_response_expected'] = self.context['request'].data['request_reply']
 

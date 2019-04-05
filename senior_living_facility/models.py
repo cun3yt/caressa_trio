@@ -7,6 +7,8 @@ from django.db import models
 from django.db.models import signals
 from django.utils import timezone
 from model_utils.models import TimeStampedModel, StatusField
+
+from alexa import models as alexa_models
 from caressa.settings import TIME_ZONE as DEFAULT_TIMEZONE
 from jsonfield import JSONField
 from typing import Optional
@@ -488,19 +490,22 @@ class Message(CreatedTimeStampedModel):
                                           help_text='This field will be populated either from an '
                                                     'voice record audio url or text to speech process.',
                                           )
-    message_source_user = models.ForeignKey(to='alexa.User',
-                                            help_text='The user who sent the message.',
-                                            on_delete=models.DO_NOTHING,
-                                            )
+    source_user = models.ForeignKey(to='alexa.User',
+                                    help_text='The user who sent the message.',
+                                    on_delete=models.DO_NOTHING,
+                                    )
 
-    delivery_rule = models.TextField(choices=ContentDeliveryRule.TYPES,
-                                     default=ContentDeliveryRule.TYPE_INJECTABLE,
-                                     )
+    delivery_rule = models.ForeignKey(to=ContentDeliveryRule,
+                                      on_delete=models.DO_NOTHING,
+                                      )
     is_response_expected = models.BooleanField(default=False,
                                                )
 
 
-class MessageResponse(TimeStampedModel):
+class MessageResponse(TimeStampedModel):  # todo Not in use at the moment
+    """
+    Purpose: Keep the message responses that required a yes/no answer.
+    """
     class Meta:
         db_table = 'message_response'
 
@@ -525,28 +530,18 @@ class MessageThread(CreatedTimeStampedModel):
         db_table = 'message_thread'
 
     @staticmethod
-    def get_or_create_new_thread(sender_user_id, reciever_user_id):
-        user = get_user_model()
+    def get_or_create_new_thread(sender_user: 'alexa_models.User', reciever_user: Optional['alexa_models.User']):
 
-        sender_user = user.objects.get(id=sender_user_id)
+        is_all_recipients = True if reciever_user is None else False
 
-        if reciever_user_id == 'all-residents':
-            reciever_user = None
-            is_all_receipients = True
-        else:
-            reciever_user = user.objects.get(id=reciever_user_id)
-            is_all_receipients = False
-
-        reciever_user_id = reciever_user_id if not reciever_user_id == 'all-residents' else None
-
-        assert sender_user.user_type == user.CAREGIVER_ORG, (
+        assert sender_user.user_type == alexa_models.User.CAREGIVER_ORG, (
             "Message Threads defined for Senior Living Facility Admin Users. "
             "It is {user_type} for User id: {user_id}".format(user_type=sender_user.user_type,
-                                                              user_id=sender_user_id)
+                                                              user_id=sender_user.id)
         )
 
         sender_user_facility = sender_user.senior_living_facility
-        qs = MessageThreadParticipant.objects.all().filter(user=reciever_user_id,
+        qs = MessageThreadParticipant.objects.all().filter(user=reciever_user,
                                                            senior_living_facility=sender_user_facility)
         created = False
         if qs.count() == 0:
@@ -555,7 +550,7 @@ class MessageThread(CreatedTimeStampedModel):
             MessageThreadParticipant.objects.create(message_thread=message_thread,
                                                     user=reciever_user,
                                                     senior_living_facility=sender_user_facility,
-                                                    is_all_receipients=is_all_receipients,
+                                                    is_all_recipients=is_all_recipients,
                                                     )
         else:
             message_thread = qs[0].message_thread
@@ -581,7 +576,7 @@ class MessageThreadParticipant(CreatedTimeStampedModel):
                                                help_text='Message thread participating senior living facility',
                                                on_delete=models.DO_NOTHING,
                                                )
-    is_all_receipients = models.BooleanField(help_text='If true user field needs to be empty',
+    is_all_recipients = models.BooleanField(help_text='If true user field needs to be empty',
                                              default=False
                                              )
 
