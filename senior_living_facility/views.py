@@ -1,7 +1,11 @@
+import json
+
+from django.core import serializers
+from django.forms import model_to_dict
 from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from alexa.admin import UserCreationForm
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from caressa.settings import WEB_CLIENT, API_URL
 from alexa.models import FamilyOutreach
 from django.core.exceptions import ValidationError
@@ -41,6 +45,7 @@ def app_downloads(request):
     return TemplateResponse(request, 'app-downloads.html', context=context)
 
 
+@ensure_csrf_cookie
 def family_prospect_invitation(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
