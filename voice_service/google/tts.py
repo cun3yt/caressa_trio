@@ -2,6 +2,8 @@ from google.cloud.texttospeech import TextToSpeechClient, types, enums
 from boto3 import client as boto3_client
 from django.utils.crypto import get_random_string
 from datetime import datetime
+
+from utilities.aws_operations import aws_url_creator
 from .setup import credentials
 
 S3_REGION = 'https://s3-us-west-1.amazonaws.com'
@@ -51,7 +53,6 @@ def tts_to_s3(return_format: str, **kwargs) -> str:
     if return_format == 'key':
         return file_key
 
-    url = '{region}/{bucket}/{file_key}'.format(region=S3_REGION,
-                                                bucket=S3_PRODUCTION_BUCKET,
-                                                file_key=file_key)
+    url = aws_url_creator(bucket=S3_PRODUCTION_BUCKET, file_key=file_key)
+
     return url

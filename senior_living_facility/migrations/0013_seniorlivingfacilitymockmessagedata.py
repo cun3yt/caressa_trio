@@ -29,6 +29,6 @@ class Migration(migrations.Migration):
             options={
                 'db_table': 'mock_facility_messages',
             },
-            bases=(models.Model, utilities.views.mixins.ForAdminMixin),
+            bases=(models.Model, utilities.views.mixins.ForAdminApplicationMixin),
         ),
     ]

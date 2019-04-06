@@ -7,13 +7,15 @@ from django.db.models import signals
 from django.utils import timezone
 from model_utils.models import TimeStampedModel, StatusField
 from caressa.settings import DATETIME_FORMATS, TIME_ZONE as DEFAULT_TIMEZONE
+from alexa import models as alexa_models
 from jsonfield import JSONField
 from typing import Optional
 from utilities.template import template_to_str
 from model_utils import Choices
 from streaming.models import AudioFile
 
-from utilities.views.mixins import ForAdminMixin
+from utilities.views.mixins import ForAdminApplicationMixin
+from utilities.models.mixins import ProfilePictureMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
 from datetime import datetime, time
@@ -25,7 +27,7 @@ from utilities.sms import send_sms
 from utilities.time import time_today_in_tz as time_in_tz
 
 
-class SeniorLivingFacility(TimeStampedModel):
+class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
     class Meta:
         db_table = 'senior_living_facility'
         verbose_name = 'Senior Living Facility'
@@ -50,6 +52,7 @@ class SeniorLivingFacility(TimeStampedModel):
                                          default='10:00:00', )
     check_in_reminder = models.TimeField(null=True,
                                          default=None, )    # todo check business value of having default value
+    profile_pic = models.TextField(blank=True, default='')
 
     @property
     def phone_numbers(self) -> list:
@@ -527,6 +530,112 @@ class ServiceRequest(CreatedTimeStampedModel):
             send_sms(number.as_international, context, 'sms/service-request.txt')
 
 
+class Message(CreatedTimeStampedModel):
+    class Meta:
+        db_table = 'message'
+        ordering = ['-created']
+
+    message_thread = models.ForeignKey(to='MessageThread',
+                                       help_text='Collection of messages between related participants.',
+                                       on_delete=models.DO_NOTHING,
+                                       )
+    content = models.TextField(null=True,
+                               help_text='Content which will be processed with text to speech.',
+                               )
+    content_audio_file = models.TextField(null=True,
+                                          help_text='This field will be populated either from an '
+                                                    'voice record audio url or text to speech process.',
+                                          )
+    source_user = models.ForeignKey(to='alexa.User',
+                                    help_text='The user who sent the message.',
+                                    on_delete=models.DO_NOTHING,
+                                    )
+
+    delivery_rule = models.ForeignKey(to=ContentDeliveryRule,
+                                      on_delete=models.DO_NOTHING,
+                                      )
+    is_response_expected = models.BooleanField(default=False,
+                                               )
+
+
+class MessageResponse(TimeStampedModel):  # todo Not in use at the moment
+    """
+    Purpose: Keep the message responses that required a yes/no answer.
+    """
+    class Meta:
+        db_table = 'message_response'
+
+    from_user = models.ForeignKey(to='alexa.User',
+                                  help_text='User who responses the message',
+                                  on_delete=models.DO_NOTHING,
+                                  )
+    message = models.ForeignKey(to=Message,
+                                help_text='Response Requested Message',
+                                on_delete=models.DO_NOTHING,
+                                )
+
+    response = models.NullBooleanField(help_text='Message response True represents Yes, '
+                                                 'False Represents No, '
+                                                 'Null represents No Reply',
+                                       default=None,
+                                       )
+
+
+class MessageThread(CreatedTimeStampedModel):
+    class Meta:
+        db_table = 'message_thread'
+
+    @staticmethod
+    def get_or_create_new_thread(sender_user: 'alexa_models.User', reciever_user: Optional['alexa_models.User']):
+
+        is_all_recipients = True if reciever_user is None else False
+
+        assert sender_user.user_type == alexa_models.User.CAREGIVER_ORG, (
+            "Message Threads defined for Senior Living Facility Admin Users. "
+            "It is {user_type} for User id: {user_id}".format(user_type=sender_user.user_type,
+                                                              user_id=sender_user.id)
+        )
+
+        sender_user_facility = sender_user.senior_living_facility
+        qs = MessageThreadParticipant.objects.all().filter(user=reciever_user,
+                                                           senior_living_facility=sender_user_facility)
+        created = False
+        if qs.count() == 0:
+            message_thread = MessageThread.objects.create()
+            created = True
+            MessageThreadParticipant.objects.create(message_thread=message_thread,
+                                                    user=reciever_user,
+                                                    senior_living_facility=sender_user_facility,
+                                                    is_all_recipients=is_all_recipients,
+                                                    )
+        else:
+            message_thread = qs[0].message_thread
+
+        return message_thread, created
+
+
+class MessageThreadParticipant(CreatedTimeStampedModel):
+    class Meta:
+        db_table = 'message_thread_participant'
+        unique_together = ('user', 'senior_living_facility')
+
+    message_thread = models.ForeignKey(to=MessageThread,
+                                       on_delete=models.DO_NOTHING,
+                                       )
+    user = models.ForeignKey(to='alexa.User',
+                             null=True,
+                             help_text='Message thread participating user',
+                             on_delete=models.DO_NOTHING,
+                             )
+
+    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
+                                               help_text='Message thread participating senior living facility',
+                                               on_delete=models.DO_NOTHING,
+                                               )
+    is_all_recipients = models.BooleanField(help_text='If true user field needs to be empty',
+                                            default=False, )
+
+
 #                 ______      _                 _        ___  _ _
 #                 | ___ \    | |               (_)      / _ \| | |
 #  ______ ______  | |_/ / ___| | _____      __  _ ___  / /_\ | | |  ______ ______
@@ -543,8 +652,7 @@ class ServiceRequest(CreatedTimeStampedModel):
 #
 #
 
-
-class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
+class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
         db_table = 'mock_user_data'
 
@@ -576,7 +684,7 @@ class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminMixin):
     device_status = JSONField(default={})
 
 
-class SeniorLivingFacilityMockMessageData(TimeStampedModel, ForAdminMixin):
+class SeniorLivingFacilityMockMessageData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
         db_table = 'mock_facility_messages'
 

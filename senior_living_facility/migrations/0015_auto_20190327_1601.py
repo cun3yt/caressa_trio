@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
             options={
                 'db_table': 'mock_message_thread',
             },
-            bases=(models.Model, utilities.views.mixins.ForAdminMixin),
+            bases=(models.Model, utilities.views.mixins.ForAdminApplicationMixin),
         ),
         migrations.RenameField(
             model_name='seniorlivingfacilitymockmessagedata',
