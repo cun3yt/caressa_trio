@@ -635,7 +635,6 @@ class MessageThreadParticipant(CreatedTimeStampedModel):
     is_all_recipients = models.BooleanField(help_text='If true user field needs to be empty',
                                             default=False, )
 
-
 #                 ______      _                 _        ___  _ _
 #                 | ___ \    | |               (_)      / _ \| | |
 #  ______ ______  | |_/ / ___| | _____      __  _ ___  / /_\ | | |  ______ ______
