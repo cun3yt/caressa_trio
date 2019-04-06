@@ -1,22 +1,9 @@
-{% extends 'base.html' %}
+{% extends "base-js.html" %}
 
 {% block content %}
-    <p>Welcome {{ prospect.name }},</p>
-    <p>Sign Up Here to Connect with {{ prospect.senior.full_name }} on Caressa.</p>
-    <p>
-        <div>
-            <form method="post">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <input type="hidden" name="invitation_code" value="{{ invitation_code}}">
-                <button type="submit">Sign up</button>
-            </form>
-        </div>
-    </p>
-    <hr>
-    <p>Q: What is Caressa?</p>
-    <p>A: Caressa is a radio-like senior companion for entertainment and information that the seniors deserve! It brings the security of family connection and more.</p>
-{% endblock %}
+    <div id="app" data-component="invitation"
+         data-invitation-code="{{ invitation_code }}"
+         data-prospect="{{ prospect }}"></div>
 
-{% block js_3rd_parties %}
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
 {% endblock %}
