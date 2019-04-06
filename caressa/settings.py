@@ -269,3 +269,9 @@ TWILIO_AUTH_TOKEN = environ.get('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER = environ.get('TWILIO_PHONE_NUMBER')
 
 GOOGLE_APPLICATION_CREDENTIALS_RAW = environ.get('GOOGLE_APPLICATION_CREDENTIALS_RAW')
+
+DATETIME_FORMATS = {
+    'spoken': {
+        'time': "%I:%M %p"  # e.g. '06:30 PM'
+    }
+}
