@@ -116,6 +116,11 @@ class AudioFile(TimeStampedModel):
                             db_index=True, )
 
     def __init__(self, *args, **kwargs):
+        """
+        If there is a `type` class variable in any subclass of `AudioFile` it will be treated as setting
+        `audio_type` field's default value. For example in Song model, `audio_type`'s default is set to
+        `AudioFile.TYPE_SONG` with the help of this initializer and the class variable `type`.
+        """
         if hasattr(self, 'type'):
             self._meta.get_field('audio_type').default = self.type
 
