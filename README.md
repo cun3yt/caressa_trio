@@ -193,3 +193,10 @@ where you are serving your REST globally. Check it out [Serveo](serveo.net). You
 * Run `coverage run manage.py test` to generate `.coverage` file
 * See the test coverage report (interprets `.coverage` file): `coverage report`
 * See `.coveragerc` for default configuration. You can also use command line arguments to change behavior
+
+## Email Templates
+* Email templates are planned as tables as it is the most convenient way.
+* There is two main part in the templates. Head and Body.
+    * Head keeps styles
+    * Body keeps content inside table/tr/td HTML tags.
+* For more info which is used https://github.com/seanpowell/Email-Boilerplate
