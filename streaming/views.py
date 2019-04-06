@@ -18,7 +18,6 @@ def stream_io_wrapper(request):
 
 
 def stream_io(req_body, request):
-    log(req_body)
     user = request.user
 
     req_type = deep_get(req_body, 'request.type')
@@ -27,7 +26,6 @@ def stream_io(req_body, request):
 
     log("Request Body: {}".format(req_body))
     log("Type: {}".format(req_type))
-    log("Intent: {}".format(intent))
     log("Intent Name: {}".format(intent_name))
 
     if req_type == 'SessionEndedRequest':
@@ -52,16 +50,7 @@ def stream_io(req_body, request):
 
 
 def filler():
-    data = {
-        "version": "1.0",
-        "response": {
-            "shouldEndSession": True
-        }
-    }
-
-    log(" >> LOG: FILLER")
-
-    return data
+    return {"result": "success"}
 
 
 @transaction.atomic()
@@ -75,7 +64,7 @@ def save_played_main_content(user: User, req_body):
 
 
 @transaction.atomic()
-def pause_session():
+def pause_session():        # todo hw is using it but any value at all?
     log(' >> LOG: PAUSE')
     return stop_session()
 
@@ -87,11 +76,9 @@ def resume_session(user: User):
     return start_session(main_content_to_be_played)
 
 
-def stop_session():
+def stop_session():        # todo hw is probably using it but any value at all?
     data = {
-        "version": "1.0",
         "response": {
-            "shouldEndSession": True,
             "directives": [
                 {
                     "type": "AudioPlayer.Stop"
@@ -106,11 +93,8 @@ def stop_session():
 
 
 def start_session(main_content_to_be_played: AudioFile):
-
     data = {
-        "version": "1.0",
         "response": {
-            "shouldEndSession": True,
             "directives": [
                 {
                     "type": "AudioPlayer.Play",
@@ -120,7 +104,6 @@ def start_session(main_content_to_be_played: AudioFile):
                             "url": main_content_to_be_played.url,
                             "token": main_content_to_be_played.id,
                             "hash": main_content_to_be_played.hash,
-                            "offsetInMilliseconds": 0
                         },
                     }
                 }
@@ -139,9 +122,7 @@ def start_session(main_content_to_be_played: AudioFile):
 def enqueue_next_song(user: User):
     main_content_to_be_played = AudioFile.get_main_content_to_play(user)
     data = {
-        "version": "1.0",
         "response": {
-            "shouldEndSession": True,
             "directives": [
                 {
                     "type": "AudioPlayer.Play",
@@ -151,8 +132,6 @@ def enqueue_next_song(user: User):
                             "url": main_content_to_be_played.url,
                             "token": main_content_to_be_played.id,
                             "hash": main_content_to_be_played.hash,
-                            "expectedPreviousToken": 0,
-                            "offsetInMilliseconds": 0
                         },
                     }
                 }

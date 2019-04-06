@@ -186,6 +186,9 @@ class AudioFile(TimeStampedModel):
         instance._set_duration()
         instance._set_hash_if_not_set()
 
+    def add_to_positive_negative_signal_by(self, user: User, signal_type='signal-positive'):
+        return UserAudioFileSignal.objects.create(audio_file=self, user=user, signal=signal_type)
+
 
 AudioFile._meta.get_field('modified').db_index = True
 
@@ -217,6 +220,36 @@ for signal in audio_file_pre_save_signals:
     signals.pre_save.connect(receiver=AudioFile.pre_save_operations,
                              sender=signal['sender'],
                              dispatch_uid=signal['uid'])
+
+
+class UserAudioFileSignal(CreatedTimeStampedModel):
+    """
+    Purpose: Keeping users' liked/not-liked (or yes/no answer'ed) audio files
+    """
+    class Meta:
+        db_table = 'user_audio_file_signal'
+
+    SIGNAL_POSITIVE = 'positive'
+    SIGNAL_NEGATIVE = 'negative'
+
+    SIGNAL_SET = (
+        (SIGNAL_POSITIVE, 'Positive'),
+        (SIGNAL_NEGATIVE, 'Negative'),
+    )
+
+    user = models.ForeignKey(to=User,
+                             on_delete=models.DO_NOTHING,
+                             related_name='liked_audio_files', )
+    audio_file = models.ForeignKey(to=AudioFile,
+                                   on_delete=models.DO_NOTHING,
+                                   related_name='liked_by_users', )
+    signal = models.CharField(max_length=50,
+                              choices=SIGNAL_SET,
+                              default=SIGNAL_POSITIVE, )
+
+    @classmethod
+    def is_signal_valid(cls, signal_type):
+        return signal_type in [item[0] for item in cls.SIGNAL_SET]
 
 
 class UserMainContentConsumption(CreatedTimeStampedModel):

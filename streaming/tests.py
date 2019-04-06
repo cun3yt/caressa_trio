@@ -344,15 +344,13 @@ class StreamingPlayTestCase(TestCase):
         request_body = request_body_creator_for_audio_player('AudioPlayer.PlaybackStarted', token)
         request = self.factory.get('/streaming')
         request.user = self.user
-        data = stream_io(request_body, request)
+        stream_io(request_body, request)
 
-        response = data['response']['shouldEndSession']
         consumed_audio_by_user = UserMainContentConsumption.objects.all()[0].played_main_content
         umcc_count_after_save_state = UserMainContentConsumption.objects.all().count()
 
         self.assertEqual(consumed_audio_by_user, self.audio_file_1)
         self.assertEqual(umcc_count_after_save_state, 1)
-        self.assertTrue(response)
 
 
 class StreamingNextAndQueueTestCase(TestCase):
@@ -402,10 +400,8 @@ class StreamingPauseAndFillerTestCase(TestCase):
         request = self.factory.get('/streaming')
         request.user = self.user
         data = stream_io(request_body_pause_command, request)
-        response = data['response']['shouldEndSession']
         audio_player_directive = data['response']['directives'][0]['type']
 
-        self.assertTrue(response)
         self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
 
     def test_pause_intent(self):
@@ -413,10 +409,7 @@ class StreamingPauseAndFillerTestCase(TestCase):
         request = self.factory.get('/streaming')
         request.user = self.user
         data = stream_io(request_body_pause_intent, request)
-        response = data['response']['shouldEndSession']
         audio_player_directive = data['response']['directives'][0]['type']
-
-        self.assertTrue(response)
         self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
 
     def test_none_intent(self):
@@ -424,10 +417,7 @@ class StreamingPauseAndFillerTestCase(TestCase):
         request = self.factory.get('/streaming')
         request.user = self.user
         data = stream_io(none_intent, request)
-        is_session_ended = data['response']['shouldEndSession']
         audio_player_directive = data['response']['directives'][0]['type']
-
-        self.assertTrue(is_session_ended)
         self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
 
     def test_fallback_filler(self):
@@ -435,6 +425,4 @@ class StreamingPauseAndFillerTestCase(TestCase):
         request = self.factory.get('/streaming')
         request.user = self.user
         data = stream_io(fallback_request, request)
-        is_session_ended = data['response']['shouldEndSession']
-
-        self.assertTrue(is_session_ended)
+        self.assertDictEqual(data, {'result': 'success'})
