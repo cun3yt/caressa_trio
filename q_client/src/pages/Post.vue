@@ -73,100 +73,93 @@
 </template>
 
 <script>
-import PostItems from 'components/PostCategories'
-
-export default {
-  name: 'post',
-  props: ['setupContent'],
-  created () {
-    this.setupContent({
-      title: 'Post'
-    })
-  },
-  computed: {
-    selectedCategories () { // returns the selected category names
-      return this.displayLogic.selectedItems.map(lst => lst[2])
-    }
-  },
-  methods: {
-    firstUnselectedCategory () {
-      let itemsSelectedMapping = this.postItems.map(obj => this.selectedCategories.includes(obj.category))
-      return itemsSelectedMapping.indexOf(false)
-    },
-    addSelectedItem (itemId, subItemId, category, verbLabel, target) {
-      let obj = { // object to be sent to the API endpoint
-        'verb': verbLabel,
-        'target': target
-      }
-      this.displayLogic.selectedItems.push([itemId, subItemId, category, obj])
-      this.displayLogic.selectedPostItem = this.firstUnselectedCategory()
-    },
-    remove (index) {
-      this.displayLogic.selectedPostItem = this.displayLogic.selectedItems[index][0]
-      this.displayLogic.selectedItems.splice(index, 1)
-    },
-    post () {
-      let selections, vm
-      this.displayLogic.loaderForPosting = true
-
-      selections = this.displayLogic.selectedItems.map(item => item[3])
-      vm = this
-
-      this.showNotif()
-
-      this.$http.post(`${this.$root.$options.hosts.rest}/post/`, {
-        'userId': this.$root.$options.user.id,
-        'selections': selections
-      }).then(response => {
-        vm.displayLogic.loaderForPosting = false
-        vm.$router.push('feed')
-      }).then(response => {
-        vm.displayLogic.loaderForPosting = false
-        console.log('failure')
+  import PostItems from 'components/PostCategories'
+  export default {
+    name: 'post',
+    props: ['setupContent'],
+    created () {
+      this.setupContent({
+        title: 'Post'
       })
     },
-    showNotif () {
-      this.$q.notify({
-        color: 'secondary',
-        message: 'You post is submitted.',
-        position: 'top-right',
-        icon: 'far fa-check-circle',
-        detail: this.toString()
-      })
-    },
-    toString () {
-      if (this.displayLogic.selectedItems.length === 0) {
-        return ''
+    computed: {
+      selectedCategories () { // returns the selected category names
+        return this.displayLogic.selectedItems.map(lst => lst[2])
       }
-
-      let items = this.displayLogic.selectedItems.map(item => `${item[3].verb} ${item[3].target}`)
-      let count = items.length
-      return `I'm ${items.slice(0, count - 1).join(', ')} and ${items[count - 1]}.`
-    }
-  },
-  data () {
-    return {
-      displayLogic: {
-        selectedPostItem: 0,
-        selectedItems: [],
-        loaderForPosting: false
+    },
+    methods: {
+      firstUnselectedCategory () {
+        let itemsSelectedMapping = this.postItems.map(obj => this.selectedCategories.includes(obj.category))
+        return itemsSelectedMapping.indexOf(false)
       },
-      postItems: PostItems.postItems
+      addSelectedItem (itemId, subItemId, category, verbLabel, target) {
+        let obj = { // object to be sent to the API endpoint
+          'verb': verbLabel,
+          'target': target
+        }
+        this.displayLogic.selectedItems.push([itemId, subItemId, category, obj])
+        this.displayLogic.selectedPostItem = this.firstUnselectedCategory()
+      },
+      remove (index) {
+        this.displayLogic.selectedPostItem = this.displayLogic.selectedItems[index][0]
+        this.displayLogic.selectedItems.splice(index, 1)
+      },
+      post () {
+        let selections, vm
+        this.displayLogic.loaderForPosting = true
+        selections = this.displayLogic.selectedItems.map(item => item[3])
+        vm = this
+        this.showNotif()
+        this.$auth.post(`${this.$root.$options.hosts.rest}/post/`, {
+          'userId': this.$root.$options.user.id,
+          'selections': selections
+        }).then(response => {
+          vm.displayLogic.loaderForPosting = false
+          vm.$router.push('feed')
+        }).then(response => {
+          vm.displayLogic.loaderForPosting = false
+          console.log('failure')
+        })
+      },
+      showNotif () {
+        this.$q.notify({
+          color: 'secondary',
+          message: 'You post is submitted.',
+          position: 'top-right',
+          icon: 'far fa-check-circle',
+          detail: this.toString()
+        })
+      },
+      toString () {
+        if (this.displayLogic.selectedItems.length === 0) {
+          return ''
+        }
+        let items = this.displayLogic.selectedItems.map(item => `${item[3].verb} ${item[3].target}`)
+        let count = items.length
+        return `I'm ${items.slice(0, count - 1).join(', ')} and ${items[count - 1]}.`
+      }
+    },
+    data () {
+      return {
+        displayLogic: {
+          selectedPostItem: 0,
+          selectedItems: [],
+          loaderForPosting: false
+        },
+        postItems: PostItems.postItems
+      }
     }
   }
-}
 </script>
 
 <style scoped lang="stylus">
   primary = red
-
   img.creative
     height: auto
     width: auto
     display:block
     max-height: 32px
     max-width: 32px
-
   .scroll-limits
     width: 300px
     height: 350px

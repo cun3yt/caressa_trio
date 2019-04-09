@@ -23,7 +23,7 @@
       </q-list><div class="q-pa-sm"></div>
       <q-list>
         <q-list-header>
-         <q-item-main label="Music"></q-item-main>
+          <q-item-main label="Music"></q-item-main>
         </q-list-header>
         <q-collapsible icon="fas fa-music" label="Genres"
                        :sublabel="musicSelectionStatus ? '' : `Please help us personalize music for ${senior.firstName}`">
@@ -38,34 +38,34 @@
               </q-item-main>
             </q-item>
             <q-item>
-                <q-item-main>
+              <q-item-main>
                 <q-btn @click="sendInterests()" label="Apply" color="primary" size="0.9rem" icon="fas fa-check"/>
               </q-item-main>
-              </q-item>
-      </q-list>
-          </q-collapsible>
+            </q-item>
+          </q-list>
+        </q-collapsible>
       </q-list>
       <div class="q-pa-sm"></div>
       <q-list inset-separator>
         <q-list-header>
-         <q-item-main label="Family"></q-item-main>
+          <q-item-main label="Family"></q-item-main>
         </q-list-header>
         <q-item v-for="(member, index) in circleMembership.members" :key="`member-${index}`">
           <q-item-side>
             <q-item-tile icon="fas fa-user" color="primary" />
           </q-item-side>
-            <q-item-main
-              :label="`${member.first_name} ${member.last_name}`"
-              label-lines="1"
-              :sublabel="member.is_admin ? 'Admin' : ''"
-              sublabel-lines="1"
-            />
-            <q-btn
-              v-if="isAdmin"
-              color="primary"
-              size="sm"
-              icon="fas fa-pencil-alt"
-            />
+          <q-item-main
+            :label="`${member.first_name} ${member.last_name}`"
+            label-lines="1"
+            :sublabel="member.is_admin ? 'Admin' : ''"
+            sublabel-lines="1"
+          />
+          <q-btn
+            v-if="isAdmin"
+            color="primary"
+            size="sm"
+            icon="fas fa-pencil-alt"
+          />
         </q-item>
         <q-item v-for="(pendingMember, index) in circleMembership.pendings" :key="`pending_member-${index}`">
           <q-item-side>
@@ -142,21 +142,21 @@
           </q-item>
         </q-collapsible>
       </q-list>
-        <q-item>
-          <q-btn
-            style="background:white; color:#de5866"
-            class="full-width"
-            label="Sign Out Caressa"
-            to="/logout"
-          />
-        </q-item>
+      <q-item>
+        <q-btn
+          style="background:white; color:#de5866"
+          class="full-width"
+          label="Sign Out Caressa"
+          @click="signOut"
+        />
+      </q-item>
     </div>
     <q-page-container>
       <q-modal v-model="profilePictureData.updateProfilePictureModal" minimized content-css="padding: 8px" @hide="clearImage">
-          <div class="q-display-1 q-mb-md">
-            <span class="q-title">New Profile Picture</span>
-            <q-btn color="red" style="float: right" v-close-overlay icon="fas fa-times" @click="clearImage"/>
-          </div>
+        <div class="q-display-1 q-mb-md">
+          <span class="q-title">New Profile Picture</span>
+          <q-btn color="red" style="float: right" v-close-overlay icon="fas fa-times" @click="clearImage"/>
+        </div>
         <div v-if="profilePictureData.isLoading">
           <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
         </div>
@@ -193,7 +193,7 @@
             <label for="file"><strong>Choose a file</strong></label>
             </span>
           </div>
-          </div>
+        </div>
       </q-modal>
     </q-page-container>
   </q-page>
@@ -202,11 +202,10 @@
 <script>
 import { VueCropper } from 'vue-cropper'
 import {bus} from '../plugins/auth.js'
-
 export default {
   name: 'settings',
   components: {VueCropper},
-  props: ['setupContent'],
+  props: ['setupContent', 'logOut'],
   created () {
     this.setupContent({
       title: this.user
@@ -312,7 +311,6 @@ export default {
         fileWriter.onerror = function (e) {
           console.log('Failed file write: ' + e.toString())
         }
-
         fileWriter.write(dataObj)
       })
     },
@@ -320,13 +318,11 @@ export default {
       let vm = this
       fileEntry.file(function (file) {
         let reader = new FileReader()
-
         reader.onloadend = function () {
           let blob = new Blob([new Uint8Array(this.result)], { type: 'image/png' })
           vm.profilePictureData.option.img = window.URL.createObjectURL(blob)
           vm.profilePictureData.file = blob
         }
-
         reader.readAsArrayBuffer(file)
       })
     },
@@ -397,14 +393,17 @@ export default {
       this.profilePictureData.updateProfilePictureModal = !this.profilePictureData.updateProfilePictureModal
     },
     sendInterests () {
-      this.$http.patch(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`, this.genres)
+      this.$auth.patch(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`, this.genres)
         .then(res => {
           console.log(res.body)
         })
     },
+    signOut: function () {
+      this.logOut()
+    },
     getPresignedUrl (fileName, contentType) {
       this.profilePictureData.isLoading = true
-      return this.$http.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
+      return this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
         'key': fileName,
         'content-type': contentType,
         'client-method': 'put_object',
@@ -419,7 +418,7 @@ export default {
       })
     },
     newProfilePicture () {
-      this.$http.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/new_profile_picture/`, {
         'file_name': this.profilePictureData.fileName
       }).then(res => {
         this.profilePictureData.isLoading = false
@@ -435,17 +434,14 @@ export default {
     },
     setInitialData () {
       this.senior = this.$root.$options.senior
-
       if (!this.senior || !this.senior.id) { return }
-
       let vm = this
-      this.$http.get(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`)
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/${this.senior.id}/settings/`)
         .then(function (res) {
           vm.genres = res.body
           vm.genres.settings.genres.sort((item1, item2) => { return item1.label < item2.label ? -1 : 1 })
         })
-
-      this.$http.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
         .then(res => {
           this.circleId = res.body.pk
           this.circleMembership = {
@@ -459,7 +455,7 @@ export default {
         })
     },
     newCircleMember () {
-      this.$http.post(`${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/invite/`, {'email': this.newMemberEmail})
+      this.$auth.post(`${this.$root.$options.hosts.rest}/api/circles/${this.circleId}/members/invite/`, {'email': this.newMemberEmail})
         .then(res => {
           this.showNotif({message: `An email was sent to ${this.newMemberEmail}`, icon: 'far fa-check-circle', color: 'tertiary'})
           this.circleMembership.pendings.push({email: this.newMemberEmail, is_admin: false})
@@ -474,7 +470,7 @@ export default {
         })
     },
     reInviteMember (invitationCode, contact) {
-      this.$http.post(
+      this.$auth.post(
         `${this.$root.$options.hosts.rest}/api/circle-invitation/${invitationCode}/reinvite/`, {'data': 'data'})
         .then(res => {
           this.showNotif({message: `Invitation was re-sent to ${contact}`, icon: 'far fa-check-circle', color: 'tertiary'})
@@ -500,51 +496,46 @@ export default {
 </script>
 
 <style scoped lang="stylus">
-.main-content {
-  width: 500px;
-  max-width: 90vw;
-}
-
-.cut {
-  width: 225px;
-  height: 225px;
-  margin: 5px auto;
-}
-
-.profile-pic {
-  width: 225px;
-  height: 225px;
-  margin: 5px auto;
-}
-
-.inputfile {
-  width: 0.1px;
-  height: 0.1px;
-  opacity: 0;
-  overflow: hidden;
-  position: absolute;
-  z-index: -1;
-}
-
-.image-container {
-  max-width: 100%
-}
-
-.inputfile + label {
-  background: #f15d22;
-  border: none;
-  border-radius: 5px;
-  color: #fff;
-  cursor: pointer;
-  display: inline-block;
-  font-family: 'Poppins', sans-serif;
-  font-size: inherit;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  outline: none;
-  padding: 1rem 30px;
-  position: relative;
-  transition: all 0.3s;
-  vertical-align: middle;
-}
+  .main-content {
+    width: 500px;
+    max-width: 90vw;
+  }
+  .cut {
+    width: 225px;
+    height: 225px;
+    margin: 5px auto;
+  }
+  .profile-pic {
+    width: 225px;
+    height: 225px;
+    margin: 5px auto;
+  }
+  .inputfile {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+  }
+  .image-container {
+    max-width: 100%
+  }
+  .inputfile + label {
+    background: #f15d22;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+    display: inline-block;
+    font-family: 'Poppins', sans-serif;
+    font-size: inherit;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    outline: none;
+    padding: 1rem 30px;
+    position: relative;
+    transition: all 0.3s;
+    vertical-align: middle;
+  }
 </style>

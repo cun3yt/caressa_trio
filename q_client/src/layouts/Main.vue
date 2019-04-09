@@ -21,17 +21,178 @@
     </q-layout-header>
 
     <q-page-container>
-      <router-view :setup-content="setupContent"></router-view>
+      <router-view :setup-content="setupContent" :log-out="logOut"></router-view>
+
+      <q-modal v-model="signUpModal" maximized>
+        <div style="padding: 2.5em; margin-top: 1.5em">
+          <div class="q-display-3 text-weight-light">
+            <span style="color:#2FCD8C">Care</span>
+            <span style="color:#83ddba">ssa</span>
+          </div>
+          <div style="padding-top: 3em">
+            <p class="q-display-1 text-weight-thin">Welcome,</p>
+            <p class="q-display-1 text-weight-thin">Lets get started.</p>
+            <div>
+              <q-input
+                v-model="signUpEmail"
+                type="email"
+                float-label="e-mail"
+                color="#2FCD8C"
+              />
+              <q-input
+                v-model="signUpPassword"
+                type="password"
+                float-label="password"
+                color="#2FCD8C"
+              />
+            </div>
+          </div>
+          <q-btn style="color:#2FCD8C; margin-top: 2em"
+                 @click="signUpModal = !signUpModal; noSeniorModal = !noSeniorModal"
+                 label="SIGN UP"
+          />
+        </div>
+        <div style="padding: 2.5em; margin-top: 1.5em">
+          <p @click="loginRedirect('signUpModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+          <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+            What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+          </div>
+        </div>
+      </q-modal>
+      <q-modal v-model="loginModal" maximized>
+        <div style="padding: 2.5em; margin-top: 1.5em">
+          <div class="q-display-3 text-weight-light">
+            <span style="color:#2FCD8C">Care</span>
+            <span style="color:#83ddba">ssa</span>
+          </div>
+          <div style="padding-top: 3em">
+            <p class="q-display-1 text-weight-thin">Welcome,</p>
+            <p class="q-display-1 text-weight-thin">Enter Credentials</p>
+            <div>
+              <q-input
+                v-model="loginEmail"
+                type="email"
+                float-label="e-mail"
+                color="#2FCD8C"
+              />
+              <q-input
+                v-model="loginPassword"
+                type="password"
+                float-label="password"
+                color="#2FCD8C"
+              />
+            </div>
+          </div>
+          <q-btn style="color:#2FCD8C; margin-top: 2em"
+                 @click=submitLogin()
+                 label="LOGIN"
+          />
+        </div>
+        <div style="padding: 2.5em; margin-top: 1.5em">
+          <p @click="signUpRedirect('loginModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Sign Up</span></p>
+          <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+            What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+          </div>
+        </div>
+      </q-modal>
+
+      <q-modal v-model="noSeniorModal" maximized>
+        <div style="padding: 1.5em 2.5em; margin-top: 1.5em">
+          <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+          <div style="padding-top: 3em">
+            <p class="q-display-2 text-weight-thin">Oops!</p>
+            <p class="q-display-1 text-weight-light">Nobody is in your list.</p>
+          </div>
+          <q-btn class="q-display-1 text-weight-light"
+                 style="color:#83ddba; padding: 0.2em; margin-top: 2em"
+                 @click="noSeniorModal = false; addSeniorModal = true"
+                 label="add your beloved elder"
+          />
+        </div>
+        <div style="padding: 1.5em; margin-top: 1.5em">
+          <div @click="videoDirection('noSeniorModal')" class="q-title text-weight-light">
+            <p @click="loginRedirect('noSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Login</span></p>
+            What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+          </div>
+        </div>
+      </q-modal>
+
+      <q-modal v-model="videoModal" maximized>
+        <div style="padding: 0.8em; margin-top: 5em">
+          <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+          <p class="q-title text-weight-thin">Connecting Seniors with their Family</p>
+          <q-video
+            src="https://www.youtube.com/embed/uilkmUoXoLU?rel=0&amp;showinfo=0"
+            style="width: 22.2em; height: 18em"
+          />
+          <q-btn
+            align="between"
+            class="btn-fixed-width"
+            style="color:#2FCD8C; padding: 1em; margin-top: 2em"
+            @click="goBacktoPreviousModal"
+            icon="fas fa-arrow-left"
+            label="GO BACK"
+          />
+        </div>
+      </q-modal>
+
+      <q-modal v-model="addSeniorModal" maximized>
+        <div style="padding: 2.5em; margin-top: 1.5em">
+          <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+          <div style="padding-top: 3em">
+            <p class="q-display-1 text-weight-thin">Connect your beloved. &lt;3</p>
+            <div>
+              <q-input v-model="appPhoneNumber" type="number" float-label="Your Phone Number" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em" />
+              <q-input v-model="seniorPhoneNumber" type="number" float-label="Elder Phone Number" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
+              <q-input v-model="deviceCode" type="number" float-label="Number On Device" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
+            </div>
+          </div>
+          <q-btn style="color:#2FCD8C; margin-top: 2em" @click="addSeniorModal = false; foundSeniorModal = true" icon="fas fa-user-plus" label="Add" />
+        </div>
+        <div style="padding: 2.5em; margin-top: 1.5em">
+          <p @click="loginRedirect('addSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+          <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+            What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+          </div>
+        </div>
+      </q-modal>
+
+      <q-modal v-model="foundSeniorModal" maximized>
+        <div style="padding: 2.5em; margin-top: 1.5em">
+          <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+          <div style="padding-top: 3em">
+            <div>
+              <q-icon size="5em" style="color:#2FCD8C" name="check_circle_outline" />
+            </div>
+            <p class="q-display-1 text-weight-thin" style="margin-top: 2em">Found Beloved &lt;3</p>
+            <q-btn
+              v-for="(senior, index) in seniors"
+              :key="index"
+              style="color:#2FCD8C; margin-top: 1em; padding:0 1em 0 1em"
+              class="q-title"
+              @click="foundSeniorModal = false"
+              icon-right="arrow_forward_ios"
+              :label="senior.name" />
+          </div>
+        </div>
+        <div style="padding: 2.5em; margin-top: 1.5em">
+          <p @click="loginRedirect('foundSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+          <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+            What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+          </div>
+        </div>
+      </q-modal>
+
     </q-page-container>
     <q-layout-footer>
       <q-tabs>
         <q-route-tab v-for="(item, index) in pages"
-        :key="index"
-        slot="title"
-        :icon="item.icon"
-        :to="{name: item.name}"
-        replace
-        :label="item.label" />
+                     :key="index"
+                     slot="title"
+                     :icon="item.icon"
+                     :to="{name: item.name}"
+                     replace
+                     :label="item.label" />
       </q-tabs>
     </q-layout-footer>
 
@@ -40,10 +201,19 @@
 
 <script>
 import {bus} from '../plugins/auth.js'
-
 export default {
   data () {
     return {
+      signUpEmail: '',
+      signUpPassword: '',
+      loginEmail: '',
+      loginPassword: '',
+      loginModal: this.$auth.isLoggedOut(),
+      signUpModal: false,
+      noSeniorModal: false,
+      videoModal: false,
+      addSeniorModal: false,
+      foundSeniorModal: false,
       seniorPhoneNumber: '',
       deviceCode: '',
       appPhoneNumber: '',
@@ -99,6 +269,27 @@ export default {
       this.signUpModal = true
       this[currentModal] = false
     },
+    logOut: function () {
+      this.$auth.tokenRevoke()
+      this.loginModal = true
+    },
+    submitLogin: function () {
+      let data = {
+        'username': this.loginEmail,
+        'password': this.loginPassword
+      }
+      this.$auth.login(data).then(
+        response => {
+          console.log(response, 'success')
+          this.loginEmail = ''
+          this.loginPassword = ''
+          this.loginModal = false
+          bus.$emit('addFeeds')
+        }, response => {
+          console.log(response, 'error')
+          this.loginModal = true
+        })
+    },
     loginSuccessRedirect: function () {
       let vm = this
       this.$root.fillUserResource(() => { vm.loginModal = false })
@@ -119,55 +310,7 @@ export default {
       this.videoModal = false
       const lastModal = this.lastPosition
       this[`${lastModal}`] = true
-    },
-    fillUserResource (callbackFn = null) {
-      // Fetch User Info...
-      this.$http.get(`${this.$root.$options.hosts.rest}/api/users/me/channels/`)
-        .then(response => {
-          this.$q.cookies.set('pusher_channel', response.data['channels'][0], {expires: 10})
-          this.$root.$options.pusherConfig = response.data['channels'][0]
-        }, response => {
-          console.log(response, 'something failed.')
-        })
-
-      this.$http.get(`${this.$root.$options.hosts.rest}/api/users/me/`)
-        .then(res => {
-          let userData = res.body
-
-          this.$root.$options.user = {
-            'id': userData.pk,
-            'firstName': userData.first_name,
-            'lastName': userData.last_name,
-            'email': userData.email,
-            'userType': userData.user_type,
-            'profilePic': userData.profile_pic_url
-          }
-
-          // todo check cookies' necessity
-          this.$q.cookies.set('user_id', userData.id, {expires: 10})
-          this.$q.cookies.set('email', userData.email, {expires: 10})
-          this.$q.cookies.set('profile_pic', userData.profile_pic_url, {expires: 10})
-
-          this.$root.$options.senior = {}
-
-          if (userData.senior) {
-            this.$root.$options.senior = {
-              'id': userData.senior.id,
-              'firstName': userData.senior.first_name,
-              'lastName': userData.senior.last_name,
-              'profilePic': userData.senior.profile_pic_url
-            }
-          }
-
-          if (callbackFn) {
-            callbackFn()
-          }
-        })
     }
-  },
-  beforeMount () {
-    console.log('Main before mount fill user data')
-    this.fillUserResource()
   },
   mounted () {
     bus.$on('loginRedirect', this.loginRedirect)
@@ -183,13 +326,13 @@ export default {
 </script>
 
 <style lang="stylus">
-.q-toolbar-title
-  text-align: center
-.q-tabs-scroller
-  margin: 0 auto
-/*.main-content1*/
+  .q-toolbar-title
+    text-align: center
+  .q-tabs-scroller
+    margin: 0 auto
+  /*.main-content1*/
   /*width: 500px*/
   /*max-width: 90vw*/
-/*.docs-btn .q-btn*/
+  /*.docs-btn .q-btn*/
   /*margin 5px*/
 </style>

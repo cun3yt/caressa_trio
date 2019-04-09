@@ -65,7 +65,6 @@
 
 <script>
 import share from '../share.js'
-
 export default {
   mounted: function () {
     this.getFeedObject = share.getFeedObject
@@ -88,7 +87,6 @@ export default {
   created () {
     let likedReactions = this.feed.user_reactions
     this.latestJokeId = this.joke.id
-
     if (likedReactions.user_like_state.did_user_like) {
       this.markFunny(false)
       this.funnyId = likedReactions.user_like_state.reaction_id
@@ -105,11 +103,9 @@ export default {
     markFunny (apiCall) {
       this.funnyState = !this.funnyState
       this.funnyMsg = this.funnyState ? 'You found it funny' : 'That\'s funny!'
-
       let vm = this
-
       if (apiCall && this.funnyState) {
-        this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
+        this.$auth.post(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/`, {
           'reaction': 'liked',
           'owner': this.$root.$options.user.id,
           'content': this.feed.id
@@ -120,9 +116,8 @@ export default {
           })
           .then(response => { console.log('failure') })
       }
-
       if (apiCall && !this.funnyState) {
-        this.$http.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.funnyId}/`, {
+        this.$auth.delete(`${this.$root.$options.hosts.rest}/act/actions/${this.feed.id}/reactions/${this.funnyId}/`, {
           'reaction': 'liked',
           'owner': this.$root.$options.user.id,
           'content': this.feed.id
@@ -146,8 +141,7 @@ export default {
     },
     markAdditionalJokeFunny (joke) {
       joke.funny = !joke.funny
-
-      this.$http.post(`${this.$root.$options.hosts.rest}/like_joke/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/like_joke/`, {
         'joke_id': joke.id,
         'set_to': (joke.funny ? 'true' : 'false')
       }).then(response => {

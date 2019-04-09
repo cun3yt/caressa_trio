@@ -2,7 +2,7 @@ export default {
   getFeedObject (resource, excludeList, handleFn, errorFn) {
     let excludeStr = ''
     excludeStr = `?exclude=${excludeList.join(',')}`
-    this.$http
+    this.$auth
       .get(
         `${
           this.$root.$options.hosts.rest

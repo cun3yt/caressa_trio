@@ -6,14 +6,14 @@
         <template v-if="feed.action_object_type==='Joke'">
           <joke-feed :feed="feed"
                      :joke="feed.action_object"
-                     >
+          >
             <comment-section :actionId="feed.id" :comments="feed.paginated_comments" />
           </joke-feed>
         </template>
         <template v-else-if="feed.action_object_type==='News'">
           <news-feed :feed="feed"
                      :news="feed.action_object"
-                     >
+          >
             <comment-section :actionId="feed.id" :comments="feed.paginated_comments" />
           </news-feed>
         </template>
@@ -41,9 +41,7 @@ import RegularFeed from 'components/RegularFeed'
 import CommentSection from 'components/CommentSection'
 import Pusher from 'pusher-js'
 import {bus} from '../plugins/auth.js'
-
 // Pusher.logToConsole = true // for logging purpose
-
 export default {
   name: 'feed',
   props: ['setupContent'],
@@ -73,7 +71,7 @@ export default {
     addFeeds () {
       let vm = this
       ++this.pageNumber
-      this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`)
+      this.$auth.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`)
         .then(response => {
           vm.feeds = vm.feeds.concat(response.data['results'])
           if (vm.bottomVisible()) {
@@ -133,5 +131,4 @@ export default {
 </script>
 
 <style scoped>
-
 </style>

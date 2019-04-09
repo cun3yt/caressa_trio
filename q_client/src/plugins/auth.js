@@ -38,7 +38,7 @@ authModule = {
       bus.$emit('loginRedirect')
     })
   },
-  refreshToken: function () { // todo will be replaced by routes/auth.js
+  refreshToken: function () {
     console.log('token refresh processing')
     let vm = this
     if (this.refresh_token) {

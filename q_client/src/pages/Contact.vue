@@ -32,20 +32,20 @@
       <q-item separator />
       <q-list v-if="queries.length > 0">
         <q-item>
-        <q-item-main>
-        <q-collapsible v-for="query in queries" :key="query.id"  group="queries" multiline class="q-mb-xs shadow-1">
-          <template slot="header">
-            <q-icon :name="query.solved ? 'fas fa-check' : 'far fa-clock'"
-                    class="q-mr-md"
-                    size="1.2em"
-                    :color="query.solved ? 'tertiary' : 'warning'"/>
-            <q-item-main :label="query.message.title ? query.message.title : 'No Title'" :sublabel="query.solved ? 'Solved' : 'Waiting'"/>
-          </template>
-            <p class="text-primary">{{query.message.main}}</p>
-            <p v-if="!query.solved" class="text-info text-weight-thin">We will contact you from <span class="text-weight-light">{{email}}</span></p>
-        </q-collapsible>
+          <q-item-main>
+            <q-collapsible v-for="query in queries" :key="query.id"  group="queries" multiline class="q-mb-xs shadow-1">
+              <template slot="header">
+                <q-icon :name="query.solved ? 'fas fa-check' : 'far fa-clock'"
+                        class="q-mr-md"
+                        size="1.2em"
+                        :color="query.solved ? 'tertiary' : 'warning'"/>
+                <q-item-main :label="query.message.title ? query.message.title : 'No Title'" :sublabel="query.solved ? 'Solved' : 'Waiting'"/>
+              </template>
+              <p class="text-primary">{{query.message.main}}</p>
+              <p v-if="!query.solved" class="text-info text-weight-thin">We will contact you from <span class="text-weight-light">{{email}}</span></p>
+            </q-collapsible>
 
-        </q-item-main>
+          </q-item-main>
         </q-item>
       </q-list>
     </div>
@@ -55,7 +55,6 @@
 <script>
 import {Cookies} from 'quasar'
 import { required } from 'vuelidate/lib/validators'
-
 export default {
   name: 'contact',
   props: ['setupContent'],
@@ -72,7 +71,7 @@ export default {
         return
       }
       let vm = this
-      vm.$http.post(`${vm.$root.$options.hosts.rest}/act/queries/`, {
+      vm.$auth.post(`${vm.$root.$options.hosts.rest}/act/queries/`, {
         'title': this.form.contactFormTitle,
         'main': this.form.contactFormMain
       }).then(response => {
@@ -84,7 +83,7 @@ export default {
     },
     loadQueries: function () {
       let vm = this
-      vm.$http.get(`${vm.$root.$options.hosts.rest}/act/queries/`)
+      vm.$auth.get(`${vm.$root.$options.hosts.rest}/act/queries/`)
         .then(response => {
           console.log(response.data.results, 'get form response')
           this.queries = response.data['results']

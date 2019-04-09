@@ -41,66 +41,65 @@
       </div>
 
       <q-page-sticky position="bottom" :offset="[10, 10]">
-      <div style="width: 500px; max-width: 90vw; padding: 20px;">
-        <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
-        <q-btn :disable="recording!=null" class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
-      </div>
-
-      <div class="doc-container with-bg">
-        <div class="row justify-center">
-          <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
-          <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
-        </div>
-        </div>
-      <div class="row justify-start">
-        <div class="col-2" style="padding-top: 3em; padding-left: 3em">
-          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="deleteRecord"
-                 v-on:touchstart.native="deleteRecord"
-                 side="left"
-                 size="20px"
-                 round
-                 color="negative"
-                 icon="fas fa-trash"></q-btn>
-        </div>
-        <div class="col-2"></div>
-        <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false"
-               class="col-4" v-on:mousedown.native="uploadRecord"
-               v-on:touchstart.native="uploadRecord"
-               side="left"
-               size="40px"
-               style="padding-right: 0.2em"
-               round
-               color="positive"
-               icon="fas fa-paper-plane"
-        ></q-btn>
-        <q-btn v-else class="col-4" v-on:mousedown.native="toggleRecord"
-               v-on:touchstart.native="toggleRecord"
-               side="left"
-               size="40px"
-               round
-               :outline="recordingState"
-               :color="recordingState ? 'negative' : 'primary' "
-               :icon="recordingState ? 'fas fa-stop' : 'fas fa-microphone'"></q-btn>
-        <div class="col-2" style="padding-top: 3em; padding-left: 1em">
-          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="playRecord"
-                 v-on:touchstart.native="playRecord"
-                 side="left"
-                 size="20px"
-                 style="padding-left: 0.3em"
-                 round
-                 color="info"
-                 icon="fas fa-play"></q-btn>
+        <div style="width: 500px; max-width: 90vw; padding: 20px;">
+          <q-input type="textarea" ref="newMessage" name="newMessage" placeholder="Message" v-model="messageText" value=""/>
+          <q-btn :disable="recording!=null" class="action-btn" @click="sendMessage" side="right" color="primary">Send Message</q-btn>
         </div>
 
-      </div>
+        <div class="doc-container with-bg">
+          <div class="row justify-center">
+            <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
+            <q-spinner-bars class="col-2" v-if="recordingState" color="negative" :size="60" />
+          </div>
+        </div>
+        <div class="row justify-start">
+          <div class="col-2" style="padding-top: 3em; padding-left: 3em">
+            <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="deleteRecord"
+                   v-on:touchstart.native="deleteRecord"
+                   side="left"
+                   size="20px"
+                   round
+                   color="negative"
+                   icon="fas fa-trash"></q-btn>
+          </div>
+          <div class="col-2"></div>
+          <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false"
+                 class="col-4" v-on:mousedown.native="uploadRecord"
+                 v-on:touchstart.native="uploadRecord"
+                 side="left"
+                 size="40px"
+                 style="padding-right: 0.2em"
+                 round
+                 color="positive"
+                 icon="fas fa-paper-plane"
+          ></q-btn>
+          <q-btn v-else class="col-4" v-on:mousedown.native="toggleRecord"
+                 v-on:touchstart.native="toggleRecord"
+                 side="left"
+                 size="40px"
+                 round
+                 :outline="recordingState"
+                 :color="recordingState ? 'negative' : 'primary' "
+                 :icon="recordingState ? 'fas fa-stop' : 'fas fa-microphone'"></q-btn>
+          <div class="col-2" style="padding-top: 3em; padding-left: 1em">
+            <q-btn v-if="audioMessageObj.key && audioMessageObj.sent === false" v-on:mousedown.native="playRecord"
+                   v-on:touchstart.native="playRecord"
+                   side="left"
+                   size="20px"
+                   style="padding-left: 0.3em"
+                   round
+                   color="info"
+                   icon="fas fa-play"></q-btn>
+          </div>
+
+        </div>
       </q-page-sticky>
-      </div>
+    </div>
 
   </q-page>
 </template>
 
 <script>
-
 export default {
   name: 'chat',
   props: ['setupContent'],
@@ -125,13 +124,11 @@ export default {
       textMessageObj.stamp = 'Today at 13:50'
       textMessageObj.type = 'family_ios_text'
       textMessageObj.text = []
-
       this.textMessageObj = textMessageObj
-
       if (this.messageText !== '') {
         this.textMessageObj.text.push(this.messageText)
       }(this.messages.push(this.textMessageObj))
-      this.$http.post(`${this.$root.$options.hosts.rest}/new_message/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'type': 'family_ios_text',
         'key': key,
         'content': this.messageText
@@ -157,7 +154,6 @@ export default {
         let key = today + '-' + randomInt
         this.audioMessageObj.key = key
         let newRecord = key + '.wav'
-
         let src = 'documents://' + newRecord
         this.audioMessageObj.url = src
         this.recording = new window.Media(src,
@@ -197,14 +193,13 @@ export default {
       myMedia.play()
     },
     uploadRecord: function () {
-      this.$http.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
         'key': this.audioMessageObj.key,
         'content-type': 'audio/wav',
         'client-method': 'put_object',
         'request-type': 'PUT'
       }).then(response => {
         console.log('response :' + response.body)
-
         let vm = this
         let ft = new window.FileTransfer()
         let options = new window.FileUploadOptions()
@@ -220,11 +215,10 @@ export default {
           console.log('got main dir', dir)
           dir.getFile(vm.audioMessageObj.key + '.wav', {create: true}, function (file) {
             console.log('file itself', file)
-
             ft.upload(file.nativeURL, response.body,
               function (response) {
                 console.log(response)
-                vm.$http.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
+                vm.$auth.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
                   'userId': vm.$root.$options.user.id,
                   'type': 'family_ios_audio',
                   'key': vm.audioMessageObj.key
@@ -244,7 +238,6 @@ export default {
                 console.log(error)
               },
               options)
-
             console.log('got the file')
           }, function (err) { console.log(err) })
         })
@@ -286,7 +279,7 @@ export default {
   },
   mounted () {
     let deviceCheckFn = () => {
-      this.$http.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
+      this.$auth.get(`${this.$root.$options.hosts.rest}/api/users/me/circles/`)
         .then(response => {
           this.isLoading = false
           this.senior = response.body.senior
@@ -297,7 +290,6 @@ export default {
           setTimeout(deviceCheckFn, 300000)
         })
     }
-
     deviceCheckFn()
   },
   computed: {

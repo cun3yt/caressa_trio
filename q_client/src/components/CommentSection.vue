@@ -25,7 +25,6 @@
 <script>
 import moment from 'moment'
 import Comment from './Comment'
-
 export default {
   name: 'CommentSection',
   components: {Comment},
@@ -52,7 +51,7 @@ export default {
   methods: {
     refresh () {
       let vm = this
-      this.$http.get(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {}).then(
+      this.$auth.get(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {}).then(
         response => {
           vm.comments = response.data // todo this line gives error because of prop mutation inside component.
           vm.next_url = response.data['next']
@@ -64,8 +63,7 @@ export default {
     },
     loadMore () {
       let vm = this
-
-      this.$http.get(this.next_url, {})
+      this.$auth.get(this.next_url, {})
         .then(response => {
           // todo 1. Fix the warning: Avoid mutating a prop directly since the value will be overwritten whenever
           // the parent component re-renders. Instead, use a data or computed property based on the prop's value.
@@ -80,9 +78,8 @@ export default {
     },
     post (new_comment = this.new_comment) {
       let vm = this
-
       // todo: Check if this is still in use (there is a similar one in Comment.vue)
-      this.$http.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': new_comment})
+      this.$auth.post(`${this.$root.$options.hosts.rest}/act/actions/${this.actionId}/comments/`, {'comment': new_comment})
         .then(
           response => {
             console.log('success')
@@ -97,5 +94,4 @@ export default {
 </script>
 
 <style scoped>
-
 </style>
