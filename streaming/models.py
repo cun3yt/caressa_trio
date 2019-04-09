@@ -1,18 +1,22 @@
+from random import randint
+
+from django.contrib.auth import get_user_model
+from django.db import models
+from django.db.models import signals
+from django.utils.html import format_html
+
 from alexa import models as alexa_models
 from caressa.settings import AUTH_USER_MODEL as User
-from django.db import models
 from model_utils.models import TimeStampedModel
 from jsonfield import JSONField
-from django.db.models import signals
 from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
 from urllib.error import HTTPError
-from django.utils.html import format_html
+
+from utilities.cryptography import compute_hash
 from utilities.models.abstract_models import CreatedTimeStampedModel
 from utilities.models.mixins import CacheMixin
 from utilities.time import seconds_to_minutes
-from random import randint
-from django.contrib.auth import get_user_model
 
 
 class Tag(TimeStampedModel):
@@ -67,11 +71,13 @@ class AudioFile(TimeStampedModel):
         verbose_name_plural = 'Audio Files'
 
     TYPE_SONG = 'song'
+    TYPE_FACILITY_AUTO_GENERATED_CONTENT = 'facility-auto-generated-content'
     TYPE_FAMILY_UPDATE = 'family_update'
     TYPE_MISC = 'miscellaneous'
 
     TYPE_SET = (
         (TYPE_SONG, 'Song'),
+        (TYPE_FACILITY_AUTO_GENERATED_CONTENT, 'Facility Auto Generated Content'),
         (TYPE_FAMILY_UPDATE, 'Family Update'),
         (TYPE_MISC, 'Miscellaneous'),
     )
@@ -83,10 +89,13 @@ class AudioFile(TimeStampedModel):
                           db_index=True,
                           verbose_name='File URL',
                           help_text='File URL, it must be publicly accessible', )
+
+    # duration is set by pre-save signal below
     duration = models.IntegerField(blank=False,
                                    null=False,
                                    default=0,
                                    help_text='Duration of content in seconds', )
+
     name = models.TextField(blank=False,
                             null=False,
                             db_index=True,
@@ -98,7 +107,28 @@ class AudioFile(TimeStampedModel):
                                    null=False,
                                    default='',
                                    help_text='For Internal Use only', )
+
     payload = JSONField(default={})
+
+    hash = models.TextField(null=False,
+                            blank=True,
+                            default='',
+                            db_index=True, )
+
+    def __init__(self, *args, **kwargs):
+        """
+        If there is a `type` class variable in any subclass of `AudioFile` it will be treated as setting
+        `audio_type` field's default value. For example in Song model, `audio_type`'s default is set to
+        `AudioFile.TYPE_SONG` with the help of this initializer and the class variable `type`.
+        """
+        if hasattr(self, 'type'):
+            self._meta.get_field('audio_type').default = self.type
+
+            kwargs_type = kwargs.get('audio_type', None)
+            if not kwargs_type:
+                kwargs['audio_type'] = self.type
+
+        super().__init__(*args, **kwargs)
 
     def __str__(self):
         return "({audio_type}) {file_name}".format(audio_type=self.audio_type, file_name=self.name)
@@ -133,15 +163,36 @@ class AudioFile(TimeStampedModel):
 
         return Tag.tag_list_to_audio_file(user_genres_id_list)
 
-    def __init__(self, *args, **kwargs):
-        if hasattr(self, 'type'):
-            self._meta.get_field('audio_type').default = self.type
+    def _set_hash_if_not_set(self):
+        """
+        The hash may be set by the AudioFile's referer while creating it.
+        Example: SeniorLivingFacilityContent sets the hash according to its own logic.
 
-            kwargs_type = kwargs.get('audio_type', None)
-            if not kwargs_type:
-                kwargs['audio_type'] = self.type
+        :author Cuneyt Mertayak
+        """
 
-        super().__init__(*args, **kwargs)
+        if self.hash:
+            return
+
+        txt = "{}-{}".format(self.audio_type, self.url)
+        self.hash = compute_hash(txt)
+
+    def _set_duration(self):
+        try:
+            filename, headers = urlretrieve(self.url)
+            audio = MP3(filename)
+            self.duration = round(audio.info.length)
+        except HTTPError:
+            self.duration = -1
+
+    @staticmethod
+    def pre_save_operations(**kwargs):
+        instance = kwargs.get('instance')   # type: 'AudioFile'
+        instance._set_duration()
+        instance._set_hash_if_not_set()
+
+    def add_to_positive_negative_signal_by(self, user: User, signal_type='signal-positive'):
+        return UserAudioFileSignal.objects.create(audio_file=self, user=user, signal=signal_type)
 
 
 AudioFile._meta.get_field('modified').db_index = True
@@ -162,26 +213,48 @@ class Song(AudioFile):
     objects = _Manager()
 
 
-def audio_file_accessibility_and_duration(sender, instance, raw, using, update_fields, **kwargs):
-    try:
-        filename, headers = urlretrieve(instance.url)
-        audio = MP3(filename)
-        instance.duration = round(audio.info.length)
-    except HTTPError:
-        instance.duration = -1
-
-
-audio_duration_signals = [
+audio_file_pre_save_signals = [
     {'sender': AudioFile,
-     'uid': 'audio_file_accessibility_and_duration', },
+     'uid': 'audio_file.pre_save', },
     {'sender': Song,
-     'uid': 'song_accessibility_and_duration', },
+     'uid': 'song.pre_save', },
 ]
 
 # All models (including proxy models) need their own signal-function connection.
-for duration_signal in audio_duration_signals:
-    signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
-                             sender=duration_signal['sender'], dispatch_uid=duration_signal['uid'])
+for signal in audio_file_pre_save_signals:
+    signals.pre_save.connect(receiver=AudioFile.pre_save_operations,
+                             sender=signal['sender'],
+                             dispatch_uid=signal['uid'])
+
+
+class UserAudioFileSignal(CreatedTimeStampedModel):
+    """
+    Purpose: Keeping users' liked/not-liked (or yes/no answer'ed) audio files
+    """
+    class Meta:
+        db_table = 'user_audio_file_signal'
+
+    SIGNAL_POSITIVE = 'positive'
+    SIGNAL_NEGATIVE = 'negative'
+
+    SIGNAL_SET = (
+        (SIGNAL_POSITIVE, 'Positive'),
+        (SIGNAL_NEGATIVE, 'Negative'),
+    )
+
+    user = models.ForeignKey(to=User,
+                             on_delete=models.DO_NOTHING,
+                             related_name='liked_audio_files', )
+    audio_file = models.ForeignKey(to=AudioFile,
+                                   on_delete=models.DO_NOTHING,
+                                   related_name='liked_by_users', )
+    signal = models.CharField(max_length=50,
+                              choices=SIGNAL_SET,
+                              default=SIGNAL_POSITIVE, )
+
+    @classmethod
+    def is_signal_valid(cls, signal_type):
+        return signal_type in [item[0] for item in cls.SIGNAL_SET]
 
 
 class UserMainContentConsumption(CreatedTimeStampedModel):

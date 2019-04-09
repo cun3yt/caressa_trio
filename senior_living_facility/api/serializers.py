@@ -328,7 +328,7 @@ class SeniorLivingFacilityContentSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_hash(content: SeniorLivingFacilityContent):
-        return content.text_content_hash
+        return content.hash
 
 
 class ServiceRequestSerializer(serializers.ModelSerializer):

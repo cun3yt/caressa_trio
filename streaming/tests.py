@@ -4,8 +4,7 @@ from uuid import uuid4
 from django.test import TestCase, RequestFactory
 from model_mommy import mommy
 from alexa.models import UserSettings, User
-from streaming.models import Tag, AudioFile, audio_file_accessibility_and_duration, UserMainContentConsumption, \
-    UserContentRepository
+from streaming.models import Tag, AudioFile, UserMainContentConsumption, UserContentRepository
 from streaming.views import stream_io
 from streaming.test_helper_functions import request_body_creator_for_intent, \
     request_body_creator, request_body_creator_for_audio_player, request_body_creator_for_pause_command
@@ -67,9 +66,9 @@ class UserContentRepositoryTests(TestCase):
 class TagModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
+        signals.pre_save.disconnect(receiver=AudioFile.pre_save_operations,
                                     sender=AudioFile,
-                                    dispatch_uid='audio_file_accessibility_and_duration')
+                                    dispatch_uid='audio_file.pre_save')
 
         cls.tag1 = mommy.make('streaming.Tag', name='song-classical', is_setting_available=False)  # type: Tag
         cls.default_tag1 = mommy.make('streaming.Tag', is_setting_available=True)  # type: Tag
@@ -163,8 +162,8 @@ class TagModelTestCase(TestCase):
 class AudioFileModelTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        signals.pre_save.disconnect(receiver=audio_file_accessibility_and_duration,
-                                    sender=AudioFile, dispatch_uid='audio_file_accessibility_and_duration')
+        signals.pre_save.disconnect(sender=AudioFile,
+                                    dispatch_uid='audio_file.pre_save')
         cls.audio_file1 = mommy.make('streaming.AudioFile',  # type: AudioFile
                                      duration=40,
                                      audio_type=AudioFile.TYPE_SONG,
@@ -190,9 +189,9 @@ class AudioFileModelTestCase(TestCase):
         self.assertEqual(duration_in_minutes2, expected_duration2)
 
     def test_is_publicly_accessible(self):
-        signals.pre_save.connect(receiver=audio_file_accessibility_and_duration,
+        signals.pre_save.connect(receiver=AudioFile.pre_save_operations,
                                  sender=AudioFile,
-                                 dispatch_uid='audio_file_accessibility_and_duration')
+                                 dispatch_uid='_in-test-signal-connect')
         bucket_name = 'caressa-test-{uuid}'.format(uuid=str(uuid4())[:8])
         s3 = boto3.client('s3')
         s3.create_bucket(Bucket=bucket_name)
@@ -216,12 +215,16 @@ class AudioFileModelTestCase(TestCase):
         is_public = sample_audio_file.is_publicly_accessible()
 
         self.assertIsInstance(sample_audio_file.duration, int)
+        self.assertIsNotNone(sample_audio_file.hash)
         self.assertTrue(is_public)
 
         bucket = boto3.resource('s3').Bucket(bucket_name)
         for key in bucket.objects.all():
             key.delete()
         bucket.delete()
+
+        signals.pre_save.disconnect(sender=AudioFile,
+                                    dispatch_uid='_in-test-signal-connect')
 
     def test_string_representation(self):
         actual_string_representation = str(self.audio_file1)
@@ -341,15 +344,13 @@ class StreamingPlayTestCase(TestCase):
         request_body = request_body_creator_for_audio_player('AudioPlayer.PlaybackStarted', token)
         request = self.factory.get('/streaming')
         request.user = self.user
-        data = stream_io(request_body, request)
+        stream_io(request_body, request)
 
-        response = data['response']['shouldEndSession']
         consumed_audio_by_user = UserMainContentConsumption.objects.all()[0].played_main_content
         umcc_count_after_save_state = UserMainContentConsumption.objects.all().count()
 
         self.assertEqual(consumed_audio_by_user, self.audio_file_1)
         self.assertEqual(umcc_count_after_save_state, 1)
-        self.assertTrue(response)
 
 
 class StreamingNextAndQueueTestCase(TestCase):
@@ -399,10 +400,8 @@ class StreamingPauseAndFillerTestCase(TestCase):
         request = self.factory.get('/streaming')
         request.user = self.user
         data = stream_io(request_body_pause_command, request)
-        response = data['response']['shouldEndSession']
         audio_player_directive = data['response']['directives'][0]['type']
 
-        self.assertTrue(response)
         self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
 
     def test_pause_intent(self):
@@ -410,10 +409,7 @@ class StreamingPauseAndFillerTestCase(TestCase):
         request = self.factory.get('/streaming')
         request.user = self.user
         data = stream_io(request_body_pause_intent, request)
-        response = data['response']['shouldEndSession']
         audio_player_directive = data['response']['directives'][0]['type']
-
-        self.assertTrue(response)
         self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
 
     def test_none_intent(self):
@@ -421,10 +417,7 @@ class StreamingPauseAndFillerTestCase(TestCase):
         request = self.factory.get('/streaming')
         request.user = self.user
         data = stream_io(none_intent, request)
-        is_session_ended = data['response']['shouldEndSession']
         audio_player_directive = data['response']['directives'][0]['type']
-
-        self.assertTrue(is_session_ended)
         self.assertEqual(audio_player_directive, 'AudioPlayer.Stop')
 
     def test_fallback_filler(self):
@@ -432,6 +425,4 @@ class StreamingPauseAndFillerTestCase(TestCase):
         request = self.factory.get('/streaming')
         request.user = self.user
         data = stream_io(fallback_request, request)
-        is_session_ended = data['response']['shouldEndSession']
-
-        self.assertTrue(is_session_ended)
+        self.assertDictEqual(data, {'result': 'success'})

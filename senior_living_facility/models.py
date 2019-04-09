@@ -1,4 +1,3 @@
-import hashlib
 import pytz
 
 from django.contrib.auth import get_user_model
@@ -7,13 +6,13 @@ from django.db import models
 from django.db.models import signals
 from django.utils import timezone
 from model_utils.models import TimeStampedModel, StatusField
-
+from caressa.settings import DATETIME_FORMATS, TIME_ZONE as DEFAULT_TIMEZONE
 from alexa import models as alexa_models
-from caressa.settings import TIME_ZONE as DEFAULT_TIMEZONE
 from jsonfield import JSONField
 from typing import Optional
 from utilities.template import template_to_str
 from model_utils import Choices
+from streaming.models import AudioFile
 
 from utilities.views.mixins import ForAdminApplicationMixin
 from utilities.models.mixins import ProfilePictureMixin
@@ -23,8 +22,9 @@ from datetime import datetime, time
 from icalevents.icalevents import events as query_events
 from utilities.speech import ssml_post_process
 
-from utilities.time import time_today_in_tz as time_in_tz
+from utilities.cryptography import compute_hash
 from utilities.sms import send_sms
+from utilities.time import time_today_in_tz as time_in_tz
 
 
 class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
@@ -114,7 +114,7 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         return result_list
 
     def get_today_events(self):
-        spoken_time_format = "%I:%M %p"  # e.g. '06:30 PM'
+        spoken_time_format = DATETIME_FORMATS['spoken']['time']
 
         tz = pytz.timezone(self.timezone)
         now = datetime.now(tz)
@@ -248,6 +248,8 @@ class SeniorDeviceUserActivityLog(CreatedTimeStampedModel):
     """
     This class represents users' interaction with his/her device.
 
+    Purpose: Keeping the analytic logs of all interface of the senior device.
+
     Example activity log:
         activity: click.main-button
         data (extra/notes/payload): { 'device-response': 'pause.content' }
@@ -288,6 +290,15 @@ SeniorDeviceUserActivityLog._meta.get_field('created').db_index = True
 
 
 class ContentDeliveryRule(models.Model):
+    """
+    Purpose: Content Delivery Rule for Senior Device
+
+    It includes:
+        * Type: How the content is delivered, e.g. injectable (to main player), voice-mail, urgent-mail
+        * Recipients: Which users to get the message
+        * Start/End Datetime: The time interval the content is valid
+        * Delivery Frequency: How often the related content is going to be delivered
+    """
     class Meta:
         db_table = 'content_delivery_rule'
         indexes = [
@@ -303,9 +314,14 @@ class ContentDeliveryRule(models.Model):
     TYPES = Choices(TYPE_INJECTABLE, TYPE_VOICE_MAIL, TYPE_URGENT_MAIL, )
 
     type = StatusField(choices_name='TYPES', null=False, blank=False, default=TYPE_INJECTABLE)
-    recipient_ids = ArrayField(models.IntegerField(), null=True, default=None) # None is the largest possible set (e.g. whole facility)
+
+    # `recipient_ids = None` means the largest possible set (i.e. whole facility)
+    recipient_ids = ArrayField(models.IntegerField(), null=True, default=None)
+
     start = models.DateTimeField(default=timezone.now, null=False, blank=False, )
+
     end = models.DateTimeField(null=False, blank=False, )
+
     frequency = models.IntegerField(help_text="Frequency in seconds. If the field is set to 0 "
                                               "it means that it is for one time use",
                                     default=0,
@@ -324,6 +340,12 @@ class ContentDeliveryRule(models.Model):
 
 class SeniorLivingFacilityContent(CreatedTimeStampedModel):
     """
+    Purpose: Keeping the Auto-generated TTS content from the Senior Living Facility to the senior devices.
+    Example contents:
+        * Calendar Summary
+        * Calendar Event
+        * Morning Check-in Call to Action
+
     All text (tts) contents that are sent from SeniorLivingFacility to seniors are saved here.
     """
     class Meta:
@@ -346,22 +368,39 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel):
                                                blank=False,
                                                default=None,
                                                on_delete=models.DO_NOTHING, )
+
     content_type = StatusField(choices_name='CONTENT_TYPES',
                                null=False,
                                blank=False, )
+
     text_content = models.TextField(null=False,
                                     blank=True,
                                     default='', )
-    text_content_hash = models.TextField(null=False,    # todo the name better be changed to `hash`
-                                         blank=True,
-                                         default='',
-                                         db_index=True, )
-    audio_url = models.URLField(null=False,
-                                blank=True,
-                                default='', )
+
+    # `audio_file` is filled with pre-save signal
+    audio_file = models.ForeignKey(to=AudioFile,
+                                   null=True,   # todo: set this to False later
+                                   blank=False,
+                                   default=None,
+                                   on_delete=models.DO_NOTHING, )
+
     delivery_rule = models.ForeignKey(to=ContentDeliveryRule,
                                       null=False,
                                       on_delete=models.DO_NOTHING, )
+
+    @property
+    def audio_url(self):
+        assert self.audio_file, (
+            "audio_file is not set"
+        )
+        return self.audio_file.url
+
+    @property
+    def hash(self):
+        assert self.audio_file, (
+            "audio_file is not set"
+        )
+        return self.audio_file.hash
 
     @staticmethod
     def find(delivery_type, start, end, frequency=ContentDeliveryRule.FREQUENCY_ONE_TIME,
@@ -370,16 +409,28 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel):
         inst, _ = SeniorLivingFacilityContent.objects.get_or_create(delivery_rule=delivery_rule, **kwargs)
         return inst
 
+    def _generate_hash(self):
+        txt = "{}-{}-{}".format(str(self.delivery_rule), self.text_content, self.content_type)
+        return compute_hash(txt)
 
-def compute_hash_for_text_content(sender, instance, raw, using, update_fields, **kwargs):
-    txt = "{}-{}-{}".format(str(instance.delivery_rule), instance.text_content, instance.content_type)
-    instance.text_content_hash = hashlib.sha256(txt.encode('utf-8')).hexdigest() \
-        if instance.text_content else ''
-    instance.audio_url = tts_to_s3(return_format='url', text=instance.text_content) if instance.text_content else ''
+    def _set_audio_file(self):
+        url = tts_to_s3(return_format='url', text=self.text_content)
+        audio_file = AudioFile.objects.create(audio_type=AudioFile.TYPE_FACILITY_AUTO_GENERATED_CONTENT,
+                                              url=url,
+                                              payload={'text': self.text_content,
+                                                       'facility_id': self.senior_living_facility.id},
+                                              hash=self._generate_hash())
+        self.audio_file = audio_file
+
+    @staticmethod
+    def pre_save_operations(**kwargs):
+        instance = kwargs.get('instance')   # type: 'SeniorLivingFacilityContent'
+        instance._set_audio_file()
 
 
-signals.pre_save.connect(receiver=compute_hash_for_text_content,
-                         sender=SeniorLivingFacilityContent, dispatch_uid='compute_hash_for_text_content')
+signals.pre_save.connect(receiver=SeniorLivingFacilityContent.pre_save_operations,
+                         sender=SeniorLivingFacilityContent,
+                         dispatch_uid='senior_living_facility_content.pre_save')
 
 
 class SeniorLivingFacilityMessageLog(CreatedTimeStampedModel):
@@ -389,6 +440,8 @@ class SeniorLivingFacilityMessageLog(CreatedTimeStampedModel):
     Content Type: Definition of the content, e.g. 'Call for Morning Check In'
     Medium Type: Text-to-Speech, Voice
     Delivery Type: Urgent Mail, Voice Mail
+
+    Example usage: Checking if the morning check in is sent in the last X hours.
     """
     class Meta:
         db_table = 'senior_living_facility_message_log'
@@ -448,6 +501,9 @@ SeniorLivingFacilityMessageLog._meta.get_field('created').db_index = True
 
 
 class ServiceRequest(CreatedTimeStampedModel):
+    """
+    Purpose: Keeping The Logs of Service Button Press on Senior Device
+    """
     class Meta:
         db_table = 'service_request'
 
@@ -462,7 +518,7 @@ class ServiceRequest(CreatedTimeStampedModel):
     def process(self):
         facility = self.receiver
         phone_numbers = facility.phone_numbers
-        time_format = "%I:%M %p"  # e.g. '06:30 PM'
+        time_format = DATETIME_FORMATS['spoken']['time']
         tz = pytz.timezone(facility.timezone)
         request_time = self.created.astimezone(tz).strftime(time_format)
         context = {
@@ -577,9 +633,23 @@ class MessageThreadParticipant(CreatedTimeStampedModel):
                                                on_delete=models.DO_NOTHING,
                                                )
     is_all_recipients = models.BooleanField(help_text='If true user field needs to be empty',
-                                             default=False
-                                             )
+                                            default=False, )
 
+#                 ______      _                 _        ___  _ _
+#                 | ___ \    | |               (_)      / _ \| | |
+#  ______ ______  | |_/ / ___| | _____      __  _ ___  / /_\ | | |  ______ ______
+# |______|______| | ___ \/ _ | |/ _ \ \ /\ / / | / __| |  _  | | | |______|______|
+#                 | |_/ |  __| | (_) \ V  V /  | \__ \ | | | | | |
+#                 \____/ \___|_|\___/ \_/\_/   |_|___/ \_| |_|_|_|
+#
+#                 ___  ___           _     ______      _
+#                 |  \/  |          | |    |  _  \    | |
+#  ______ ______  | .  . | ___   ___| | __ | | | |__ _| |_ __ _ ______ ______
+# |______|______| | |\/| |/ _ \ / __| |/ / | | | / _` | __/ _` |______|______|
+#                 | |  | | (_) | (__|   <  | |/ | (_| | || (_| |
+#                 \_|  |_/\___/ \___|_|\_\ |___/ \__,_|\__\__,_|
+#
+#
 
 class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
