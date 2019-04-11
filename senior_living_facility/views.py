@@ -1,8 +1,12 @@
+import json
+
+from django.core import serializers
+from django.forms import model_to_dict
 from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from alexa.admin import UserCreationForm
-from django.views.decorators.csrf import csrf_exempt
-from caressa.settings import WEB_CLIENT, API_URL
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from caressa.settings import WEB_CLIENT, API_URL, WEB_BASE_URL
 from alexa.models import FamilyOutreach
 from django.core.exceptions import ValidationError
 from django.urls import reverse
@@ -41,6 +45,7 @@ def app_downloads(request):
     return TemplateResponse(request, 'app-downloads.html', context=context)
 
 
+@ensure_csrf_cookie
 def family_prospect_invitation(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
@@ -59,7 +64,6 @@ def family_prospect_invitation(request):
             redirect_url = "{url}?success=1".format(url=reverse('app-downloads'))
             return redirect(redirect_url)
 
-    form = UserCreationForm()
     try:
         family_outreach = FamilyOutreach.objects.get(tracking_code=request.GET.get('invitation_code'),
                                                      converted_user=None)
@@ -68,8 +72,10 @@ def family_prospect_invitation(request):
     else:
         prospect = family_outreach.prospect
         context = {
-            'prospect': prospect,
-            'form': form,
-            'invitation_code': family_outreach.tracking_code
+            'name': prospect.name,
+            'email': prospect.email,
+            'senior': prospect.senior.first_name,
+            'invitation_code': family_outreach.tracking_code,
+            'base_url': WEB_BASE_URL
         }
         return TemplateResponse(request, 'invitation.html', context=context)

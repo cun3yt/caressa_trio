@@ -1,13 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Our awesome apps</title>
-</head>
-<body>
-    {% if message %}
-        <p>{{ message }}</p>
-    {% endif %}
-    Here are our download links: link1 link2
-</body>
-</html>
+{% extends "base-js.html" %}
+
+{% block content %}
+<div id="app"
+     data-component="appDownloads"
+></div>
+
+{% endblock %}

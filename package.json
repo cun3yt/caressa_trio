@@ -5,7 +5,7 @@
   "main": "static/javascript/index.js",
   "private": true,
   "dependencies": {
-    "element-ui": "^2.5.4",
+    "element-ui": "^2.7.2",
     "lamejs": "^1.2.0",
     "lodash": "^4.17.11",
     "moment-timezone": "^0.5.23",
