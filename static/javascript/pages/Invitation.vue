@@ -50,7 +50,7 @@
         },
         data () {
             let validatePass1 = (rule, value, callback) => {
-                if (value === '') {
+                if (value.trim() === '') {
                     callback(new Error('Please input the password'));
                 } else {
                     if (this.signUpForm.pass2 !== '') {
@@ -60,7 +60,7 @@
                 }
             };
             let validatePass2 = (rule, value, callback) => {
-                if (value === '') {
+                if (value.trim() === '') {
                     callback(new Error('Please input the password again'));
                 } else if (value !== this.signUpForm.pass1) {
                     callback(new Error('Two inputs don\'t match!'));
