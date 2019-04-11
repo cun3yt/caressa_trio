@@ -16,6 +16,7 @@ class TagAdmin(admin.ModelAdmin):
                     'is_setting_available', )
 
     search_fields = ['name', ]
+    ordering = ['name', ]
 
 
 @admin.register(Song)
