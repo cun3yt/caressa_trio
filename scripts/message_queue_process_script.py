@@ -25,7 +25,7 @@ def _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key):
     s3 = boto3.resource('s3')
     file_key = ios_file_key + '.mp3'
     s3.Bucket(S3_RAW_UPLOAD_BUCKET).download_file(ios_file_key, '/tmp/{}'.format(ios_file_key))
-    webm_audio = AudioSegment.from_file('/tmp/{}'.format(ios_file_key), format='wav')
+    webm_audio = AudioSegment.from_file('/tmp/{}'.format(ios_file_key))
     webm_audio.export('/tmp/{}'.format(file_key), format='mp3')
     s3_client = boto3.client('s3')
     s3_client.upload_file('/tmp/{}'.format(file_key),
@@ -47,7 +47,7 @@ def audio_worker(publisher, next_queued_job: Messages):
 
     ios_file_key = next_queued_job.message['key']
 
-    if not next_queued_job.message['key'].endswith('.mp3'):
+    if not ios_file_key.endswith('.mp3'):
         file_key = _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key)
     else:
         file_key = ios_file_key
