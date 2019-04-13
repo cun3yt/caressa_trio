@@ -635,6 +635,49 @@ class MessageThreadParticipant(CreatedTimeStampedModel):
     is_all_recipients = models.BooleanField(help_text='If true user field needs to be empty',
                                             default=False, )
 
+
+class FacilityCheckInOperationForSenior(TimeStampedModel):
+    """
+    Facility's Operation (i.e. Action) on Senior's Daily Check In Status
+
+    Senior's self check in (implied data from another source)
+    takes precedence over this data source.
+
+    This data can be "notified" and "staff checked".
+    "Staff checked" takes precedence over "notified" when both exist.
+    If neither exists it is pending.
+    """
+
+    class Meta:
+        db_table = 'facility_check_in_operation_for_senior'
+        indexes = [
+            models.Index(fields=['senior', 'date', ]),
+        ]
+
+    senior = models.ForeignKey(to='alexa.User',
+                               null=False,
+                               on_delete=models.DO_NOTHING,
+                               related_name='facility_check_in_operations', )
+
+    date = models.DateField(null=False,
+                            help_text="Check in information date for senior.", )
+
+    notified = models.DateField(null=True,
+                                default=None, )
+
+    checked = models.DateTimeField(null=True,
+                                   default=None, )
+
+    staff = models.ForeignKey(to='alexa.User',
+                              null=True,
+                              on_delete=models.DO_NOTHING,
+                              help_text="The facility staff that made the check in", )
+
+    # todo write or remove below before creating a Pull Request
+    # @classmethod
+    # def get_today_check_in_for_senior(cls, user: User):
+    #     return cls.objects.get
+
 #                 ______      _                 _        ___  _ _
 #                 | ___ \    | |               (_)      / _ \| | |
 #  ______ ______  | |_/ / ___| | _____      __  _ ___  / /_\ | | |  ______ ______
@@ -650,6 +693,7 @@ class MessageThreadParticipant(CreatedTimeStampedModel):
 #                 \_|  |_/\___/ \___|_|\_\ |___/ \__,_|\__\__,_|
 #
 #
+
 
 class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:

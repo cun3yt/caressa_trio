@@ -6,7 +6,8 @@ from senior_living_facility.views import facility_home, facility_settings, famil
     app_downloads
 from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet, \
     FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet, \
-    MessageThreadMessagesViewSet, ServiceRequestViewSet, uploaded_new_profile_picture, FacilityMessageViewSet
+    MessageThreadMessagesViewSet, ServiceRequestViewSet, uploaded_new_profile_picture, FacilityMessageViewSet, \
+    FacilityResidentTodayCheckInViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -42,6 +43,8 @@ api_urls = [
          FacilityMessageViewSet.as_view({'post': 'create', })),
     path('api/facility/<int:pk>/messages/',
          FacilityMessagesViewSet.as_view({'get': 'list', })),
+    path('api/residents/<int:pk>/checked/today/',
+         FacilityResidentTodayCheckInViewSet.as_view({'post': 'create', 'delete': 'destroy', })),
     path('api/message-threads/<int:pk>/', message_thread, name='mock_message_thread',),
     path('api/message-threads/<int:pk>/messages/',
          MessageThreadMessagesViewSet.as_view({'get': 'list', })),

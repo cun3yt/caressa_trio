@@ -1,6 +1,7 @@
 from rest_framework.permissions import BasePermission
 from alexa.models import User, Circle, UserSettings
 from actions.models import Comment
+from senior_living_facility.api.permissions import IsFacilityOrgMember, IsInSameFacility
 
 
 class IsSameUser(BasePermission):
@@ -51,18 +52,8 @@ class CommentAccessible(BasePermission):
         return circle.is_member(request.user)
 
 
-class IsFacilityOrgMemberAndCanSeeSenior(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_provider()
-
-    def has_object_permission(self, request, view, obj):
-        assert isinstance(obj, User), (
-                "The object that is tried to be reached supposed to be User, found: '%s'" % type(obj)
-        )
-        senior = obj
-        if not senior.senior_living_facility:
-            return False
-        return senior.senior_living_facility == request.user.senior_living_facility
+class IsFacilityOrgMemberAndCanSeeSenior(IsFacilityOrgMember, IsInSameFacility):
+    pass
 
 
 class IsSenior(BasePermission):
