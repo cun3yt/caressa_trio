@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytz
 
 from django.contrib.auth import get_user_model
@@ -656,6 +658,25 @@ class FacilityCheckInOperationForSenior(TimeStampedModel):
             models.Index(fields=['senior', 'date', ]),
         ]
 
+    set_of_statuses = {
+        'staff-checked': {
+            'status': 'staff-checked',
+            'label': 'Staff Checked',
+        },
+        'self-checked': {
+            'status': 'self-checked',
+            'label': 'Self Checked',
+        },
+        'pending': {
+            'status': 'pending',
+            'label': 'Pending',
+        },
+        'notified': {
+            'status': 'notified',
+            'label': 'Notified',
+        },
+    }
+
     senior = models.ForeignKey(to='alexa.User',
                                null=False,
                                on_delete=models.DO_NOTHING,
@@ -676,18 +697,28 @@ class FacilityCheckInOperationForSenior(TimeStampedModel):
                               help_text="The facility staff that made the check in", )
 
     @classmethod
-    def get_seniors_in_state(cls, facility: SeniorLivingFacility, state):
+    def get_seniors_grouped_by_state(cls, facility: SeniorLivingFacility) -> dict:
+        seniors_grouped = deepcopy(cls.set_of_statuses)
+        for status, val in cls.set_of_statuses.items():
+            seniors_grouped[status]['residents'] = cls._get_seniors_in_state(facility, val['status'])
+        return seniors_grouped
+
+    @classmethod
+    def _get_seniors_in_state(cls, facility: SeniorLivingFacility, state=None):
         """
         Returns list of users that are in the given state today
 
         todo Should this function be in SeniorLivingFacility model?
 
         :param facility:
-        :param state: possible values: "pending", "notified", "staff-checked", "self-checked"
+        :param state: possible values: "pending", "notified", "staff-checked", "self-checked", None
         :return: QuerySet['User']
         """
 
         User = get_user_model()
+
+        if state is None:
+            return facility.residents
 
         self_checked_in_user_ids = facility.get_resident_ids_checked_in()
 
