@@ -1,4 +1,6 @@
 from datetime import timedelta
+
+from django.urls import reverse
 from django.utils import timezone
 
 from django.contrib.auth import get_user_model
@@ -48,8 +50,8 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
         return facility.get_profile_pic()
 
     @staticmethod
-    def get_number_of_residents(facility: SeniorLivingFacility):  # todo hardcode
-        return 142
+    def get_number_of_residents(facility: SeniorLivingFacility):
+        return facility.residents.count()
 
     @staticmethod
     def get_number_of_unread_notifications(facility: SeniorLivingFacility):  # todo hardcode
@@ -131,8 +133,10 @@ class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminAp
     profile_picture = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_message_thread_url(senior: User):  # todo hardcode
-        return 'https://caressa.herokuapp.com/senior-id-{id}-message-thread-url'.format(id=senior.id)
+    def get_message_thread_url(senior: User):
+        return {
+            'url': reverse('message-thread', kwargs={'pk': senior.id})
+        }
 
     @staticmethod
     def get_profile_picture(senior: User):
@@ -140,13 +144,18 @@ class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminAp
 
     @staticmethod
     def get_device_status(senior: User):
-        mock_device_status = MockUserData.objects.all().filter(senior=senior)[0].device_status
+        qs = MockUserData.objects.all().filter(senior=senior)
+        if qs.count() == 0:
+            return None
+
+        mock_device_status = qs[0].device_status
         if mock_device_status == {}:
             return None
+
         return mock_device_status
 
 
-class MorningCheckinUserNotifiedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminApplicationMixin):
+class MorningCheckInUserNotifiedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminApplicationMixin):
     class Meta:
         model = User
         fields = ('id',
@@ -156,15 +165,15 @@ class MorningCheckinUserNotifiedSerializer(AdminAppSeniorListSerializer, MockSta
                   'device_status',
                   'message_thread_url',
                   'mock_status',
-                  'check_in_info',
+                  'check_in',
                   )
 
-    check_in_info = serializers.SerializerMethodField()
+    check_in = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_check_in_info(senior: User):
+    def get_check_in(senior: User):
         return {
-            'check_in_url': 'https://caressa.herokuapp.com/senior-id-{id}-check-in-url'.format(id=senior.id)
+            'url': reverse('morning-check-in', kwargs={'pk': senior.id})
         }
 
 
@@ -192,7 +201,7 @@ class FacilityMessagesSerializer(serializers.ModelSerializer, MockStatusMixin, F
         return mock_message_data.message_from
 
 
-class MorningCheckinUserPendingSerializer(AdminAppSeniorListSerializer):
+class MorningCheckInUserStaffCheckedSerializer(SeniorSerializer, MockStatusMixin):
     class Meta:
         model = User
         fields = ('id',
@@ -201,44 +210,35 @@ class MorningCheckinUserPendingSerializer(AdminAppSeniorListSerializer):
                   'room_no',
                   'device_status',
                   'message_thread_url',
-                  'mock_status',
-                  'check_in_info',
+                  'profile_picture',
+                  'check_in',
+                  'mock_status',        # todo remove
                   )
 
-    check_in_info = serializers.SerializerMethodField()
+    check_in = serializers.SerializerMethodField()
+    message_thread_url = serializers.SerializerMethodField()
+    profile_picture = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_check_in_info(senior: User):
+    def get_profile_picture(senior: User):
+        return senior.get_profile_pic()
+
+    @staticmethod
+    def get_message_thread_url(senior: User):
         return {
-            'check_in_url': 'https://caressa.herokuapp.com/senior-id-{id}-check-in-url'.format(id=senior.id)
+            'url': reverse('message-thread', kwargs={'pk': senior.id})
         }
 
-
-class MorningCheckinUserStaffCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminApplicationMixin):
-    class Meta:
-        model = User
-        fields = ('id',
-                  'first_name',
-                  'last_name',
-                  'room_no',
-                  'device_status',
-                  'message_thread_url',
-                  'mock_status',
-                  'check_in_info',
-                  )
-
-    check_in_info = serializers.SerializerMethodField()
-
     @staticmethod
-    def get_check_in_info(senior: User):
+    def get_check_in(senior: User):
         return {
             'checked_by': 'Staff Joe',
             'check_in_time': '2019-02-02T23:37:43.811630Z',
-            'remove_check_in_url': 'https://caressa.herokuapp.com/senior-id-{id}-remove-check-in-url'.format(id=senior.id)
+            'url': reverse('morning-check-in', kwargs={'pk': senior.id})
         }
 
 
-class MorningCheckinUserSelfCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminApplicationMixin):
+class MorningCheckInUserSelfCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminApplicationMixin):
     class Meta:
         model = User
         fields = ('id',
@@ -258,24 +258,6 @@ class MorningCheckinUserSelfCheckedSerializer(AdminAppSeniorListSerializer, Mock
         return {
             'checked_by': 'self',
             'check_in_time': '2019-02-02T23:37:43.811630Z'
-        }
-
-    @staticmethod
-    def get_resident(obj):
-        return {
-            "pk": 94,
-            "first_name": "Edward",
-            "last_name": "Hofferton",
-            "room_no": "106",
-            "device_status": {
-                "is_online": True,
-                "status_checked": "2019-02-02T23:37:43.811630Z",
-                "last_activity_time": "2019-03-22T03:59:08.302690Z",
-                "is_today_checked_in": True
-            },
-            "message_thread_url": "https://caressa.herokuapp.com/senior-id-94-message-thread-url",
-            "profile_picture": "https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_250.jpg",
-            "mock_status": True
         }
 
 

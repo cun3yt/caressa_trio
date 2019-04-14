@@ -1,11 +1,14 @@
+from copy import deepcopy
+
 import pytz
 
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from django.db.models import signals
+from django.db.models import signals, Q
 from django.utils import timezone
 from model_utils.models import TimeStampedModel, StatusField
+
 from caressa.settings import DATETIME_FORMATS, TIME_ZONE as DEFAULT_TIMEZONE
 from alexa import models as alexa_models
 from jsonfield import JSONField
@@ -24,7 +27,7 @@ from utilities.speech import ssml_post_process
 
 from utilities.cryptography import compute_hash
 from utilities.sms import send_sms
-from utilities.time import time_today_in_tz as time_in_tz
+from utilities.time import time_today_in_tz as time_in_tz, today_in_tz
 
 
 class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
@@ -94,6 +97,7 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         return check_in_reminder_in_tz <= now_in_tz
 
     def get_resident_ids_checked_in(self):
+        # todo change the fn name to `get_resident_ids_self_checked_in`
         user_model = get_user_model()
         morning_check_in_time = self.check_in_time_today_in_tz.strftime('%Y-%m-%d %H:%M:%S%z')
 
@@ -635,6 +639,134 @@ class MessageThreadParticipant(CreatedTimeStampedModel):
     is_all_recipients = models.BooleanField(help_text='If true user field needs to be empty',
                                             default=False, )
 
+
+class FacilityCheckInOperationForSenior(TimeStampedModel):
+    """
+    Facility's Operation (i.e. Action) on Senior's Daily Check In Status
+
+    Senior's self check in (implied data from another source)
+    takes precedence over this data source.
+
+    This data can be "notified" and "staff checked".
+    "Staff checked" takes precedence over "notified" when both exist.
+    If neither exists it is pending.
+    """
+
+    class Meta:
+        db_table = 'facility_check_in_operation_for_senior'
+        indexes = [
+            models.Index(fields=['senior', 'date', ]),
+        ]
+
+    set_of_statuses = {
+        'staff-checked': {
+            'status': 'staff-checked',
+            'label': 'Staff Checked',
+        },
+        'self-checked': {
+            'status': 'self-checked',
+            'label': 'Self Checked',
+        },
+        'pending': {
+            'status': 'pending',
+            'label': 'Pending',
+        },
+        'notified': {
+            'status': 'notified',
+            'label': 'Notified',
+        },
+    }
+
+    senior = models.ForeignKey(to='alexa.User',
+                               null=False,
+                               on_delete=models.DO_NOTHING,
+                               related_name='facility_check_in_operations', )
+
+    date = models.DateField(null=False,
+                            help_text="Check in information date for senior.", )
+
+    notified = models.DateField(null=True,
+                                default=None, )
+
+    checked = models.DateTimeField(null=True,
+                                   default=None, )
+
+    staff = models.ForeignKey(to='alexa.User',
+                              null=True,
+                              on_delete=models.DO_NOTHING,
+                              help_text="The facility staff that made the check in", )
+
+    @classmethod
+    def get_seniors_grouped_by_state(cls, facility: SeniorLivingFacility) -> dict:
+        seniors_grouped = deepcopy(cls.set_of_statuses)
+        for status, val in cls.set_of_statuses.items():
+            seniors_grouped[status]['residents'] = cls._get_seniors_in_state(facility, val['status'])
+        return seniors_grouped
+
+    @classmethod
+    def _get_seniors_in_state(cls, facility: SeniorLivingFacility, state=None):
+        """
+        Returns list of users that are in the given state today
+
+        todo Should this function be in SeniorLivingFacility model?
+
+        :param facility:
+        :param state: possible values: "pending", "notified", "staff-checked", "self-checked", None
+        :return: QuerySet['User']
+        """
+
+        User = get_user_model()
+
+        if state is None:
+            return facility.residents
+
+        self_checked_in_user_ids = facility.get_resident_ids_checked_in()
+
+        if state == 'self-checked':
+            return User.objects.filter(pk__in=self_checked_in_user_ids)
+
+        filter_dict = {
+            'user_type': User.CARETAKER,
+            'senior_living_facility': facility,
+            'facility_check_in_operations__date': today_in_tz(facility.timezone),
+        }
+        exclude_dict = {
+            'pk__in': self_checked_in_user_ids,
+        }
+
+        if state == 'staff-checked':
+            filter_dict = {**filter_dict,
+                           'facility_check_in_operations__checked__isnull': False,
+                           }
+            return User.objects.all().filter(**filter_dict).exclude(**exclude_dict)
+        elif state == 'notified':
+            filter_dict = {**filter_dict,
+                           'facility_check_in_operations__checked__isnull': True,
+                           'facility_check_in_operations__notified__isnull': False,
+                           }
+            return User.objects.all().filter(**filter_dict).exclude(**exclude_dict)
+        elif state == 'pending':
+            # Fetching the entries
+            #   * either both `checked` and `notified` are None
+            # OR
+            #   * there is no entry at all
+
+            # todo Simplify if you can
+
+            qs = User.objects.all().filter((Q(user_type=User.CARETAKER)
+                                            & Q(senior_living_facility=facility)
+                                            & Q(facility_check_in_operations__date=today_in_tz(facility.timezone))
+                                            & ~Q(pk__in=self_checked_in_user_ids)
+                                            & Q(facility_check_in_operations__checked__isnull=True)
+                                            & Q(facility_check_in_operations__notified__isnull=True))
+                                           | (Q(user_type=User.CARETAKER)
+                                              & Q(senior_living_facility=facility)
+                                              & ~Q(pk__in=self_checked_in_user_ids)
+                                              & Q(facility_check_in_operations__id__isnull=True)))
+            return qs
+        else:
+            raise Exception('Cannot compute!')
+
 #                 ______      _                 _        ___  _ _
 #                 | ___ \    | |               (_)      / _ \| | |
 #  ______ ______  | |_/ / ___| | _____      __  _ ___  / /_\ | | |  ______ ______
@@ -650,6 +782,7 @@ class MessageThreadParticipant(CreatedTimeStampedModel):
 #                 \_|  |_/\___/ \___|_|\_\ |___/ \__,_|\__\__,_|
 #
 #
+
 
 class SeniorLivingFacilityMockUserData(TimeStampedModel, ForAdminApplicationMixin):
     class Meta:
