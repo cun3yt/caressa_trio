@@ -617,10 +617,15 @@ class MessageThread(CreatedTimeStampedModel):
 
         return message_thread, created
 
+    @property
+    def last_message(self):
+        return Message.objects.filter(message_thread=self)[0]
+
 
 class MessageThreadParticipant(CreatedTimeStampedModel):
     class Meta:
         db_table = 'message_thread_participant'
+        ordering = ['-created']
         unique_together = ('user', 'senior_living_facility')
 
     message_thread = models.ForeignKey(to=MessageThread,

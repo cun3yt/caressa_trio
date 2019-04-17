@@ -8,9 +8,10 @@ from rest_framework import serializers
 from caressa.settings import REST_FRAMEWORK
 
 from alexa.models import User
-from alexa.api.serializers import SeniorSerializer
+from alexa.api.serializers import SeniorSerializer, UserSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule, ServiceRequest, Message, MessageThread
+    SeniorLivingFacilityContent, ContentDeliveryRule, ServiceRequest, Message, MessageThread, MessageThreadParticipant, \
+    MessageResponse
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
@@ -175,6 +176,99 @@ class MorningCheckInUserNotifiedSerializer(AdminAppSeniorListSerializer, MockSta
         return {
             'url': reverse('morning-check-in', kwargs={'pk': senior.id})
         }
+
+
+class ResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MessageResponse
+        fields = ('id', 'created', 'content')
+
+    content = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_content(message_response: MessageResponse):
+        response_types = {
+            True : 'Yes',
+            False: 'No',
+            None: 'No Reply Yet'
+        }
+        return response_types.get(message_response.response)
+
+
+class FacilityStaffSerializer(UserSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'first_name', 'last_name', 'user_type', 'senior_living_facility')
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ('id', 'time', 'message_type', 'message_from', 'content', 'reply')
+
+    time = serializers.SerializerMethodField()
+    content = serializers.SerializerMethodField()
+    message_type = serializers.SerializerMethodField()
+    message_from = serializers.SerializerMethodField()
+    reply = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_time(message: Message):
+        return message.created
+
+    @staticmethod
+    def get_content(message: Message):
+        if message.content is None:
+            content_type = 'Audio'
+            content_details = message.content_audio_file
+        else:
+            content_type = 'Text'
+            content_details = message.content
+
+        return {
+            "type": content_type,
+            "details": content_details
+        }
+
+    @staticmethod
+    def get_message_type(message: Message):
+        message_types = {
+            ContentDeliveryRule.TYPE_VOICE_MAIL: 'Message',
+            ContentDeliveryRule.TYPE_URGENT_MAIL: 'Broadcast',
+            ContentDeliveryRule.TYPE_INJECTABLE: 'Announcement'
+        }
+        return message_types.get(message.delivery_rule.type)
+
+    @staticmethod
+    def get_message_from(message: Message):
+        return FacilityStaffSerializer(message.source_user).data
+
+    @staticmethod
+    def get_reply(message: Message):
+        if not message.is_response_expected:
+            return None
+        message_response = MessageResponse.objects.get(message=message)
+        return ResponseSerializer(message_response).data
+
+
+class MessageThreadParticipantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MessageThread
+        fields = ('id', 'resident', 'last_message', )
+
+    resident = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_resident(message_thread_participant: MessageThreadParticipant):
+        if not message_thread_participant.user:
+            return 'All Residents'
+        return AdminAppSeniorListSerializer(message_thread_participant.user).data
+
+    @staticmethod
+    def get_last_message(message_thread_participant: MessageThreadParticipant):
+        last_message = message_thread_participant.message_thread.last_message
+        return MessageSerializer(last_message).data
 
 
 class FacilityMessagesSerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminApplicationMixin):

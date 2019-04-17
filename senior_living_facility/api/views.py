@@ -16,10 +16,10 @@ from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserIn
 from senior_living_facility.api.serializers import FacilitySerializer, AdminAppSeniorListSerializer, \
     MorningCheckInUserNotifiedSerializer, \
     MorningCheckInUserStaffCheckedSerializer, MorningCheckInUserSelfCheckedSerializer, FacilityMessagesSerializer, \
-    MessageThreadMessagesSerializer, FacilityMessageSerializer
+    MessageThreadMessagesSerializer, FacilityMessageSerializer, MessageThreadParticipantSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
     SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData, ServiceRequest, Message, \
-    FacilityCheckInOperationForSenior
+    FacilityCheckInOperationForSenior, MessageThread, MessageThreadParticipant
 from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
     SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer, ServiceRequestSerializer
 from django.utils import timezone
@@ -97,11 +97,15 @@ class FacilityMessageViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = FacilityMessageSerializer
 
 
-class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
+class MessagesThreadParticipantViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )  # todo add check for message readability for user
-    queryset = SeniorLivingFacilityMockMessageData.objects.all()
-    serializer_class = FacilityMessagesSerializer
+    serializer_class = MessageThreadParticipantSerializer
+
+    @property
+    def facility(self):
+        facility_id = self.kwargs.get('pk')
+        return SeniorLivingFacility.objects.get(id=facility_id)
 
     class _Pagination(PageNumberPagination):
         max_page_size = 20
@@ -109,6 +113,9 @@ class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, Fo
         page_size = 5
 
     pagination_class = _Pagination
+
+    def get_queryset(self):
+        return MessageThreadParticipant.objects.filter(senior_living_facility=self.facility)
 
 
 class FacilityResidentTodayCheckInViewSet(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
