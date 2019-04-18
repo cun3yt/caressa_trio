@@ -135,8 +135,9 @@ class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminAp
 
     @staticmethod
     def get_message_thread_url(senior: User):
+        message_thread = MessageThreadParticipant.objects.get(user=senior).message_thread
         return {
-            'url': reverse('message-thread', kwargs={'pk': senior.id})
+            'url': reverse('message-thread', kwargs={'pk': message_thread.id})
         }
 
     @staticmethod
@@ -253,7 +254,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class MessageThreadParticipantSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MessageThread
+        model = MessageThreadParticipant
         fields = ('id', 'resident', 'last_message', )
 
     resident = serializers.SerializerMethodField()
@@ -319,8 +320,9 @@ class MorningCheckInUserStaffCheckedSerializer(SeniorSerializer, MockStatusMixin
 
     @staticmethod
     def get_message_thread_url(senior: User):
+        message_thread = MessageThreadParticipant.objects.get(user=senior).message_thread
         return {
-            'url': reverse('message-thread', kwargs={'pk': senior.id})
+            'url': reverse('message-thread', kwargs={'pk': message_thread.id})
         }
 
     @staticmethod
@@ -355,21 +357,24 @@ class MorningCheckInUserSelfCheckedSerializer(AdminAppSeniorListSerializer, Mock
         }
 
 
-class MessageThreadMessagesSerializer(serializers.ModelSerializer, MockStatusMixin):
+class MessageThreadSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MockMessageData
-        fields = ('id', 'message', 'mock_status', 'message_from')
+        model = MessageThread
+        fields = ('pk', 'resident', 'messages')
 
-    message = serializers.SerializerMethodField()
-    message_from = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_message(mock_message_data: MockMessageData):
-        return mock_message_data.message
+    messages = serializers.SerializerMethodField()
+    resident = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_message_from(mock_message_data: MockMessageData):
-        return mock_message_data.message_from
+    def get_resident(message_thread: MessageThread):
+        resident = message_thread.resident_participant
+        return AdminAppSeniorListSerializer(resident).data if isinstance(resident, User) else resident
+
+    @staticmethod
+    def get_messages(message_thread: MessageThread):
+        return {
+            'url': reverse('message-thread-messages', kwargs={'pk': message_thread.id})
+        }
 
 
 class SeniorDeviceUserActivityLogSerializer(serializers.ModelSerializer):
