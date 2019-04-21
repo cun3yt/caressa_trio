@@ -7,7 +7,7 @@ from senior_living_facility.views import facility_home, facility_settings, famil
 from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet, \
     FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet, \
     MessageThreadMessagesViewSet, ServiceRequestViewSet, uploaded_new_profile_picture, FacilityMessageViewSet, \
-    FacilityResidentTodayCheckInViewSet
+    FacilityResidentTodayCheckInViewSet, PhotoGalleryViewSet, PhotosDayViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -55,4 +55,8 @@ api_urls = [
          uploaded_new_profile_picture, name='uploaded_new_profile_picture',),
     path('api/users/me/service-requests/',
          ServiceRequestViewSet.as_view({'post': 'create'})),
+    path('api/photo-galleries/<int:pk>/',
+         PhotoGalleryViewSet.as_view({'get': 'list', }), name='photo-gallery'),
+    path('api/photo-galleries/<int:pk>/days/<slug:date>/',
+         PhotosDayViewSet.as_view({'get': 'list', }), name='photo-day-view'),
 ]

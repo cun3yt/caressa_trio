@@ -5,12 +5,12 @@ from django.utils import timezone
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from caressa.settings import REST_FRAMEWORK
+from caressa.settings import REST_FRAMEWORK, API_URL
 
 from alexa.models import User
 from alexa.api.serializers import SeniorSerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule, ServiceRequest, Message, MessageThread
+    SeniorLivingFacilityContent, ContentDeliveryRule, ServiceRequest, Message, MessageThread, FacilityPhoto
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
@@ -326,3 +326,37 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         instance = super(ServiceRequestSerializer, self).create(validated_data)     # type: ServiceRequest
         instance.process()
         return instance
+
+
+class PhotoGallerySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FacilityPhoto
+        fields = ('day', )
+
+    day = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_day(photo: FacilityPhoto):
+        photo_date = '{year}-{month}-{day}'.format(year=photo.date.year, month=photo.date.month, day=photo.date.day)
+        photo_url = '{base_url}{absolute_url}'.format(base_url=API_URL,
+                                                      absolute_url=reverse('photo-day-view',
+                                                                           kwargs={
+                                                                               'pk': photo.photo_gallery_id,
+                                                                               'date': photo_date
+                                                                           }))
+        return {
+            'date': photo_date,
+            'url': photo_url
+        }
+
+
+class PhotosDaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FacilityPhoto
+        fields = ('photo', )
+
+    photo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_photo(photo: FacilityPhoto):
+        return photo.url

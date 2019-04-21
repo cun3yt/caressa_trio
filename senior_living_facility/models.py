@@ -21,7 +21,7 @@ from utilities.views.mixins import ForAdminApplicationMixin
 from utilities.models.mixins import ProfilePictureMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
-from datetime import datetime, time
+from datetime import datetime, time, date
 from icalevents.icalevents import events as query_events
 from utilities.speech import ssml_post_process
 
@@ -766,6 +766,41 @@ class FacilityCheckInOperationForSenior(TimeStampedModel):
             return qs
         else:
             raise Exception('Cannot compute!')
+
+
+class FacilityPhotoGallery(CreatedTimeStampedModel):
+    class Meta:
+        db_table = 'facility_photo_gallery'
+
+    senior_living_facility = models.OneToOneField(to=SeniorLivingFacility,
+                                                  primary_key=True,
+                                                  null=False,
+                                                  blank=False,
+                                                  on_delete=models.DO_NOTHING, )
+
+
+class FacilityPhoto(TimeStampedModel):
+    class Meta:
+        db_table = 'facility_photo'
+        ordering = ['-date']
+
+    photo_gallery = models.ForeignKey(to=FacilityPhotoGallery,
+                                      null=False,
+                                      blank=False,
+                                      on_delete=models.DO_NOTHING,
+                                      help_text="The gallery which the photo belongs to.")
+
+    date = models.DateField(null=False,
+                            blank=False,
+                            default=date.today,
+                            help_text="This date represents when the photo taken. If date can't be extracted from "
+                                      "photo's metadata it will be set to today by default.")
+
+    url = models.URLField(blank=False,
+                          null=False,
+                          verbose_name='Photo URL',
+                          help_text='Photo URL, it must be publicly accessible')
+
 
 #                 ______      _                 _        ___  _ _
 #                 | ___ \    | |               (_)      / _ \| | |

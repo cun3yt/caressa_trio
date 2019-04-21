@@ -1,6 +1,6 @@
 import pytz
 
-from django.db.models import Q
+from django.db.models import Q, Count
 from rest_framework import viewsets, mixins, status
 from rest_framework.response import Response
 from rest_framework.decorators import authentication_classes, permission_classes, api_view
@@ -16,10 +16,10 @@ from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserIn
 from senior_living_facility.api.serializers import FacilitySerializer, AdminAppSeniorListSerializer, \
     MorningCheckInUserNotifiedSerializer, \
     MorningCheckInUserStaffCheckedSerializer, MorningCheckInUserSelfCheckedSerializer, FacilityMessagesSerializer, \
-    MessageThreadMessagesSerializer, FacilityMessageSerializer
+    MessageThreadMessagesSerializer, FacilityMessageSerializer, PhotoGallerySerializer, PhotosDaySerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
     SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData, ServiceRequest, Message, \
-    FacilityCheckInOperationForSenior
+    FacilityCheckInOperationForSenior, FacilityPhoto
 from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
     SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer, ServiceRequestSerializer
 from django.utils import timezone
@@ -53,7 +53,7 @@ class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdm
 
 
 class FacilityListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    pagination_class = (OAuth2Authentication, )
+    authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
     serializer_classes = {
         'staff-checked': MorningCheckInUserStaffCheckedSerializer,
@@ -197,6 +197,45 @@ class SeniorLivingFacilityContentViewSet(mixins.ListModelMixin, viewsets.Generic
                                                           delivery_rule__end__gte=now,
                                                           delivery_rule__type=ContentDeliveryRule.TYPE_INJECTABLE)\
             .filter(Q(delivery_rule__recipient_ids__isnull=True) | Q(delivery_rule__recipient_ids__contains=[user.id]))
+
+
+class PhotoGalleryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
+    serializer_class = PhotoGallerySerializer
+
+    class _Pagination(PageNumberPagination):
+        max_page_size = 20
+        page_size_query_param = 'page_size'
+        page_size = 5
+
+    pagination_class = _Pagination
+
+    def get_queryset(self):
+        dist = FacilityPhoto.objects.values('date').annotate(date_count=Count('date')).filter(date_count=1)
+        single_dates = FacilityPhoto.objects.filter(date__in=[item['date'] for item in dist])
+        return single_dates
+
+
+class PhotosDayViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
+    serializer_class = PhotosDaySerializer
+
+    @property
+    def date(self):
+        return self.kwargs.get('date')
+
+    class _Pagination(PageNumberPagination):
+        max_page_size = 20
+        page_size_query_param = 'page_size'
+        page_size = 10
+
+    pagination_class = _Pagination
+
+    def get_queryset(self):
+        datetime_obj = datetime.strptime(self.date, '%Y-%m-%d')
+        return FacilityPhoto.objects.filter(date=datetime_obj)
 
 
 @authentication_classes((OAuth2Authentication, ))
