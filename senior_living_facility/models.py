@@ -7,6 +7,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import signals, Q
 from django.utils import timezone
+from django.utils.functional import cached_property
 from model_utils.models import TimeStampedModel, StatusField
 
 from caressa.settings import DATETIME_FORMATS, TIME_ZONE as DEFAULT_TIMEZONE
@@ -96,8 +97,8 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         now_in_tz = timezone.localtime(timezone=pytz.timezone(self.timezone))
         return check_in_reminder_in_tz <= now_in_tz
 
-    def get_resident_ids_checked_in(self):
-        # todo change the fn name to `get_resident_ids_self_checked_in`
+    @cached_property
+    def resident_ids_self_checked_in_today(self):
         user_model = get_user_model()
         morning_check_in_time = self.check_in_time_today_in_tz.strftime('%Y-%m-%d %H:%M:%S%z')
 
@@ -109,7 +110,7 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
 
     def get_resident_ids_with_device_but_not_checked_in(self):
         user_model = get_user_model()
-        checked_in_senior_ids = self.get_resident_ids_checked_in()
+        checked_in_senior_ids = self.resident_ids_self_checked_in_today
         result_list = list(user_model.objects.filter(senior_living_facility=self,
                                                      user_type__exact=user_model.CARETAKER,
                                                      devices__isnull=False)
@@ -176,6 +177,10 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         template_with_context = template_to_str('speech/whole-calendar-today.ssml', context)
         return ssml_post_process(template_with_context)
 
+    @cached_property
+    def residents_grouped_by_state(self) -> dict:
+        return FacilityCheckInOperationForSenior.get_seniors_grouped_by_state(facility=self)
+
     def __str__(self):
         return self.name
 
@@ -222,7 +227,10 @@ class SeniorDevice(TimeStampedModel):
         verbose_name_plural = 'Senior Devices'
 
     serial = models.CharField(primary_key=True, max_length=50, blank=True, default='', null=False, )
+
+    # Instead of `devices` use `User.device` property
     user = models.ForeignKey(to='alexa.User', on_delete=models.DO_NOTHING, null=True, related_name='devices', )
+
     is_online = models.BooleanField(default=False, )
     status_checked = models.DateTimeField(null=False, )
     raw_log = models.ForeignKey(to='senior_living_facility.SeniorDevicesRawLog', null=True, on_delete=models.DO_NOTHING)
@@ -697,18 +705,24 @@ class FacilityCheckInOperationForSenior(TimeStampedModel):
                               help_text="The facility staff that made the check in", )
 
     @classmethod
+    def get_for_senior_today(cls, senior) -> Optional['FacilityCheckInOperationForSenior']:
+        facility = senior.senior_living_facility
+        date = today_in_tz(facility.timezone)
+        operations = senior.facility_check_in_operations.filter(date=date)
+        return operations[0] if operations.count() > 0 else None
+
+    @classmethod
     def get_seniors_grouped_by_state(cls, facility: SeniorLivingFacility) -> dict:
         seniors_grouped = deepcopy(cls.set_of_statuses)
         for status, val in cls.set_of_statuses.items():
-            seniors_grouped[status]['residents'] = cls._get_seniors_in_state(facility, val['status'])
+            seniors_grouped[status]['residents'] = cls._get_seniors_in_state(facility, val['status'])\
+                .order_by('first_name', 'room_no')
         return seniors_grouped
 
     @classmethod
     def _get_seniors_in_state(cls, facility: SeniorLivingFacility, state=None):
         """
         Returns list of users that are in the given state today
-
-        todo Should this function be in SeniorLivingFacility model?
 
         :param facility:
         :param state: possible values: "pending", "notified", "staff-checked", "self-checked", None
@@ -720,7 +734,7 @@ class FacilityCheckInOperationForSenior(TimeStampedModel):
         if state is None:
             return facility.residents
 
-        self_checked_in_user_ids = facility.get_resident_ids_checked_in()
+        self_checked_in_user_ids = facility.resident_ids_self_checked_in_today
 
         if state == 'self-checked':
             return User.objects.filter(pk__in=self_checked_in_user_ids)

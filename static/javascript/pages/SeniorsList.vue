@@ -146,7 +146,7 @@
 
                         for (var col of that.gridColumns) {
                             if (col.field === 'device_status') {
-                                if ( !row[col.field] ) {
+                                if ( !row[col.field] || !row[col.field]['is_there_device'] ) {
                                     row[col.field] = [ null ]
                                     continue
                                 }
