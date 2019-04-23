@@ -123,6 +123,5 @@ class MorningCheckInSerializerMixin(DeviceStatusSerializerMixin, CheckInSerializ
     @staticmethod
     def get_base_fields():
         return ('device_status',
-                'check_in_info',
                 'message_thread_url',
-                'profile_picture_url',)
+                'profile_picture_url', )
