@@ -97,6 +97,21 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         now_in_tz = timezone.localtime(timezone=pytz.timezone(self.timezone))
         return check_in_reminder_in_tz <= now_in_tz
 
+    @property
+    def real_time_communication_channels(self):
+        channel = alexa_models.User.get_facility_channel(self.facility_id)
+
+        return {
+            'check-in': {
+                'channel': channel,
+                'event': 'check-in-status',
+            },
+            'device-status': {
+                'channel': channel,
+                'event': 'device-status',
+            }
+        }
+
     @cached_property
     def resident_ids_self_checked_in_today(self):
         user_model = get_user_model()

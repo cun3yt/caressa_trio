@@ -33,6 +33,7 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
                   'timezone',
                   'photo_gallery_url',
                   'profile_picture',
+                  'real_time_communication_channels',
                   'mock_status', )
         read_only_fields = ('name', 'timezone', )
 
