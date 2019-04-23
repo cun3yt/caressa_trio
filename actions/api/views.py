@@ -157,7 +157,7 @@ def new_post(request):
 @authentication_classes((OAuth2Authentication, ))
 @permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
-def pre_signed_url_for_s3(request):
+def pre_signed_url_for_s3(request):  # todo find and replace with pre_signed_url_for_s3_multiple all usages and remove
     key = request.data['key']
     content_type = request.data.get('content-type')
     request_type = request.data.get('request-type')
@@ -174,6 +174,42 @@ def pre_signed_url_for_s3(request):
         HttpMethod=request_type
     )
     return Response(url)
+
+
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
+@api_view(['POST'])
+def pre_signed_url_for_s3_multiple(request):
+
+    assert isinstance(request.data, list), "Invalid format of POST data."
+
+    assert not len(request.data) > 15, "Request count cannot be higher than 15."
+
+    lst = []
+    for file_attribute_dict in request.data:
+        key = file_attribute_dict['key']
+        content_type = file_attribute_dict['content-type']
+        request_type = file_attribute_dict['request-type']
+        client_method = file_attribute_dict['client-method']
+        s3 = boto3.client('s3')
+
+        url = s3.generate_presigned_url(
+            ClientMethod=client_method,
+            Params={
+                'Bucket': settings.S3_RAW_UPLOAD_BUCKET,
+                'Key': key,
+                'ContentType': content_type
+            },
+            HttpMethod=request_type
+        )
+
+        obj = {
+            'key': key,
+            'url': url
+        }
+        lst.append(obj)
+
+    return Response(lst)
 
 
 @authentication_classes((OAuth2Authentication, ))
