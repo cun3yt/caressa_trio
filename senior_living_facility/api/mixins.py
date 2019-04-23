@@ -2,7 +2,6 @@ from django.urls import reverse
 
 from alexa.models import User
 from senior_living_facility.models import SeniorDeviceUserActivityLog, FacilityCheckInOperationForSenior
-from rest_framework import serializers
 
 
 class DeviceStatusSerializerMixin:
