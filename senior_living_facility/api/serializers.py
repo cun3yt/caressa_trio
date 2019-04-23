@@ -3,9 +3,8 @@ from datetime import timedelta
 from django.urls import reverse
 from django.utils import timezone
 
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from caressa.settings import REST_FRAMEWORK
+from caressa.settings import REST_FRAMEWORK, API_URL
 
 from alexa.models import User
 from alexa.api.serializers import SeniorSerializer, UserSerializer
@@ -15,7 +14,6 @@ from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUser
 from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
-from utilities.logger import log
 from utilities.views.mixins import MockStatusMixin, ForAdminApplicationMixin
 from voice_service.google import tts
 
@@ -137,7 +135,9 @@ class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminAp
     def get_message_thread_url(senior: User):
         message_thread = MessageThreadParticipant.objects.get(user=senior).message_thread
         return {
-            'url': reverse('message-thread', kwargs={'pk': message_thread.id})
+            'url': '{base_url}{absolute_url}'.format(base_url=API_URL,
+                                                     absolute_url=reverse('message-thread',
+                                                                          kwargs={'pk': message_thread.id}))
         }
 
     @staticmethod
@@ -175,7 +175,8 @@ class MorningCheckInUserNotifiedSerializer(AdminAppSeniorListSerializer, MockSta
     @staticmethod
     def get_check_in(senior: User):
         return {
-            'url': reverse('morning-check-in', kwargs={'pk': senior.id})
+            'url': '{base_url}{absolute_url}'.format(base_url=API_URL,
+                                                     absolute_url=reverse('morning-check-in', kwargs={'pk': senior.id}))
         }
 
 
@@ -219,12 +220,8 @@ class MessageSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_content(message: Message):
-        if message.content is None:
-            content_type = 'Audio'
-            content_details = message.content_audio_file
-        else:
-            content_type = 'Text'
-            content_details = message.content
+        content_type, content_details = ('Audio', message.content_audio_file,) if message.content is None \
+            else ('Text', message.content,)
 
         return {
             "type": content_type,
@@ -322,7 +319,9 @@ class MorningCheckInUserStaffCheckedSerializer(SeniorSerializer, MockStatusMixin
     def get_message_thread_url(senior: User):
         message_thread = MessageThreadParticipant.objects.get(user=senior).message_thread
         return {
-            'url': reverse('message-thread', kwargs={'pk': message_thread.id})
+            'url': '{base_url}{absolute_url}'.format(base_url=API_URL,
+                                                     absolute_url=reverse('message-thread',
+                                                                          kwargs={'pk': message_thread.id}))
         }
 
     @staticmethod
@@ -330,7 +329,8 @@ class MorningCheckInUserStaffCheckedSerializer(SeniorSerializer, MockStatusMixin
         return {
             'checked_by': 'Staff Joe',
             'check_in_time': '2019-02-02T23:37:43.811630Z',
-            'url': reverse('morning-check-in', kwargs={'pk': senior.id})
+            'url': '{base_url}{absolute_url}'.format(base_url=API_URL,
+                                                     absolute_url=reverse('photo-day-view', kwargs={'pk': senior.id}))
         }
 
 
@@ -373,7 +373,9 @@ class MessageThreadSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_messages(message_thread: MessageThread):
         return {
-            'url': reverse('message-thread-messages', kwargs={'pk': message_thread.id})
+            'url': '{base_url}{absolute_url}'.format(base_url=API_URL,
+                                                     absolute_url=reverse('message-thread-messages',
+                                                                          kwargs={'pk': message_thread.id}))
         }
 
 
