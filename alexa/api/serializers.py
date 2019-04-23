@@ -2,7 +2,6 @@ from rest_framework import serializers
 from alexa.models import Joke, User, FamilyProspect, Circle, UserSettings, CircleInvitation, CircleReinvitation
 from actions.models import UserAction
 from senior_living_facility.api.mixins import DeviceStatusSerializerMixin
-from senior_living_facility.models import SeniorDeviceUserActivityLog
 from streaming.models import Tag
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream

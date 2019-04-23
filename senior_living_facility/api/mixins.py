@@ -14,8 +14,6 @@ class DeviceStatusSerializerMixin:
     2. `device_status = serializers.SerializerMethodField()`
     """
 
-    device_status = serializers.SerializerMethodField()
-
     @staticmethod
     def get_device_status(senior: User):
         defaults = {
@@ -63,8 +61,6 @@ class CheckInSerializerMixin:
     2. `check_in_info = serializers.SerializerMethodField(method_name=<either one of the get-functions>)`
     """
 
-    check_in_info = serializers.SerializerMethodField(method_name='get_check_in_info_for_checked_in')
-
     @staticmethod
     def get_info_for_checked_in(senior: User):
         # todo time consuming for all user? N+1 problem fix with fetch related!
@@ -99,8 +95,6 @@ class MessageThreadUrlSerializerMixin:
     2. `message_thread_url = serializers.SerializerMethodField()`
     """
 
-    message_thread_url = serializers.SerializerMethodField()
-
     @staticmethod
     def get_message_thread_url(senior: User):
         return {'url': reverse('message-thread', kwargs={'pk': senior.id})}
@@ -114,8 +108,6 @@ class ProfilePictureUrlSerializerMixin:
     1. `profile_picture_url` in its fields tuple.
     2. `profile_picture_url = serializers.SerializerMethodField()`
     """
-
-    profile_picture_url = serializers.SerializerMethodField()
 
     @staticmethod
     def get_profile_picture_url(senior: User):
