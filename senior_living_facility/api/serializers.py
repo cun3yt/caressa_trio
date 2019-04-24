@@ -6,11 +6,10 @@ from rest_framework import serializers
 from caressa.settings import REST_FRAMEWORK
 
 from alexa.models import User
+from senior_living_facility.api import mixins as facility_mixins
+from senior_living_facility import models as facility_models
 from alexa.api.serializers import SeniorSerializer, UserSerializer
-from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule, ServiceRequest, Message, MessageThread, MessageThreadParticipant, \
-    MessageResponse
-from senior_living_facility.models import SeniorLivingFacilityMockUserData as MockUserData
+from senior_living_facility.models import ContentDeliveryRule, ServiceRequest, Message, MessageThread
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from utilities.api.urls import reverse
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
@@ -20,7 +19,7 @@ from voice_service.google import tts
 
 class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
     class Meta:
-        model = SeniorLivingFacility
+        model = facility_models.SeniorLivingFacility
         fields = ('pk', 'name', 'facility_id', 'calendar_url', 'timezone',
                   'check_in_morning_start', 'check_in_deadline', 'check_in_reminder', )
         read_only_fields = ('facility_id', 'calendar_url', 'timezone', )
@@ -28,7 +27,7 @@ class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
 
 class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminApplicationMixin):
     class Meta:
-        model = SeniorLivingFacility
+        model = facility_models.SeniorLivingFacility
         fields = ('id',
                   'name',
                   'number_of_residents',
@@ -36,6 +35,7 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
                   'timezone',
                   'photo_gallery_url',
                   'profile_picture',
+                  'real_time_communication_channels',
                   'mock_status', )
         read_only_fields = ('name', 'timezone', )
 
@@ -45,19 +45,19 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
     profile_picture = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_profile_picture(facility: SeniorLivingFacility):
+    def get_profile_picture(facility: facility_models.SeniorLivingFacility):
         return facility.get_profile_pic()
 
     @staticmethod
-    def get_number_of_residents(facility: SeniorLivingFacility):
+    def get_number_of_residents(facility: facility_models.SeniorLivingFacility):
         return facility.residents.count()
 
     @staticmethod
-    def get_number_of_unread_notifications(facility: SeniorLivingFacility):  # todo hardcode
+    def get_number_of_unread_notifications(facility: facility_models.SeniorLivingFacility):  # todo hardcode
         return 3
 
     @staticmethod
-    def get_photo_gallery_url(facility: SeniorLivingFacility):  # todo hardcode
+    def get_photo_gallery_url(facility: facility_models.SeniorLivingFacility):  # todo hardcode
         return 'https://www.caressa.herokuapp.com/gallery_url'
 
 
@@ -72,11 +72,11 @@ class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplication
 
     def create(self, validated_data):
         source_user = self.context['request'].user
-        reciever_user_id = self.context['request'].data['to']
+        receiver_user_id = self.context['request'].data['to']
 
-        reciever_user = None if reciever_user_id == 'all-residents' else User.objects.get(id=reciever_user_id)
+        receiver_user = None if receiver_user_id == 'all-residents' else User.objects.get(id=receiver_user_id)
 
-        validated_data['message_thread'], _ = MessageThread.get_or_create_new_thread(source_user, reciever_user)
+        validated_data['message_thread'], _ = MessageThread.get_or_create_new_thread(source_user, receiver_user)
         validated_data['source_user'] = source_user
 
         message_data = self.context['request'].data['message']
@@ -100,21 +100,23 @@ class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplication
         message_type = self.context['request'].data['message_type']
         delivery_type = message_types.get(message_type)
         in_seven_days = timezone.now() + timedelta(days=7)
-        recipient_ids = [reciever_user.id] if reciever_user is not None else None
-        delivery_rule = ContentDeliveryRule.find(delivery_type=delivery_type,
-                                                 start=timezone.now(),
-                                                 end=in_seven_days,
-                                                 recipient_ids=recipient_ids,
-                                                 )
+        recipient_ids = [receiver_user.id] if receiver_user is not None else None
+        delivery_rule = facility_models.ContentDeliveryRule.find(delivery_type=delivery_type,
+                                                                 start=timezone.now(), end=in_seven_days,
+                                                                 recipient_ids=recipient_ids, )
         validated_data['delivery_rule'] = delivery_rule
 
         validated_data['is_response_expected'] = self.context['request'].data['request_reply']
 
-        instance = super(FacilityMessageSerializer, self).create(validated_data)     # type: Message
-        return instance
+        instance = super(FacilityMessageSerializer, self).create(validated_data)
+        return instance     # type: Message
 
 
-class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminApplicationMixin):
+class AdminAppSeniorListSerializer(facility_mixins.DeviceStatusSerializerMixin,
+                                   facility_mixins.MessageThreadUrlSerializerMixin,
+                                   facility_mixins.ProfilePictureUrlSerializerMixin,
+                                   serializers.ModelSerializer, ):
+    # todo: How this serializer compares to alexa.SeniorSerializer?
     class Meta:
         model = User
         fields = ('id',
@@ -123,71 +125,24 @@ class AdminAppSeniorListSerializer(SeniorSerializer, MockStatusMixin, ForAdminAp
                   'room_no',
                   'device_status',
                   'message_thread_url',
-                  'profile_picture',
-                  'mock_status',
-                  )
+                  'profile_picture_url', )
 
     device_status = serializers.SerializerMethodField()
     message_thread_url = serializers.SerializerMethodField()
-    profile_picture = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_message_thread_url(senior: User):
-        message_thread = MessageThreadParticipant.objects.get(user=senior).message_thread
-        return {
-            'url': reverse(name='message-thread', kwargs={'pk': message_thread.id})
-        }
-
-    @staticmethod
-    def get_profile_picture(senior: User):
-        return senior.get_profile_pic()
-
-    @staticmethod
-    def get_device_status(senior: User):
-        qs = MockUserData.objects.all().filter(senior=senior)
-        if qs.count() == 0:
-            return None
-
-        mock_device_status = qs[0].device_status
-        if mock_device_status == {}:
-            return None
-
-        return mock_device_status
-
-
-class MorningCheckInUserNotifiedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminApplicationMixin):
-    class Meta:
-        model = User
-        fields = ('id',
-                  'first_name',
-                  'last_name',
-                  'room_no',
-                  'device_status',
-                  'message_thread_url',
-                  'mock_status',
-                  'check_in',
-                  )
-
-    check_in = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_check_in(senior: User):
-        return {
-            'url': reverse('morning-check-in', kwargs={'pk': senior.id})
-        }
+    profile_picture_url = serializers.SerializerMethodField()
 
 
 class ResponseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MessageResponse
+        model = facility_models.MessageResponse
         fields = ('id', 'created', 'content')
 
     content = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_content(message_response: MessageResponse):
+    def get_content(message_response: facility_models.MessageResponse):
         response_types = {
-            True : 'Yes',
+            True: 'Yes',
             False: 'No',
             None: 'No Reply Yet'
         }
@@ -242,26 +197,26 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_reply(message: Message):
         if not message.is_response_expected:
             return None
-        message_response = MessageResponse.objects.get(message=message)
+        message_response = facility_models.MessageResponse.objects.get(message=message)
         return ResponseSerializer(message_response).data
 
 
 class MessageThreadParticipantSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MessageThreadParticipant
+        model = facility_models.MessageThreadParticipant
         fields = ('id', 'resident', 'last_message', )
 
     resident = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_resident(message_thread_participant: MessageThreadParticipant):
+    def get_resident(message_thread_participant: facility_models.MessageThreadParticipant):
         if not message_thread_participant.user:
             return 'All Residents'
         return AdminAppSeniorListSerializer(message_thread_participant.user).data
 
     @staticmethod
-    def get_last_message(message_thread_participant: MessageThreadParticipant):
+    def get_last_message(message_thread_participant: facility_models.MessageThreadParticipant):
         last_message = message_thread_participant.message_thread.last_message
         return MessageSerializer(last_message).data
 
@@ -269,7 +224,7 @@ class MessageThreadParticipantSerializer(serializers.ModelSerializer):
 class FacilityMessagesSerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminApplicationMixin):
     class Meta:
         model = MockMessageData
-        fields = ('id', 'resident', 'last_message', 'mock_status', 'message_from')
+        fields = ('id', 'resident', 'last_message', 'mock_status', 'message_from', )
 
     resident = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
@@ -290,65 +245,48 @@ class FacilityMessagesSerializer(serializers.ModelSerializer, MockStatusMixin, F
         return mock_message_data.message_from
 
 
-class MorningCheckInUserStaffCheckedSerializer(SeniorSerializer, MockStatusMixin):
+class MorningCheckInDoneByStaffSerializer(facility_mixins.MorningCheckInSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id',
                   'first_name',
                   'last_name',
-                  'room_no',
-                  'device_status',
-                  'message_thread_url',
-                  'profile_picture',
-                  'check_in',
-                  'mock_status',        # todo remove
-                  )
+                  'room_no', ) + facility_mixins.MorningCheckInSerializerMixin.get_check_in_fields()
 
-    check_in = serializers.SerializerMethodField()
+    device_status = serializers.SerializerMethodField()
+    check_in_info = serializers.SerializerMethodField(method_name='get_info_for_checked_in')
     message_thread_url = serializers.SerializerMethodField()
-    profile_picture = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_profile_picture(senior: User):
-        return senior.get_profile_pic()
-
-    @staticmethod
-    def get_message_thread_url(senior: User):
-        message_thread = MessageThreadParticipant.objects.get(user=senior).message_thread
-        return {
-            'url': reverse('message-thread', kwargs={'pk': message_thread.id})
-        }
-
-    @staticmethod
-    def get_check_in(senior: User):
-        return {
-            'checked_by': 'Staff Joe',
-            'check_in_time': '2019-02-02T23:37:43.811630Z',
-            'url': reverse('photo-day-view', kwargs={'pk': senior.id})
-        }
+    profile_picture_url = serializers.SerializerMethodField()
 
 
-class MorningCheckInUserSelfCheckedSerializer(AdminAppSeniorListSerializer, MockStatusMixin, ForAdminApplicationMixin):
+class MorningCheckInDoneByUserSerializer(facility_mixins.MorningCheckInSerializerMixin, serializers.ModelSerializer):
+    """
+    todo this serializer cannot provide URL for reversing check in! Or can it?!
+    """
     class Meta:
         model = User
         fields = ('id',
                   'first_name',
                   'last_name',
-                  'room_no',
-                  'device_status',
-                  'message_thread_url',
-                  'mock_status',
-                  'check_in_info',
-                  )
+                  'room_no', ) + facility_mixins.MorningCheckInSerializerMixin.get_base_fields()
 
-    check_in_info = serializers.SerializerMethodField()
+    device_status = serializers.SerializerMethodField()
+    message_thread_url = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
 
-    @staticmethod
-    def get_check_in_info(senior: User):
-        return {
-            'checked_by': 'self',
-            'check_in_time': '2019-02-02T23:37:43.811630Z'
-        }
+
+class MorningCheckInNotDoneSerializer(facility_mixins.MorningCheckInSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id',
+                  'first_name',
+                  'last_name',
+                  'room_no', ) + facility_mixins.MorningCheckInSerializerMixin.get_check_in_fields()
+
+    device_status = serializers.SerializerMethodField()
+    check_in_info = serializers.SerializerMethodField(method_name='get_info_for_not_checked_in')
+    message_thread_url = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
 
 
 class MessageThreadSerializer(serializers.ModelSerializer):
@@ -373,7 +311,7 @@ class MessageThreadSerializer(serializers.ModelSerializer):
 
 class SeniorDeviceUserActivityLogSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SeniorDeviceUserActivityLog
+        model = facility_models.SeniorDeviceUserActivityLog
         fields = ('pk', 'user', 'activity', 'data', )
 
     data = serializers.JSONField()
@@ -395,14 +333,14 @@ class ContentDeliveryRuleSerializer(serializers.ModelSerializer):
 
 class SeniorLivingFacilityContentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SeniorLivingFacilityContent
+        model = facility_models.SeniorLivingFacilityContent
         fields = ('hash', 'audio_url', 'delivery_rule', )
 
     hash = serializers.SerializerMethodField()
     delivery_rule = ContentDeliveryRuleSerializer()
 
     @staticmethod
-    def get_hash(content: SeniorLivingFacilityContent):
+    def get_hash(content: facility_models.SeniorLivingFacilityContent):
         return content.hash
 
 

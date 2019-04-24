@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from alexa.models import Joke, User, FamilyProspect, Circle, UserSettings, CircleInvitation, CircleReinvitation
 from actions.models import UserAction
-from senior_living_facility.models import SeniorDeviceUserActivityLog
+from senior_living_facility.api.mixins import DeviceStatusSerializerMixin
 from streaming.models import Tag
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
@@ -13,7 +13,8 @@ from rest_framework.serializers import ValidationError as RestFrameworkValidatio
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type', 'senior_living_facility', 'profile_pic_url', 'senior', )
+        fields = ('pk', 'first_name', 'last_name', 'email', 'user_type',
+                  'senior_living_facility', 'profile_pic_url', 'senior', )
 
     profile_pic_url = serializers.SerializerMethodField()
     senior = serializers.SerializerMethodField()
@@ -187,7 +188,7 @@ class FamilyProspectSerializer(serializers.ModelSerializer):
         return True
 
 
-class SeniorSerializer(serializers.ModelSerializer):
+class SeniorSerializer(DeviceStatusSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'first_name', 'last_name', 'room_no', 'primary_contact', 'device_status', )
@@ -204,37 +205,13 @@ class SeniorSerializer(serializers.ModelSerializer):
             return FamilyProspectSerializer(prospects[0]).data if prospects.count() > 0 else None
         return FamilyMemberSerializer(admins[0]).data if admins.count() else None
 
-    @staticmethod
-    def get_device_status(senior: User):
-        device = senior.device
-
-        if not device:
-            return None
-
-        last_user_log = SeniorDeviceUserActivityLog.get_last_user_log(senior)
-
-        if not last_user_log:
-            last_activity_time = None
-            is_today_checked_in = False
-        else:
-            facility = senior.senior_living_facility
-            last_activity_time = last_user_log.created
-            is_today_checked_in = last_user_log.is_activity_counted_as_check_in(facility)
-
-        return {
-            'is_online': device.is_online,
-            'status_checked': device.status_checked,
-            'last_activity_time': last_activity_time,
-            'is_today_checked_in': is_today_checked_in,
-        }
-
     def create(self, validated_data):
         facility_admin = self.context['request'].user   # type: User
 
         validated_data['senior_living_facility'] = facility_admin.senior_living_facility
         validated_data['user_type'] = User.CARETAKER
         validated_data['email'] = 'admin_created_{}_{}@proxy.caressa.ai'.format(facility_admin.senior_living_facility.facility_id,
-                                                                                randint(0,1000000))
+                                                                                randint(0, 1000000))
         first_name = validated_data['first_name']
 
         if not first_name:
@@ -279,7 +256,8 @@ class SeniorSerializer(serializers.ModelSerializer):
             if not contact_name:    # deleting name field
                 raise RestFrameworkValidationError(detail={'errors': ['You cannot remove existing contact name']})
 
-        if not any([contact_name, contact_email, contact_phone_number]):    # no family propect earlier, all contact fields are empty
+        # no family prospect earlier, all contact fields are empty
+        if not any([contact_name, contact_email, contact_phone_number]):
             return senior
 
         # This is only created for validation
