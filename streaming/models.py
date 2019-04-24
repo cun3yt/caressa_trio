@@ -15,7 +15,6 @@ from urllib.error import HTTPError
 
 from utilities.cryptography import compute_hash
 from utilities.models.abstract_models import CreatedTimeStampedModel
-from utilities.models.mixins import CacheMixin
 from utilities.time import seconds_to_minutes
 
 

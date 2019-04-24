@@ -9,24 +9,15 @@ from rest_framework.permissions import IsAuthenticated
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from alexa.api.permissions import IsSenior
 from alexa.api.serializers import UserSerializer
-from alexa.api.views import SeniorListViewSet
 from alexa.models import User
 from caressa import settings
 from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserInFacility, IsInSameFacility
-from senior_living_facility.api.serializers import FacilitySerializer, AdminAppSeniorListSerializer, \
-    MorningCheckInUserNotifiedSerializer, \
-    MorningCheckInUserStaffCheckedSerializer, MorningCheckInUserSelfCheckedSerializer, FacilityMessagesSerializer, \
-    MessageThreadMessagesSerializer, FacilityMessageSerializer
-from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
-    SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData, ServiceRequest, Message, \
-    FacilityCheckInOperationForSenior
-from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
-    SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer, ServiceRequestSerializer
+from senior_living_facility.api import serializers as facility_serializers
+from senior_living_facility import models as facility_models
 from django.utils import timezone
 from datetime import datetime
 
-from utilities.file_operations import generate_versioned_picture_name, download_to_tmp_from_s3, \
-    profile_picture_resizing_wrapper, upload_to_s3_from_tmp
+from utilities import file_operations as file_ops
 from utilities.time import today_in_tz
 from utilities.views.mixins import ForAdminApplicationMixin
 
@@ -34,32 +25,32 @@ from utilities.views.mixins import ForAdminApplicationMixin
 class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, IsUserInFacility, )
-    queryset = SeniorLivingFacility.objects.all()
-    serializer_class = SeniorLivingFacilitySerializer
+    queryset = facility_models.SeniorLivingFacility.objects.all()
+    serializer_class = facility_serializers.SeniorLivingFacilitySerializer
 
 
 class ServiceRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsSenior, )
-    queryset = ServiceRequest.objects.all()
-    serializer_class = ServiceRequestSerializer
+    queryset = facility_models.ServiceRequest.objects.all()
+    serializer_class = facility_serializers.ServiceRequestSerializer
 
 
 class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, IsUserInFacility, )
-    queryset = SeniorLivingFacility.objects.all()
-    serializer_class = FacilitySerializer
+    queryset = facility_models.SeniorLivingFacility.objects.all()
+    serializer_class = facility_serializers.FacilitySerializer
 
 
 class FacilityListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     pagination_class = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
     serializer_classes = {
-        'staff-checked': MorningCheckInUserStaffCheckedSerializer,
-        'self-checked': MorningCheckInUserSelfCheckedSerializer,
-        'pending': MorningCheckInUserNotifiedSerializer,
-        'notified': MorningCheckInUserNotifiedSerializer,
+        'staff-checked': facility_serializers.MorningCheckInDoneByStaffSerializer,
+        'notified': facility_serializers.MorningCheckInNotDoneSerializer,
+        'self-checked': facility_serializers.MorningCheckInDoneByUserSerializer,
+        'pending': facility_serializers.MorningCheckInNotDoneSerializer,
     }
 
     @property
@@ -79,29 +70,29 @@ class FacilityListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
                 result_set[_status]['residents'] = serializer(result_set[_status]['residents'], many=True).data
             return Response(result_set)
 
-        serializer = AdminAppSeniorListSerializer(queryset, many=True)
+        serializer = facility_serializers.AdminAppSeniorListSerializer(queryset, many=True)
         return Response(serializer.data)
 
     def get_queryset(self):
-        facility = self.request.user.senior_living_facility     # type: SeniorLivingFacility
+        facility = self.request.user.senior_living_facility     # type: facility_models.SeniorLivingFacility
 
         if self.is_morning_check_in_requested:
-            return FacilityCheckInOperationForSenior.get_seniors_grouped_by_state(facility=facility)
-        return facility.residents
+            return facility.residents_grouped_by_state
+        return facility.residents.order_by('first_name', 'room_no')
 
 
 class FacilityMessageViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated, IsFacilityOrgMember,)  # todo add check for message readability for user
-    queryset = Message.objects.all()
-    serializer_class = FacilityMessageSerializer
+    queryset = facility_models.Message.objects.all()
+    serializer_class = facility_serializers.FacilityMessageSerializer
 
 
 class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )  # todo add check for message readability for user
-    queryset = SeniorLivingFacilityMockMessageData.objects.all()
-    serializer_class = FacilityMessagesSerializer
+    queryset = facility_models.SeniorLivingFacilityMockMessageData.objects.all()
+    serializer_class = facility_serializers.FacilityMessagesSerializer
 
     class _Pagination(PageNumberPagination):
         max_page_size = 20
@@ -130,12 +121,8 @@ class FacilityResidentTodayCheckInViewSet(mixins.DestroyModelMixin, mixins.Creat
         staff = request.user    # type: User
         checked = datetime.now(pytz.utc)
         today = today_in_tz(staff.senior_living_facility.timezone)
-        check_in, _ = FacilityCheckInOperationForSenior.objects.update_or_create(senior=self.senior,
-                                                                                 date=today,
-                                                                                 defaults={
-                                                                                     'checked': checked,
-                                                                                     'staff': staff,
-                                                                                 })
+        check_in, _ = facility_models.FacilityCheckInOperationForSenior.objects\
+            .update_or_create(senior=self.senior, date=today, defaults={'checked': checked, 'staff': staff})
         # todo return the check in data
         return Response({'success': True}, status=status.HTTP_201_CREATED)
 
@@ -146,19 +133,15 @@ class FacilityResidentTodayCheckInViewSet(mixins.DestroyModelMixin, mixins.Creat
 
         staff = request.user
         today = today_in_tz(staff.senior_living_facility.timezone)
-        check_in, _ = FacilityCheckInOperationForSenior.objects.update_or_create(senior=self.senior,
-                                                                                 date=today,
-                                                                                 defaults={
-                                                                                     'checked': None,
-                                                                                     'staff': staff,
-                                                                                 })
+        check_in, _ = facility_models.FacilityCheckInOperationForSenior.objects\
+            .update_or_create(senior=self.senior, date=today, defaults={'checked': None, 'staff': staff})
         return Response({'success': True}, status=status.HTTP_204_NO_CONTENT)
 
 
 class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated,)
-    serializer_class = MessageThreadMessagesSerializer
+    serializer_class = facility_serializers.MessageThreadMessagesSerializer
 
     class _Pagination(PageNumberPagination):
         max_page_size = 20
@@ -168,20 +151,20 @@ class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSe
     pagination_class = _Pagination
 
     def get_queryset(self):
-        return SeniorLivingFacilityMockMessageData.objects.filter(senior=94).order_by('-id')
+        return facility_models.SeniorLivingFacilityMockMessageData.objects.filter(senior=94).order_by('-id')
 
 
 class SeniorDeviceUserActivityLogCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsSenior, )
-    queryset = SeniorDeviceUserActivityLog
-    serializer_class = SeniorDeviceUserActivityLogSerializer
+    queryset = facility_models.SeniorDeviceUserActivityLog
+    serializer_class = facility_serializers.SeniorDeviceUserActivityLogSerializer
 
 
 class SeniorLivingFacilityContentViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsSenior, )
-    serializer_class = SeniorLivingFacilityContentSerializer
+    serializer_class = facility_serializers.SeniorLivingFacilityContentSerializer
 
     def get_queryset(self):
         """
@@ -193,9 +176,9 @@ class SeniorLivingFacilityContentViewSet(mixins.ListModelMixin, viewsets.Generic
         facility = user.senior_living_facility
 
         now = datetime.now(timezone.utc)
-        return SeniorLivingFacilityContent.objects.filter(senior_living_facility=facility,
-                                                          delivery_rule__end__gte=now,
-                                                          delivery_rule__type=ContentDeliveryRule.TYPE_INJECTABLE)\
+        return facility_models.SeniorLivingFacilityContent.objects.\
+            filter(senior_living_facility=facility, delivery_rule__end__gte=now,
+                   delivery_rule__type=facility_models.ContentDeliveryRule.TYPE_INJECTABLE)\
             .filter(Q(delivery_rule__recipient_ids__isnull=True) | Q(delivery_rule__recipient_ids__contains=[user.id]))
 
 
@@ -210,13 +193,14 @@ def uploaded_new_profile_picture(request, **kwargs):
 
     current_user_profile_pic = user.profile_pic
 
-    new_profile_pic_hash_version = generate_versioned_picture_name(current_user_profile_pic)
+    new_profile_pic_hash_version = file_ops.generate_versioned_picture_name(current_user_profile_pic)
 
-    download_to_tmp_from_s3(file_name, settings.S3_RAW_UPLOAD_BUCKET)
+    file_ops.download_to_tmp_from_s3(file_name, settings.S3_RAW_UPLOAD_BUCKET)
 
     save_picture_format = 'jpg'
-    picture_set = profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version, save_picture_format)
-    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
+    picture_set = file_ops.profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version,
+                                                            save_picture_format)
+    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
 
     user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     user.save()
