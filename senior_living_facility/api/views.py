@@ -19,7 +19,7 @@ from senior_living_facility.api.serializers import FacilitySerializer, AdminAppS
     MessageThreadMessagesSerializer, FacilityMessageSerializer, PhotoGallerySerializer, PhotosDaySerializer
 from senior_living_facility.models import SeniorLivingFacility, SeniorDeviceUserActivityLog, \
     SeniorLivingFacilityContent, ContentDeliveryRule, SeniorLivingFacilityMockMessageData, ServiceRequest, Message, \
-    FacilityCheckInOperationForSenior, FacilityPhoto
+    FacilityCheckInOperationForSenior, Photo
 from senior_living_facility.api.serializers import SeniorLivingFacilitySerializer, \
     SeniorDeviceUserActivityLogSerializer, SeniorLivingFacilityContentSerializer, ServiceRequestSerializer
 from django.utils import timezone
@@ -212,8 +212,8 @@ class PhotoGalleryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     pagination_class = _Pagination
 
     def get_queryset(self):
-        dist = FacilityPhoto.objects.values('date').annotate(date_count=Count('date')).filter(date_count=1)
-        single_dates = FacilityPhoto.objects.filter(date__in=[item['date'] for item in dist])
+        dist = Photo.objects.values('date').annotate(date_count=Count('date')).filter(date_count=1)
+        single_dates = Photo.objects.filter(date__in=[item['date'] for item in dist])
         return single_dates
 
 
@@ -235,7 +235,7 @@ class PhotosDayViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     def get_queryset(self):
         datetime_obj = datetime.strptime(self.date, '%Y-%m-%d')
-        return FacilityPhoto.objects.filter(date=datetime_obj)
+        return Photo.objects.filter(date=datetime_obj)
 
 
 @authentication_classes((OAuth2Authentication, ))

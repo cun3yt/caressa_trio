@@ -768,9 +768,9 @@ class FacilityCheckInOperationForSenior(TimeStampedModel):
             raise Exception('Cannot compute!')
 
 
-class FacilityPhotoGallery(CreatedTimeStampedModel):
+class PhotoGallery(CreatedTimeStampedModel):
     class Meta:
-        db_table = 'facility_photo_gallery'
+        db_table = 'photo_gallery'
 
     senior_living_facility = models.OneToOneField(to=SeniorLivingFacility,
                                                   primary_key=True,
@@ -779,12 +779,12 @@ class FacilityPhotoGallery(CreatedTimeStampedModel):
                                                   on_delete=models.DO_NOTHING, )
 
 
-class FacilityPhoto(TimeStampedModel):
+class Photo(TimeStampedModel):
     class Meta:
-        db_table = 'facility_photo'
+        db_table = 'photo'
         ordering = ['-date']
 
-    photo_gallery = models.ForeignKey(to=FacilityPhotoGallery,
+    photo_gallery = models.ForeignKey(to=PhotoGallery,
                                       null=False,
                                       blank=False,
                                       on_delete=models.DO_NOTHING,
