@@ -1,13 +1,13 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from senior_living_facility.mock.views import message_thread
 from senior_living_facility.views import facility_home, facility_settings, family_prospect_invitation, sign_up, \
     app_downloads
 from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet, \
     FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, \
     MessageThreadMessagesViewSet, ServiceRequestViewSet, uploaded_new_profile_picture, FacilityMessageViewSet, \
-    FacilityResidentTodayCheckInViewSet, MessagesThreadParticipantViewSet, MessageThreadViewSet
+    PhotoGalleryViewSet, PhotosDayViewSet, FacilityResidentTodayCheckInViewSet, MessagesThreadParticipantViewSet, \
+    MessageThreadViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -56,4 +56,8 @@ api_urls = [
          uploaded_new_profile_picture, name='uploaded_new_profile_picture',),
     path('api/users/me/service-requests/',
          ServiceRequestViewSet.as_view({'post': 'create'})),
+    path('api/photo-galleries/<int:pk>/',
+         PhotoGalleryViewSet.as_view({'get': 'list', }), name='photo-gallery'),
+    path('api/photo-galleries/<int:pk>/days/<slug:date>/',
+         PhotosDayViewSet.as_view({'get': 'list', }), name='photo-day-view'),
 ]

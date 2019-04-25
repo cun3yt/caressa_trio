@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from rest_framework import serializers
-from caressa.settings import REST_FRAMEWORK
+from caressa.settings import REST_FRAMEWORK, API_URL
 
 from alexa.models import User
 from senior_living_facility.api import mixins as facility_mixins
@@ -357,3 +357,36 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         instance = super(ServiceRequestSerializer, self).create(validated_data)     # type: ServiceRequest
         instance.process()
         return instance
+
+
+class PhotoGallerySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = facility_models.Photo
+        fields = ('day', )
+
+    day = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_day(photo: facility_models.Photo):
+        photo_url = '{base_url}{absolute_url}'.format(base_url=API_URL,
+                                                      absolute_url=reverse('photo-day-view',
+                                                                           kwargs={
+                                                                               'pk': photo.photo_gallery_id,
+                                                                               'date': photo.date.isoformat()
+                                                                           }))
+        return {
+            'date': photo.date.isoformat(),
+            'url': photo_url
+        }
+
+
+class PhotosDaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = facility_models.Photo
+        fields = ('photo', )
+
+    photo = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_photo(photo: facility_models.Photo):
+        return photo.url

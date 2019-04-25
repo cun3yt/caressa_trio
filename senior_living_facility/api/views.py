@@ -1,6 +1,6 @@
 import pytz
 
-from django.db.models import Q
+from django.db.models import Q, Count
 from rest_framework import viewsets, mixins, status
 from rest_framework.response import Response
 from rest_framework.decorators import authentication_classes, permission_classes, api_view
@@ -44,7 +44,7 @@ class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdm
 
 
 class FacilityListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    pagination_class = (OAuth2Authentication, )
+    authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
     serializer_classes = {
         'staff-checked': facility_serializers.MorningCheckInDoneByStaffSerializer,
@@ -200,6 +200,45 @@ class SeniorLivingFacilityContentViewSet(mixins.ListModelMixin, viewsets.Generic
             filter(senior_living_facility=facility, delivery_rule__end__gte=now,
                    delivery_rule__type=facility_models.ContentDeliveryRule.TYPE_INJECTABLE)\
             .filter(Q(delivery_rule__recipient_ids__isnull=True) | Q(delivery_rule__recipient_ids__contains=[user.id]))
+
+
+class PhotoGalleryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
+    serializer_class = facility_serializers.PhotoGallerySerializer
+
+    class _Pagination(PageNumberPagination):
+        max_page_size = 20
+        page_size_query_param = 'page_size'
+        page_size = 5
+
+    pagination_class = _Pagination
+
+    def get_queryset(self):
+        dist = facility_models.Photo.objects.values('date').annotate(date_count=Count('date')).filter(date_count=1)
+        single_dates = facility_models.Photo.objects.filter(date__in=[item['date'] for item in dist])
+        return single_dates
+
+
+class PhotosDayViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
+    serializer_class = facility_serializers.PhotosDaySerializer
+
+    @property
+    def date(self):
+        return self.kwargs.get('date')
+
+    class _Pagination(PageNumberPagination):
+        max_page_size = 20
+        page_size_query_param = 'page_size'
+        page_size = 10
+
+    pagination_class = _Pagination
+
+    def get_queryset(self):
+        datetime_obj = datetime.strptime(self.date, '%Y-%m-%d')
+        return facility_models.Photo.objects.filter(date=datetime_obj)
 
 
 @authentication_classes((OAuth2Authentication, ))
