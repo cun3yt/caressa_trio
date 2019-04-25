@@ -640,10 +640,22 @@ class MessageThread(CreatedTimeStampedModel):
 
         return message_thread, created
 
+    @property
+    def last_message(self):
+        return Message.objects.filter(message_thread=self)[0]
+
+    @property
+    def resident_participant(self):
+        message_thread_participant = MessageThreadParticipant.objects.get(message_thread=self)
+        if not message_thread_participant.user:
+            return 'All Residents'
+        return message_thread_participant.user
+
 
 class MessageThreadParticipant(CreatedTimeStampedModel):
     class Meta:
         db_table = 'message_thread_participant'
+        ordering = ['-created']
         unique_together = ('user', 'senior_living_facility')
 
     message_thread = models.ForeignKey(to=MessageThread,

@@ -88,11 +88,16 @@ class FacilityMessageViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     serializer_class = facility_serializers.FacilityMessageSerializer
 
 
-class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
+class MessagesThreadParticipantViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )  # todo add check for message readability for user
     queryset = facility_models.SeniorLivingFacilityMockMessageData.objects.all()
-    serializer_class = facility_serializers.FacilityMessagesSerializer
+    serializer_class = facility_serializers.MessageThreadParticipantSerializer
+
+    @property
+    def facility(self):
+        facility_id = self.kwargs.get('pk')
+        return facility_models.SeniorLivingFacility.objects.get(id=facility_id)
 
     class _Pagination(PageNumberPagination):
         max_page_size = 20
@@ -100,6 +105,9 @@ class FacilityMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, Fo
         page_size = 5
 
     pagination_class = _Pagination
+
+    def get_queryset(self):
+        return facility_models.MessageThreadParticipant.objects.filter(senior_living_facility=self.facility)
 
 
 class FacilityResidentTodayCheckInViewSet(mixins.DestroyModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -138,10 +146,15 @@ class FacilityResidentTodayCheckInViewSet(mixins.DestroyModelMixin, mixins.Creat
         return Response({'success': True}, status=status.HTTP_204_NO_CONTENT)
 
 
-class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
+class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated,)
-    serializer_class = facility_serializers.MessageThreadMessagesSerializer
+    serializer_class = facility_serializers.MessageSerializer
+
+    @property
+    def message_thread(self):
+        message_thread_id = self.kwargs.get('pk')
+        return facility_models.MessageThread.objects.get(id=message_thread_id)
 
     class _Pagination(PageNumberPagination):
         max_page_size = 20
@@ -151,7 +164,14 @@ class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSe
     pagination_class = _Pagination
 
     def get_queryset(self):
-        return facility_models.SeniorLivingFacilityMockMessageData.objects.filter(senior=94).order_by('-id')
+        return facility_models.Message.objects.filter(message_thread=self.message_thread)
+
+
+class MessageThreadViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, )
+    queryset = facility_models.MessageThread
+    serializer_class = facility_serializers.MessageThreadSerializer
 
 
 class SeniorDeviceUserActivityLogCreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):

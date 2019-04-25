@@ -8,8 +8,10 @@ from caressa.settings import REST_FRAMEWORK
 from alexa.models import User
 from senior_living_facility.api import mixins as facility_mixins
 from senior_living_facility import models as facility_models
+from alexa.api.serializers import SeniorSerializer, UserSerializer
 from senior_living_facility.models import ContentDeliveryRule, ServiceRequest, Message, MessageThread
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
+from utilities.api.urls import reverse
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
 from utilities.views.mixins import MockStatusMixin, ForAdminApplicationMixin
 from voice_service.google import tts
@@ -130,6 +132,95 @@ class AdminAppSeniorListSerializer(facility_mixins.DeviceStatusSerializerMixin,
     profile_picture_url = serializers.SerializerMethodField()
 
 
+class ResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = facility_models.MessageResponse
+        fields = ('id', 'created', 'content')
+
+    content = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_content(message_response: facility_models.MessageResponse):
+        response_types = {
+            True: 'Yes',
+            False: 'No',
+            None: 'No Reply Yet'
+        }
+        return response_types.get(message_response.response)
+
+
+class FacilityStaffSerializer(UserSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'first_name', 'last_name', 'user_type', 'senior_living_facility')
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = ('id', 'time', 'message_type', 'message_from', 'content', 'reply')
+
+    time = serializers.SerializerMethodField()
+    content = serializers.SerializerMethodField()
+    message_type = serializers.SerializerMethodField()
+    message_from = serializers.SerializerMethodField()
+    reply = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_time(message: Message):
+        return message.created
+
+    @staticmethod
+    def get_content(message: Message):
+        content_type, content_details = ('Audio', message.content_audio_file,) if message.content is None \
+            else ('Text', message.content,)
+
+        return {
+            "type": content_type,
+            "details": content_details
+        }
+
+    @staticmethod
+    def get_message_type(message: Message):
+        message_types = {
+            ContentDeliveryRule.TYPE_VOICE_MAIL: 'Message',
+            ContentDeliveryRule.TYPE_URGENT_MAIL: 'Broadcast',
+            ContentDeliveryRule.TYPE_INJECTABLE: 'Announcement'
+        }
+        return message_types.get(message.delivery_rule.type)
+
+    @staticmethod
+    def get_message_from(message: Message):
+        return FacilityStaffSerializer(message.source_user).data
+
+    @staticmethod
+    def get_reply(message: Message):
+        if not message.is_response_expected:
+            return None
+        message_response = facility_models.MessageResponse.objects.get(message=message)
+        return ResponseSerializer(message_response).data
+
+
+class MessageThreadParticipantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = facility_models.MessageThreadParticipant
+        fields = ('id', 'resident', 'last_message', )
+
+    resident = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_resident(message_thread_participant: facility_models.MessageThreadParticipant):
+        if not message_thread_participant.user:
+            return 'All Residents'
+        return AdminAppSeniorListSerializer(message_thread_participant.user).data
+
+    @staticmethod
+    def get_last_message(message_thread_participant: facility_models.MessageThreadParticipant):
+        last_message = message_thread_participant.message_thread.last_message
+        return MessageSerializer(last_message).data
+
+
 class FacilityMessagesSerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminApplicationMixin):
     class Meta:
         model = MockMessageData
@@ -198,21 +289,24 @@ class MorningCheckInNotDoneSerializer(facility_mixins.MorningCheckInSerializerMi
     profile_picture_url = serializers.SerializerMethodField()
 
 
-class MessageThreadMessagesSerializer(serializers.ModelSerializer, MockStatusMixin):
+class MessageThreadSerializer(serializers.ModelSerializer):
     class Meta:
-        model = MockMessageData
-        fields = ('id', 'message', 'mock_status', 'message_from')
+        model = MessageThread
+        fields = ('pk', 'resident', 'messages')
 
-    message = serializers.SerializerMethodField()
-    message_from = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_message(mock_message_data: MockMessageData):
-        return mock_message_data.message
+    messages = serializers.SerializerMethodField()
+    resident = serializers.SerializerMethodField()
 
     @staticmethod
-    def get_message_from(mock_message_data: MockMessageData):
-        return mock_message_data.message_from
+    def get_resident(message_thread: MessageThread):
+        resident = message_thread.resident_participant
+        return AdminAppSeniorListSerializer(resident).data if isinstance(resident, User) else resident
+
+    @staticmethod
+    def get_messages(message_thread: MessageThread):
+        return {
+            'url': reverse('message-thread-messages', kwargs={'pk': message_thread.id})
+        }
 
 
 class SeniorDeviceUserActivityLogSerializer(serializers.ModelSerializer):
