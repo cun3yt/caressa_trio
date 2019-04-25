@@ -57,8 +57,8 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
         return 3
 
     @staticmethod
-    def get_photo_gallery_url(facility: facility_models.SeniorLivingFacility):  # todo hardcode
-        return 'https://www.caressa.herokuapp.com/gallery_url'
+    def get_photo_gallery_url(facility: facility_models.SeniorLivingFacility):
+        return reverse('photo-gallery', kwargs={'pk': facility.id})
 
 
 class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplicationMixin):
