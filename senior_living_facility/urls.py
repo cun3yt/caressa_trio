@@ -1,13 +1,13 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
-from senior_living_facility.mock.views import message_thread
 from senior_living_facility.views import facility_home, facility_settings, family_prospect_invitation, sign_up, \
     app_downloads
 from senior_living_facility.api.views import SeniorLivingFacilityViewSet, SeniorDeviceUserActivityLogCreateViewSet, \
-    FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, FacilityMessagesViewSet, \
+    FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, \
     MessageThreadMessagesViewSet, ServiceRequestViewSet, uploaded_new_profile_picture, FacilityMessageViewSet, \
-    FacilityResidentTodayCheckInViewSet, PhotoGalleryViewSet, PhotosDayViewSet
+    PhotoGalleryViewSet, PhotosDayViewSet, FacilityResidentTodayCheckInViewSet, MessagesThreadParticipantViewSet, \
+    MessageThreadViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -42,13 +42,14 @@ api_urls = [
     path('api/facility/<int:pk>/message/',
          FacilityMessageViewSet.as_view({'post': 'create', })),
     path('api/facility/<int:pk>/messages/',
-         FacilityMessagesViewSet.as_view({'get': 'list', })),
+         MessagesThreadParticipantViewSet.as_view({'get': 'list', })),
     path('api/residents/<int:pk>/checked/today/',
          FacilityResidentTodayCheckInViewSet.as_view({'post': 'create', 'delete': 'destroy', }),
          name='morning-check-in'),
-    path('api/message-threads/<int:pk>/', message_thread, name='message-thread',),
-    path('api/message-threads/<int:pk>/messages/',
-         MessageThreadMessagesViewSet.as_view({'get': 'list', })),
+    path('api/message-thread/<int:pk>/',
+         MessageThreadViewSet.as_view({'get': 'retrieve'}), name='message-thread',),
+    path('api/message-thread/<int:pk>/messages/',
+         MessageThreadMessagesViewSet.as_view({'get': 'list', }), name='message-thread-messages'),
     path('api/users/me/contents/',
          SeniorLivingFacilityContentViewSet.as_view({'get': 'list'})),
     path('api/users/<int:id>/uploaded_new_profile_picture/',
