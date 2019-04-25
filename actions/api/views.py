@@ -182,15 +182,19 @@ def pre_signed_url_for_s3(request):  # todo find and replace with pre_signed_url
 def pre_signed_url_for_s3_multiple(request):
 
     assert isinstance(request.data, list), "Invalid format of POST data."
-
     assert not len(request.data) > 15, "Request count cannot be higher than 15."
 
     lst = []
     for file_attribute_dict in request.data:
         key = file_attribute_dict['key']
+
+        if not file_attribute_dict.get('content-type', False):
+            obj = {'key': key, 'error': "URL Couldn't Not Generated, Content Type Required"}
+            lst.append(obj)
+            continue
         content_type = file_attribute_dict['content-type']
-        request_type = file_attribute_dict['request-type']
-        client_method = file_attribute_dict['client-method']
+        request_type = file_attribute_dict.get('request-type', 'PUT')
+        client_method = file_attribute_dict.get('client-method', 'put_object')
         s3 = boto3.client('s3')
 
         url = s3.generate_presigned_url(
