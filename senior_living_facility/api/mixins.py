@@ -1,7 +1,8 @@
-from django.urls import reverse
+from utilities.api.urls import reverse
 
 from alexa.models import User
-from senior_living_facility.models import SeniorDeviceUserActivityLog, FacilityCheckInOperationForSenior
+from senior_living_facility.models import SeniorDeviceUserActivityLog, FacilityCheckInOperationForSenior, \
+    MessageThreadParticipant
 
 
 class DeviceStatusSerializerMixin:
@@ -95,8 +96,9 @@ class MessageThreadUrlSerializerMixin:
     """
 
     @staticmethod
-    def get_message_thread_url(senior: User):
-        return {'url': reverse('message-thread', kwargs={'pk': senior.id})}
+    def get_message_thread_url(senior: User):   # todo check / solve this without extra query to db
+        senior_msg_thrd_participation = MessageThreadParticipant.objects.get(user=senior)
+        return {'url': reverse('message-thread', kwargs={'pk': senior_msg_thrd_participation.message_thread_id})}
 
 
 class ProfilePictureUrlSerializerMixin:
