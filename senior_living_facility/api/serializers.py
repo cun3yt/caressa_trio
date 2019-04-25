@@ -368,12 +368,7 @@ class PhotoGallerySerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_day(photo: facility_models.Photo):
-        photo_url = '{base_url}{absolute_url}'.format(base_url=API_URL,
-                                                      absolute_url=reverse('photo-day-view',
-                                                                           kwargs={
-                                                                               'pk': photo.photo_gallery_id,
-                                                                               'date': photo.date.isoformat()
-                                                                           }))
+        photo_url = reverse('photo-day-view', kwargs={'pk': photo.photo_gallery_id, 'date': photo.date.isoformat() })
         return {
             'date': photo.date.isoformat(),
             'url': photo_url
