@@ -76,6 +76,13 @@ class TestPhotoGallerySerializer(TestCase):
         relative_url = '/api/photo-galleries/{id}/days/{iso_date}/'.format(id=self.facility.id,
                                                                            iso_date=self.gallery_view_date.isoformat())
         self.day_url = '{API_URL}{relative_url}'.format(API_URL=API_URL, relative_url=relative_url)
+
+        self.serializer_data = {
+            'day': {
+                'date': '2019-06-10',
+                'url': 'http://localhost:9900/api/photo-galleries/3/days/2019-06-10/'
+            }
+        }
         self.serializer = PhotoGallerySerializer(instance=self.photo)
 
     def test_contains_expected_fields(self):
@@ -88,3 +95,9 @@ class TestPhotoGallerySerializer(TestCase):
 
         self.assertEqual(data['day']['url'], self.day_url)
         self.assertEqual(data['day']['date'], self.gallery_view_date.isoformat())
+
+    def test_validation(self):
+        self.serializer_data = '123'
+        invalid_serializer = PhotoGallerySerializer(data=self.serializer_data)
+
+        self.assertFalse(invalid_serializer.is_valid())
