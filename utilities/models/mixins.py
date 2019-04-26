@@ -22,6 +22,9 @@ class ProfilePictureMixin:
     def get_profile_pic(self):
         return self.get_profile_picture_url('w_250', 'jpg')
 
+    def get_thumbnail_url(self):
+        return self.get_profile_picture_url('w_25', 'jpg')
+
     def get_profile_pictures(self):
         return {
             'w_250': self.get_profile_picture_url('w_250', 'jpg'),

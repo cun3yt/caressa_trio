@@ -14,9 +14,7 @@ from actstream.models import Action
 from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
-from caressa.settings import HOSTED_ENV
 from django.utils import timezone
-from random import sample
 from typing import Optional
 from senior_living_facility.models import SeniorDevice
 from senior_living_facility.models import SeniorLivingFacility
@@ -27,7 +25,7 @@ from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
 from uuid import uuid4
 from django.urls import reverse
-from caressa.settings import WEB_BASE_URL, S3_PRODUCTION_BUCKET, S3_REGION
+from caressa.settings import WEB_BASE_URL
 from utilities.email import send_email
 from utilities.sms import send_sms
 from utilities.models.mixins import ProfilePictureMixin
@@ -120,6 +118,14 @@ class User(AbstractCaressaUser, TimeStampedModel, ProfilePictureMixin):
         (CAREGIVER_ORG, 'Caregiver Organization'),
     )
 
+    SERVICE_INDEPENDENT = 'INDEPENDENT'
+    SERVICE_ASSISTED = 'ASSISTED'
+
+    SERVICE_TYPES = (
+        (SERVICE_INDEPENDENT, 'Independent'),
+        (SERVICE_ASSISTED, 'Assisted'),
+    )
+
     user_type = models.TextField(
         choices=TYPE_SET,
         default=CARETAKER,
@@ -129,20 +135,50 @@ class User(AbstractCaressaUser, TimeStampedModel, ProfilePictureMixin):
     profile_pic = models.TextField(blank=True, default='')
     state = models.TextField(blank=False, default='unknown')
     city = models.TextField(blank=False, default='unknown')
-    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility, on_delete=models.DO_NOTHING, null=True, )
+    senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
+                                               on_delete=models.DO_NOTHING,
+                                               null=True, )
+
+    # todo Below are Senior-Specific. Consider moving them to a new model `Senior` associated with User based on
+    #  one-to-one field-based
     room_no = models.CharField(verbose_name="Room Number",
                                max_length=8,
                                null=False,
                                default='',
                                blank=True,
                                help_text="The room number of the senior. It is only meaningful for the senior", )
-    is_anonymous_user = models.BooleanField(default=True,
-                                            help_text='Having this field anonymous means that the content will '
-                                                      'not be optimized on the personal level, e.g. calling by '
-                                                      'name. Once you set the user\'s first name properly you can '
-                                                      'set this field to `False`', )
+
+    birth_date = models.DateField(verbose_name="Birthday",
+                                  default=None,
+                                  null=True,
+                                  blank=True, )
+
+    move_in_date = models.DateField(verbose_name="Move In Date",
+                                    default=None,
+                                    null=True,
+                                    blank=True, )
+
+    service_type = models.TextField(choices=SERVICE_TYPES,
+                                    default='',
+                                    blank=True, )
+
+    caregivers = models.ManyToManyField(to='User',
+                                        related_name='in_care_circle_of',
+                                        blank=True,
+                                        limit_choices_to={'user_type': CAREGIVER})
 
     objects = CaressaUserManager()
+
+    def add_to_care_circle(self, caregiver: 'User'):
+        assert self.is_senior(), (
+            "Caregiver can only be added for seniors, attended for %s." % self.user_type
+        )
+
+        assert caregiver.user_type == self.CAREGIVER, (
+            "Senior's care circle can only include caregivers, attended for %s." % caregiver.user_type
+        )
+
+        self.caregivers.add(caregiver)
 
     def is_senior(self):
         return self.user_type == self.CARETAKER
