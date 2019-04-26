@@ -1,4 +1,4 @@
-from alexa.api.views import JokeViewSet, UserMeViewSet, SeniorListViewSet, \
+from alexa.api.views import JokeViewSet, UserMeViewSet, SeniorDetailViewSet, SeniorListViewSet, \
     ChannelsViewSet, CirclesViewSet, UserSettingsViewSet, CircleInvitationViewSet, CircleReinvitationViewSet
 from actions.api.views import ActionViewSet
 from rest_framework_extensions.routers import ExtendedSimpleRouter
@@ -37,6 +37,7 @@ def individual_paths():
                                                         'post': 'create', })),
         path('api/seniors/<int:pk>/', SeniorListViewSet.as_view({'delete': 'destroy',
                                                                  'put': 'update'})),
+        path('api/residents/<int:pk>/', SeniorDetailViewSet.as_view({'get': 'retrieve'})),
     ]
 
     web_url_list = [

@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from alexa.models import Joke, User, FamilyProspect, Circle, UserSettings, CircleInvitation, CircleReinvitation
 from actions.models import UserAction
-from senior_living_facility.api.mixins import DeviceStatusSerializerMixin
+from senior_living_facility.api.mixins import DeviceStatusSerializerMixin, MessageThreadUrlSerializerMixin, \
+    ProfilePictureUrlSerializerMixin, MorningCheckInSerializerMixin
 from streaming.models import Tag
 from actions.api.serializers import ActionSerializer
 from actstream.models import action_object_stream
@@ -14,15 +15,22 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('pk', 'first_name', 'last_name', 'email', 'user_type',
-                  'senior_living_facility', 'profile_pic_url', 'senior', )
+                  'senior_living_facility', 'senior', 'profile_picture_url', 'thumbnail_url', )
 
-    profile_pic_url = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
     senior = serializers.SerializerMethodField()
 
-    def get_profile_pic_url(self, user: User):
+    @staticmethod
+    def get_profile_picture_url(user: User):
         return user.get_profile_pic()
 
-    def get_senior(self, user: User):
+    @staticmethod
+    def get_thumbnail_url(user: User):
+        return user.get_thumbnail_url()
+
+    @staticmethod
+    def get_senior(user: User):
         if not user.user_type == User.FAMILY:
             return {}
         senior = user.senior_circle.person_of_interest
@@ -188,13 +196,29 @@ class FamilyProspectSerializer(serializers.ModelSerializer):
         return True
 
 
-class SeniorSerializer(DeviceStatusSerializerMixin, serializers.ModelSerializer):
+class SeniorSerializer(MorningCheckInSerializerMixin,
+                       serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('pk', 'first_name', 'last_name', 'room_no', 'primary_contact', 'device_status', )
+        fields = ('id', 'first_name', 'last_name', 'email', 'user_type', 'senior_living_facility',
+                  'phone_number', 'birth_date', 'move_in_date', 'service_type', 'room_no', 'primary_contact',
+                  'caregivers', 'thumbnail_url', ) + MorningCheckInSerializerMixin.get_check_in_fields()
 
     primary_contact = serializers.SerializerMethodField()
     device_status = serializers.SerializerMethodField()
+    caregivers = serializers.SerializerMethodField()
+    message_thread_url = serializers.SerializerMethodField()
+    profile_picture_url = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
+    check_in_info = serializers.SerializerMethodField(method_name='get_info_for_checked_in')
+
+    @staticmethod
+    def get_caregivers(senior: User):
+        return [{
+            "first_name": caregiver.first_name,
+            "last_name": caregiver.last_name,
+            "phone_number": caregiver.phone_number.as_national if caregiver.phone_number else '',
+        } for caregiver in senior.caregivers.all()]
 
     @staticmethod
     def get_primary_contact(senior: User):

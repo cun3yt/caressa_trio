@@ -113,11 +113,20 @@ class ProfilePictureUrlSerializerMixin:
 
     1. `profile_picture_url` in its fields tuple.
     2. `profile_picture_url = serializers.SerializerMethodField()`
+
+    Optional if thumbnail URL is needed:
+
+    1. `get_thumbnail_url` in its fields tuple.
+    2. `get_thumbnail_url = serializers.SerializerMethodField()`
     """
 
     @staticmethod
     def get_profile_picture_url(senior: User):
         return senior.get_profile_pic()
+
+    @staticmethod
+    def get_thumbnail_url(senior: User):
+        return senior.get_thumbnail_url()
 
 
 class MorningCheckInSerializerMixin(DeviceStatusSerializerMixin, CheckInSerializerMixin,
