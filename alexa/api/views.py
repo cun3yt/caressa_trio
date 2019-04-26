@@ -111,9 +111,6 @@ class SeniorDetailViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         self.check_object_permissions(self.request, user)
         return user
 
-    def get_serializer_class(self):
-        return SeniorSerializer
-
 
 class JokeViewSet(SerializerRequestViewSetMixin, viewsets.ReadOnlyModelViewSet):
     authentication_classes = (OAuth2Authentication,)
