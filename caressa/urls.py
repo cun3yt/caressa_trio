@@ -33,6 +33,7 @@ from caressa.admin import get_admin
 from senior_living_facility.urls import urls as senior_living_facility_urls, \
     api_urls as senior_living_facility_api_urls
 from streaming.urls import api_urls as streaming_api_urls
+from utilities.test_urls import test_urls
 
 
 from rest_framework.documentation import include_docs_urls
@@ -74,4 +75,5 @@ urlpatterns = [
 
 urlpatterns += individual_paths_alexa() + senior_living_facility_api_urls
 urlpatterns += streaming_api_urls
+urlpatterns += test_urls
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
