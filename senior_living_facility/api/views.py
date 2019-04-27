@@ -145,7 +145,7 @@ class FacilityResidentTodayCheckInViewSet(mixins.DestroyModelMixin, mixins.Creat
         today = today_in_tz(staff.senior_living_facility.timezone)
         check_in, _ = facility_models.FacilityCheckInOperationForSenior.objects\
             .update_or_create(senior=self.senior, date=today, defaults={'checked': None, 'staff': staff})
-        return Response({'success': True}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'success': True}, status=status.HTTP_202_ACCEPTED)
 
 
 class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):

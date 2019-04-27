@@ -2,6 +2,9 @@ import pytz
 import unittest
 
 from unittest.mock import patch
+
+from caressa.settings import API_URL
+from utilities.api.urls import reverse
 from utilities.email import send_email
 from utilities.speech import ssml_post_process
 from utilities.sms import send_sms
@@ -250,3 +253,16 @@ class TestDeepSet(unittest.TestCase):
             'aBC': 123,
             'AbC': 3,
         })
+
+
+class UrlTestCases(unittest.TestCase):
+    def setUp(self) -> None:
+        self.full_path = reverse(name='test-url')
+        self.full_path_with_pk = reverse(name='test-url-pk', kwargs={'pk': 1})
+        self.expected_full_path = '{API_URL}{relative_url}'.format(API_URL=API_URL, relative_url='/test/url/')
+        self.expected_full_path_with_pk = '{API_URL}{relative_url}'.format(API_URL=API_URL, relative_url='/test/url/1/')
+
+    def test_reverse(self):
+        self.assertEqual(self.full_path, self.expected_full_path)
+        self.assertEqual(self.full_path_with_pk, self.expected_full_path_with_pk)
+
