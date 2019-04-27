@@ -264,5 +264,5 @@ class UrlTestCases(unittest.TestCase):
 
     def test_reverse(self):
         self.assertEqual(self.full_path, self.expected_full_path)
-        self.assertEqual(self.expected_full_path_with_pk, self.expected_full_path_with_pk)
+        self.assertEqual(self.full_path_with_pk, self.expected_full_path_with_pk)
 
