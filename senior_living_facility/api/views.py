@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 
 from senior_living_facility.models import SeniorLivingFacility
 from utilities import file_operations as file_ops
-from utilities.time import today_in_tz
+from utilities.time import now_in_tz, today_in_tz, time_today_in_tz
 from utilities.views.mixins import ForAdminApplicationMixin
 
 
@@ -36,6 +36,33 @@ class ServiceRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated, IsSenior, )
     queryset = facility_models.ServiceRequest.objects.all()
     serializer_class = facility_serializers.ServiceRequestSerializer
+
+
+class FacilityTimeState(views.APIView):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
+
+    def get(self, request, pk, format=None):
+        assert self.facility == request.user.senior_living_facility, (
+            "No access for this calendar"
+        )
+
+        is_status_changeable = self.facility.is_morning_status_changeable
+        next_cut_off = self.facility.next_morning_status_cut_off_time
+
+        tz = self.facility.timezone
+
+        return Response({
+            'timezone': tz,
+            'current_time': now_in_tz(tz),
+            'status': "morning-status-available" if is_status_changeable else "morning-status-not-available",
+            'status_change_datetime': next_cut_off
+        })
+
+    @property
+    def facility(self):
+        pk = self.kwargs.get('pk')
+        return SeniorLivingFacility.objects.get(pk=pk)
 
 
 class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):

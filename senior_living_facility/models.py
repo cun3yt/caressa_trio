@@ -22,13 +22,13 @@ from utilities.views.mixins import ForAdminApplicationMixin
 from utilities.models.mixins import ProfilePictureMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
-from datetime import datetime, time, date
+from datetime import datetime, time, date, timedelta
 from icalevents.icalevents import events as query_events
 from utilities.speech import ssml_post_process
 
 from utilities.cryptography import compute_hash
 from utilities.sms import send_sms
-from utilities.time import time_today_in_tz as time_in_tz, today_in_tz
+from utilities.time import time_today_in_tz as time_in_tz, today_in_tz, now_in_tz
 
 
 class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
@@ -88,14 +88,29 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
     def deadline_in_time_today_in_tz(self):
         return self.time_today_in_tz(self.check_in_deadline)
 
+    @property
+    def is_morning_status_changeable(self):
+        """
+        Can the morning status be changed, i.e. is the morning status in the changeable zone.
+        """
+        return self.check_in_time_today_in_tz <= now_in_tz(self.timezone) <= self.deadline_in_time_today_in_tz
+
+    @property
+    def next_morning_status_cut_off_time(self):
+        now = now_in_tz(self.timezone)
+        if now <= self.check_in_time_today_in_tz:
+            return self.check_in_time_today_in_tz
+        if now <= self.deadline_in_time_today_in_tz:
+            return self.deadline_in_time_today_in_tz
+        return self.check_in_time_today_in_tz + timedelta(days=1)
+
     def has_check_in_reminder_passed(self):     # todo get rid of `tz` for comparison
         assert self.check_in_reminder, (
             "check_in_reminder must be set in SeniorLivingFacility "
             "for has_check_in_reminder_passed function to be used."
         )
         check_in_reminder_in_tz = self.time_today_in_tz(self.check_in_reminder)
-        now_in_tz = timezone.localtime(timezone=pytz.timezone(self.timezone))
-        return check_in_reminder_in_tz <= now_in_tz
+        return check_in_reminder_in_tz <= now_in_tz(self.timezone)
 
     @property
     def real_time_communication_channels(self):
