@@ -3,7 +3,7 @@ from datetime import date
 from django.test import TestCase
 
 from caressa.settings import API_URL
-from senior_living_facility.api.serializers import PhotoGallerySerializer
+from senior_living_facility.api.serializers import PhotoGallerySerializer, PhotosDaySerializer
 from senior_living_facility.models import SeniorLivingFacility, ServiceRequest, Photo, PhotoGallery
 from model_mommy import mommy
 from unittest.mock import patch
@@ -68,7 +68,7 @@ class TestPhotoGallerySerializer(TestCase):
     def setUp(self) -> None:
         self.facility = mommy.make(SeniorLivingFacility, facility_id='CA.Fremont.XYZ')
         self.photo_gallery = mommy.make(PhotoGallery, senior_living_facility=self.facility)
-        self.gallery_view_date = date(2019, 6, 10)
+        self.gallery_view_date = date(2019, 4, 24)
         self.photo = mommy.make(Photo, photo_gallery=self.photo_gallery,
                                 date=self.gallery_view_date,
                                 url='http://dummyimage.com/143x220.jpg/dddddd/000000')
@@ -97,7 +97,44 @@ class TestPhotoGallerySerializer(TestCase):
         self.assertEqual(data['day']['date'], self.gallery_view_date.isoformat())
 
     def test_validation(self):
-        self.serializer_data = '123'
+        self.serializer_data = 123
         invalid_serializer = PhotoGallerySerializer(data=self.serializer_data)
 
-        self.assertFalse(invalid_serializer.is_valid())
+        self.assertFalse(invalid_serializer.is_valid(), "Dictionary value is valid. Need to pass other than "
+                                                        "Dictionary to check if validation works")
+
+
+class TestPhotosDaySerializer(TestCase):
+    def setUp(self) -> None:
+        self.facility = mommy.make(SeniorLivingFacility, facility_id='CA.Fremont.XYZ')
+        self.photo_gallery = mommy.make(PhotoGallery, senior_living_facility=self.facility)
+        self.photo_attributes = {
+            'photo_gallery': self.photo_gallery,
+            'date': date(2019, 4, 24),
+            'url': 'http://dummyimage.com/143x220.jpg/dddddd/000000'
+        }
+
+        self.serializer_data = {
+            'url': 'http://dummyimage.com/232x227.png/5fa2dd/ffffff'
+        }
+
+        self.photo = Photo.objects.create(**self.photo_attributes)
+        self.serializer = PhotosDaySerializer(instance=self.photo)
+
+    def test_contains_expected_fields(self):
+        data = self.serializer.data
+
+        self. assertCountEqual(data.keys(), ['url'])
+
+    def test_photo_field_content(self):
+        data = self.serializer.data
+
+        self.assertEqual(data['url'], self.photo_attributes['url'])
+
+    def test_validation(self):
+        self.serializer_data = 'http://dummyimage.com/143x220.jpg/dddddd/000000'
+
+        invalid_serializer = PhotosDaySerializer(data=self.serializer_data)
+
+        self.assertFalse(invalid_serializer.is_valid(),)
+

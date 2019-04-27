@@ -378,10 +378,4 @@ class PhotoGallerySerializer(serializers.ModelSerializer):
 class PhotosDaySerializer(serializers.ModelSerializer):
     class Meta:
         model = facility_models.Photo
-        fields = ('photo', )
-
-    photo = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_photo(photo: facility_models.Photo):
-        return photo.url
+        fields = ('url', )
