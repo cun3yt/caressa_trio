@@ -55,7 +55,6 @@ class UserChangeForm(forms.ModelForm):
                   'last_name',
                   'email',
                   'user_type',
-                  'is_anonymous_user',
                   'date_joined',
                   'is_staff',
                   'is_active',
@@ -76,7 +75,8 @@ class UserAdmin(BaseUserAdmin):
 
     fieldsets = (
         (None, {'fields': ('email', 'password', 'user_type', 'device_serial', 'device_status', )}),
-        (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone_number', 'senior_living_facility', )}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name', 'phone_number', 'senior_living_facility',
+                                         'birth_date', 'move_in_date', 'service_type', 'caregivers', )}),
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser',
                                        'groups', 'user_permissions')}),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
@@ -95,10 +95,13 @@ class UserAdmin(BaseUserAdmin):
                     'user_type',
                     'device_status',
                     'date_joined',
-                    'is_anonymous_user',
                     'is_staff',
                     'is_active',
                     'senior_living_facility',
+                    'room_no',
+                    'birth_date',
+                    'move_in_date',
+                    'service_type',
                     'user_type',
                     'phone_number', )
     readonly_fields = ('id',
@@ -107,8 +110,11 @@ class UserAdmin(BaseUserAdmin):
                        'is_active',
                        'device_status',
                        'device_serial', )
-    search_fields = ('first_name', 'last_name', 'email',)
-    ordering = ('email',)
+
+    autocomplete_fields = ['caregivers', ]
+
+    search_fields = ('first_name', 'last_name', 'email', )
+    ordering = ('email', )
     list_filter = ('user_type', 'is_staff', 'is_superuser', 'is_active', 'groups', )
 
     def device_serial(self, user: User):

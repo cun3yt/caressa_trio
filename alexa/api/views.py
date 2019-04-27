@@ -1,6 +1,8 @@
 from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+
+from senior_living_facility.api.permissions import IsFacilityOrgMember, IsInSameFacility
 from utilities.views.mixins import SerializerRequestViewSetMixin
 from alexa.models import Joke, User, UserSettings, Circle, CircleInvitation
 from alexa.api.serializers import UserSerializer, SeniorSerializer, JokeSerializer, \
@@ -95,6 +97,19 @@ class SeniorListViewSet(mixins.UpdateModelMixin, mixins.DestroyModelMixin, mixin
                                        senior_living_facility=user.senior_living_facility,
                                        is_active=True).all()
         return queryset     # todo page size needs to be adjusted...
+
+
+class SeniorDetailViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsFacilityOrgMember, IsInSameFacility, )
+    queryset = User.objects.all()
+    serializer_class = SeniorSerializer
+
+    def get_object(self):
+        user_pk = self.kwargs.get('pk')
+        user = User.objects.get(pk=user_pk)
+        self.check_object_permissions(self.request, user)
+        return user
 
 
 class JokeViewSet(SerializerRequestViewSetMixin, viewsets.ReadOnlyModelViewSet):

@@ -97,8 +97,13 @@ class MessageThreadUrlSerializerMixin:
 
     @staticmethod
     def get_message_thread_url(senior: User):   # todo check / solve this without extra query to db
-        senior_msg_thrd_participation = MessageThreadParticipant.objects.get(user=senior)
-        return {'url': reverse('message-thread', kwargs={'pk': senior_msg_thrd_participation.message_thread_id})}
+        try:
+            senior_msg_thrd_participation = MessageThreadParticipant.objects.get(user=senior)
+            return {'url': reverse('message-thread', kwargs={'pk': senior_msg_thrd_participation.message_thread_id})}
+        except MessageThreadParticipant.DoesNotExist:
+            return {                # todo is this correct Mikail?
+                'url': None,
+            }
 
 
 class ProfilePictureUrlSerializerMixin:
@@ -108,11 +113,20 @@ class ProfilePictureUrlSerializerMixin:
 
     1. `profile_picture_url` in its fields tuple.
     2. `profile_picture_url = serializers.SerializerMethodField()`
+
+    Optional if thumbnail URL is needed:
+
+    1. `get_thumbnail_url` in its fields tuple.
+    2. `get_thumbnail_url = serializers.SerializerMethodField()`
     """
 
     @staticmethod
     def get_profile_picture_url(senior: User):
         return senior.get_profile_pic()
+
+    @staticmethod
+    def get_thumbnail_url(senior: User):
+        return senior.get_thumbnail_url()
 
 
 class MorningCheckInSerializerMixin(DeviceStatusSerializerMixin, CheckInSerializerMixin,
