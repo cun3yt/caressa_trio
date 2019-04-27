@@ -124,7 +124,7 @@ class TestPhotosDaySerializer(TestCase):
     def test_contains_expected_fields(self):
         data = self.serializer.data
 
-        self. assertCountEqual(data.keys(), ['url'])
+        self.assertCountEqual(data.keys(), ['url'])
 
     def test_photo_field_content(self):
         data = self.serializer.data
