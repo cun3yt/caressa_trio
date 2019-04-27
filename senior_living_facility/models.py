@@ -22,13 +22,13 @@ from utilities.views.mixins import ForAdminApplicationMixin
 from utilities.models.mixins import ProfilePictureMixin
 from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
-from datetime import datetime, time, date
+from datetime import datetime, time, date, timedelta
 from icalevents.icalevents import events as query_events
 from utilities.speech import ssml_post_process
 
 from utilities.cryptography import compute_hash
 from utilities.sms import send_sms
-from utilities.time import time_today_in_tz as time_in_tz, today_in_tz
+from utilities.time import time_today_in_tz as time_in_tz, today_in_tz, now_in_tz
 
 
 class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
@@ -88,14 +88,29 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
     def deadline_in_time_today_in_tz(self):
         return self.time_today_in_tz(self.check_in_deadline)
 
+    @property
+    def is_morning_status_changeable(self):
+        """
+        Can the morning status be changed, i.e. is the morning status in the changeable zone.
+        """
+        return self.check_in_time_today_in_tz <= now_in_tz(self.timezone) <= self.deadline_in_time_today_in_tz
+
+    @property
+    def next_morning_status_cut_off_time(self):
+        now = now_in_tz(self.timezone)
+        if now <= self.check_in_time_today_in_tz:
+            return self.check_in_time_today_in_tz
+        if now <= self.deadline_in_time_today_in_tz:
+            return self.deadline_in_time_today_in_tz
+        return self.check_in_time_today_in_tz + timedelta(days=1)
+
     def has_check_in_reminder_passed(self):     # todo get rid of `tz` for comparison
         assert self.check_in_reminder, (
             "check_in_reminder must be set in SeniorLivingFacility "
             "for has_check_in_reminder_passed function to be used."
         )
         check_in_reminder_in_tz = self.time_today_in_tz(self.check_in_reminder)
-        now_in_tz = timezone.localtime(timezone=pytz.timezone(self.timezone))
-        return check_in_reminder_in_tz <= now_in_tz
+        return check_in_reminder_in_tz <= now_in_tz(self.timezone)
 
     @property
     def real_time_communication_channels(self):
@@ -133,11 +148,11 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
                            .values_list('id', flat=True))
         return result_list
 
-    def get_today_events(self):
+    def get_given_day_events(self, time_: datetime) -> dict:
         spoken_time_format = DATETIME_FORMATS['spoken']['time']
 
         tz = pytz.timezone(self.timezone)
-        now = datetime.now(tz)
+
         events = {
             'count': 0,
             'all_day': {
@@ -152,8 +167,8 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
 
         if self.calendar_url:
             qs = query_events(url=self.calendar_url,
-                              start=datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz),
-                              end=datetime(now.year, now.month, now.day, 23, 59, 59, tzinfo=tz),
+                              start=datetime(time_.year, time_.month, time_.day, 0, 0, 0, tzinfo=tz),
+                              end=datetime(time_.year, time_.month, time_.day, 23, 59, 59, tzinfo=tz),
                               fix_apple=True)
 
             events['all_day']['set'] = [{'summary': event.summary,
@@ -172,6 +187,11 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
             events['count'] = events['all_day']['count'] + events['hourly_events']['count']
 
         return events
+
+    def get_today_events(self) -> dict:
+        tz = pytz.timezone(self.timezone)
+        now = datetime.now(tz)
+        return self.get_given_day_events(now)
 
     def today_events_summary_in_text(self) -> str:
         spoken_date_format = "%B %d %A"     # e.g. 'March 21 Thursday'

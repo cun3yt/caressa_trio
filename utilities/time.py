@@ -10,13 +10,17 @@ def seconds_to_minutes(seconds) -> str:
     return formatted_str
 
 
+def now_in_tz(tz: str) -> datetime:
+    return localtime(timezone=pytz.timezone(tz))
+
+
 def time_today_in_tz(timezone: str, hour, minute=0, second=0) -> datetime:
-    now_in_tz = localtime(timezone=pytz.timezone(timezone))
-    return now_in_tz.replace(hour=hour,
-                             minute=minute,
-                             second=second,
-                             microsecond=0)
+    _now_in_tz = now_in_tz(timezone)
+    return _now_in_tz.replace(hour=hour,
+                              minute=minute,
+                              second=second,
+                              microsecond=0)
 
 
 def today_in_tz(tz: str) -> date:
-    return localtime(timezone=pytz.timezone(tz)).date()
+    return now_in_tz(tz).date()
