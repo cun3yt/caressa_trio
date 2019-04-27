@@ -7,7 +7,7 @@ from senior_living_facility.api.views import SeniorLivingFacilityViewSet, Senior
     FacilityViewSet, FacilityListViewSet, SeniorLivingFacilityContentViewSet, \
     MessageThreadMessagesViewSet, ServiceRequestViewSet, uploaded_new_profile_picture, FacilityMessageViewSet, \
     PhotoGalleryViewSet, PhotosDayViewSet, FacilityResidentTodayCheckInViewSet, MessagesThreadParticipantViewSet, \
-    MessageThreadViewSet
+    MessageThreadViewSet, CalendarViewSet
 from caressa.settings import WEB_CLIENT, API_URL
 
 urls = [
@@ -60,4 +60,6 @@ api_urls = [
          PhotoGalleryViewSet.as_view({'get': 'list', }), name='photo-gallery'),
     path('api/photo-galleries/<int:pk>/days/<slug:date>/',
          PhotosDayViewSet.as_view({'get': 'list', }), name='photo-day-view'),
+    path('api/calendars/<int:pk>/',
+         CalendarViewSet.as_view(), name='calendar'),
 ]

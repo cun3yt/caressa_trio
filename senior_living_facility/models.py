@@ -133,11 +133,11 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
                            .values_list('id', flat=True))
         return result_list
 
-    def get_today_events(self):
+    def get_given_day_events(self, time_: datetime) -> dict:
         spoken_time_format = DATETIME_FORMATS['spoken']['time']
 
         tz = pytz.timezone(self.timezone)
-        now = datetime.now(tz)
+
         events = {
             'count': 0,
             'all_day': {
@@ -152,8 +152,8 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
 
         if self.calendar_url:
             qs = query_events(url=self.calendar_url,
-                              start=datetime(now.year, now.month, now.day, 0, 0, 0, tzinfo=tz),
-                              end=datetime(now.year, now.month, now.day, 23, 59, 59, tzinfo=tz),
+                              start=datetime(time_.year, time_.month, time_.day, 0, 0, 0, tzinfo=tz),
+                              end=datetime(time_.year, time_.month, time_.day, 23, 59, 59, tzinfo=tz),
                               fix_apple=True)
 
             events['all_day']['set'] = [{'summary': event.summary,
@@ -172,6 +172,11 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
             events['count'] = events['all_day']['count'] + events['hourly_events']['count']
 
         return events
+
+    def get_today_events(self) -> dict:
+        tz = pytz.timezone(self.timezone)
+        now = datetime.now(tz)
+        return self.get_given_day_events(now)
 
     def today_events_summary_in_text(self) -> str:
         spoken_date_format = "%B %d %A"     # e.g. 'March 21 Thursday'

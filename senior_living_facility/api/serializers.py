@@ -3,12 +3,12 @@ from datetime import timedelta
 from django.utils import timezone
 
 from rest_framework import serializers
-from caressa.settings import REST_FRAMEWORK, API_URL
+from caressa.settings import REST_FRAMEWORK
 
 from alexa.models import User
 from senior_living_facility.api import mixins as facility_mixins
 from senior_living_facility import models as facility_models
-from alexa.api.serializers import SeniorSerializer, UserSerializer
+from alexa.api.serializers import UserSerializer
 from senior_living_facility.models import ContentDeliveryRule, ServiceRequest, Message, MessageThread
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from utilities.api.urls import reverse

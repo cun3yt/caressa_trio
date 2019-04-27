@@ -1,7 +1,7 @@
 import pytz
 
 from django.db.models import Q, Count
-from rest_framework import viewsets, mixins, status
+from rest_framework import viewsets, mixins, status, views
 from rest_framework.response import Response
 from rest_framework.decorators import authentication_classes, permission_classes, api_view
 from rest_framework.pagination import PageNumberPagination
@@ -13,10 +13,12 @@ from alexa.models import User
 from caressa import settings
 from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserInFacility, IsInSameFacility
 from senior_living_facility.api import serializers as facility_serializers
+from senior_living_facility.api import calendar_serializers as calendar_serializers
 from senior_living_facility import models as facility_models
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from senior_living_facility.models import SeniorLivingFacility
 from utilities import file_operations as file_ops
 from utilities.time import today_in_tz
 from utilities.views.mixins import ForAdminApplicationMixin
@@ -239,6 +241,39 @@ class PhotosDayViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     def get_queryset(self):
         datetime_obj = datetime.strptime(self.date, '%Y-%m-%d')
         return facility_models.Photo.objects.filter(date=datetime_obj)
+
+
+class CalendarViewSet(views.APIView):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
+
+    def get(self, request, pk, format=None):
+        """
+        Returns the calendar events for the days of the given day GET parameter `start` +/- day_delta.
+        """
+
+        plus_minus_day_delta = 7
+        date_format = "%A, %B %d, %Y"   # e.g. Monday, April 08, 2019
+        start = request.query_params.get('start')
+        start_datetime = datetime.strptime(start, '%Y-%m-%d') - timedelta(days=plus_minus_day_delta)
+
+        assert self.facility == request.user.senior_living_facility, (
+            "No access for this calendar"
+        )
+
+        interval = [
+            {
+                'date': (start_datetime + timedelta(days=day_increment)).strftime(date_format),
+                'events': self.facility.get_given_day_events(start_datetime + timedelta(days=day_increment))
+            } for day_increment in range(0, (2 * plus_minus_day_delta + 1))
+        ]
+        data = calendar_serializers.CalendarDateSerializer(interval, many=True).data
+        return Response(data)
+
+    @property
+    def facility(self):
+        pk = self.kwargs.get('pk')
+        return SeniorLivingFacility.objects.get(pk=pk)
 
 
 @authentication_classes((OAuth2Authentication, ))
