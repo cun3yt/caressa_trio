@@ -407,12 +407,12 @@ export default {
     },
     getPresignedUrl (fileName, contentType) {
       this.profilePictureData.isLoading = true
-      return this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
+      return this.$auth.post(`${this.$root.$options.hosts.rest}/generate-signed-url/`, [{
         'key': fileName,
         'content-type': contentType,
         'client-method': 'put_object',
         'request-type': 'PUT'
-      }).then(success => {
+      }]).then(success => {
         this.profilePictureData.isLoading = false
         return success
       }, error => {
