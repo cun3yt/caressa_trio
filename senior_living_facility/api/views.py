@@ -306,26 +306,28 @@ class CalendarViewSet(views.APIView):
 @authentication_classes((OAuth2Authentication, ))
 @permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
-def uploaded_new_profile_picture(request, **kwargs):
-    user_id = kwargs.get('id', None)
+def new_profile_picture(request, **kwargs):
+    instance_type = kwargs.get('instance', None)
+    instance_model = SeniorLivingFacility if instance_type == 'facility' else User
+    instance_id = kwargs.get('id', None)
 
-    user = User.objects.filter(pk=user_id)[0]
+    instance = instance_model.objects.filter(pk=instance_id)[0]
     file_name = request.data.get('key')
 
-    current_user_profile_pic = user.profile_pic
+    current_instance_profile_pic = instance.profile_pic
 
-    new_profile_pic_hash_version = file_ops.generate_versioned_picture_name(current_user_profile_pic)
+    new_profile_pic_hash_version = file_ops.generate_versioned_picture_name(current_instance_profile_pic)
 
     file_ops.download_to_tmp_from_s3(file_name, settings.S3_RAW_UPLOAD_BUCKET)
 
     save_picture_format = 'jpg'
     picture_set = file_ops.profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version,
                                                             save_picture_format)
-    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
+    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, instance.id, 'user')
 
-    user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
-    user.save()
-    pics = user.get_profile_pictures()
+    instance.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
+    instance.save()
+    pics = instance.get_profile_pictures()
 
     return Response({
         'message': 'Profile Picture Updated',

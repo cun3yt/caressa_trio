@@ -50,8 +50,6 @@ api_urls = [
          api_views.MessageThreadMessagesViewSet.as_view({'get': 'list', }), name='message-thread-messages'),
     path('api/users/me/contents/',
          api_views.SeniorLivingFacilityContentViewSet.as_view({'get': 'list'})),
-    path('api/users/<int:id>/uploaded_new_profile_picture/',
-         api_views.uploaded_new_profile_picture, name='uploaded_new_profile_picture',),
     path('api/users/me/service-requests/',
          api_views.ServiceRequestViewSet.as_view({'post': 'create'})),
     path('api/photo-galleries/<int:pk>/',
@@ -60,4 +58,6 @@ api_urls = [
          api_views.PhotosDayViewSet.as_view({'get': 'list', }), name='photo-day-view'),
     path('api/calendars/<int:pk>/',
          api_views.CalendarViewSet.as_view(), name='calendar'),
+    path('api/<slug:instance>/<int:id>/profile-picture/',
+         api_views.new_profile_picture, name='new_profile_picture',),
 ]

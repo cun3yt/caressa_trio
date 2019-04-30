@@ -8,6 +8,8 @@ from actions.api.serializers import ActionSerializer, CommentSerializer, Reactio
 from actions.models import UserAction, Comment, UserReaction, Joke, UserPost, CommentResponse, UserQuery
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
+
+from senior_living_facility.models import SeniorLivingFacility
 from streaming.models import Messages
 import boto3
 from caressa import settings
@@ -235,7 +237,7 @@ def new_profile_picture(request):
 
     save_picture_format = 'jpg'
     picture_set = profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version, save_picture_format)
-    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
+    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id, 'user')
 
     user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     user.save()

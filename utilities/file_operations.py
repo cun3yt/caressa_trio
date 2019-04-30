@@ -65,14 +65,15 @@ def download_to_tmp_from_s3(file_name, bucket):
     return download_path
 
 
-def upload_to_s3_from_tmp(bucket, files: list, user_id):
+def upload_to_s3_from_tmp(bucket, files: list, instance_id, instance_type):
     s3_client = boto3.client('s3')
     for file in files:
         file_path = '/tmp/{file_name}'.format(file_name=file['file_name'])
         s3_client.upload_file(file_path,
                               bucket,
-                              'images/user/{user_id}/{file_name}'.format(user_id=user_id,
-                                                                         file_name=file['file_name']),
+                              'images/{instance_type}/{instance_id}/{file_name}'.format(instance_type=instance_type,
+                                                                                        instance_id=instance_id,
+                                                                                        file_name=file['file_name']),
                               ExtraArgs={'ACL': 'public-read', 'ContentType': file['file_format']})
 
 
