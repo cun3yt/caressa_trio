@@ -87,8 +87,13 @@ class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplication
             content_audio_file = tts.tts_to_s3(text=text_content, return_format='url')
         else:
             text_content = None
-            file_key = message_data.get('content')
-            content_audio_file = move_file_from_upload_to_prod_bucket(file_key)
+            source_file_key = message_data.get('content')
+            dest_file_key = 'audio/facility/{id}/message/{key}'.format(id=source_user.senior_living_facility.id,
+                                                                       key=source_file_key)
+
+            content_audio_file = move_file_from_upload_to_prod_bucket(source_file_key=source_file_key,
+                                                                      dest_file_key=dest_file_key)
+
         validated_data['content'] = text_content
         validated_data['content_audio_file'] = content_audio_file
 
