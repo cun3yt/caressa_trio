@@ -3,12 +3,15 @@ from datetime import date
 from django.test import TestCase
 
 from caressa.settings import API_URL
-from senior_living_facility.api.serializers import PhotoGallerySerializer, PhotosDaySerializer
-from senior_living_facility.models import SeniorLivingFacility, ServiceRequest, Photo, PhotoGallery
+from senior_living_facility.api.serializers import PhotoGallerySerializer, PhotosDaySerializer, MessageThreadSerializer
+from senior_living_facility.models import SeniorLivingFacility, ServiceRequest, Photo, PhotoGallery, MessageThread, \
+    MessageThreadParticipant, Message, ContentDeliveryRule
 from model_mommy import mommy
 from unittest.mock import patch
 import pytz
 import re
+
+from utilities.logger import log
 
 
 class TestSeniorLivingFacility(TestCase):
@@ -64,6 +67,79 @@ class TestServiceRequest(TestCase):
         mock_send_sms.assert_called_once_with('+1 415-533-7523', context, 'sms/service-request.txt')
 
 
+class TestMessageThreadSerializer(TestCase):
+    def setUp(self) -> None:
+        facility = mommy.make(SeniorLivingFacility, facility_id='CA.Fremont.XYZ')
+        senior = mommy.make('alexa.user', user_type='SENIOR', email='senior1@example.com',
+                            senior_living_facility=facility, phone_number='+1 493-903-1032',
+                            first_name='Pamela')
+        fac_user = mommy.make('alexa.user', user_type='CAREGIVER_ORG', email='user2@facility.com',
+                              senior_living_facility=facility, phone_number='+1 987-788-4561')
+
+        content_delivery_rule_1 = mommy.make(ContentDeliveryRule, recipient_ids=[senior.id])
+        self.message_thread_1 = mommy.make(MessageThread)
+        mommy.make(MessageThreadParticipant,
+                   message_thread=self.message_thread_1,
+                   user=senior,
+                   senior_living_facility=facility,
+                   is_all_recipients=False, )
+        mommy.make(Message,
+                   message_thread=self.message_thread_1,
+                   content='message_text_1',
+                   content_audio_file=None,
+                   source_user=fac_user,
+                   delivery_rule=content_delivery_rule_1, )
+
+        self.message_thread_1_url = '{API_URL}/api/message-thread/{id}/messages/'.format(API_URL=API_URL,
+                                                                                         id=self.message_thread_1.id)
+
+        content_delivery_rule_2 = mommy.make(ContentDeliveryRule, recipient_ids=None)
+        self.message_thread_2 = mommy.make(MessageThread)
+        mommy.make(MessageThreadParticipant,
+                   message_thread=self.message_thread_2,
+                   user=None,
+                   senior_living_facility=facility,
+                   is_all_recipients=True, )
+        mommy.make(Message,
+                   message_thread=self.message_thread_2,
+                   content='message_text_2',
+                   content_audio_file=None,
+                   source_user=fac_user,
+                   delivery_rule=content_delivery_rule_2, )
+        # self.message_thread_2_url todo implement/activate (requires all residents message thread url serialized)
+
+        self.serializer_1 = MessageThreadSerializer(instance=self.message_thread_1)
+        self.serializer_2 = MessageThreadSerializer(instance=self.message_thread_2)
+
+    def test_contains_exptected_fields(self):
+        data_1 = self.serializer_1.data
+        data_2 = self.serializer_2.data
+
+        self.assertCountEqual(data_1.keys(), ['pk', 'resident', 'messages'])
+        self.assertCountEqual(data_1['messages'].keys(), ['url'])
+        self.assertCountEqual(data_2.keys(), ['pk', 'resident', 'messages'])
+        self.assertCountEqual(data_2['messages'].keys(), ['url'])
+
+    def test_field_contents(self):
+        data_1 = self.serializer_1.data
+        data_2 = self.serializer_2.data
+
+        self.assertEqual(data_1['pk'], self.message_thread_1.id)
+        self.assertEqual(data_1['resident']['first_name'], 'Pamela')
+        self.assertEqual(data_1['messages']['url'], self.message_thread_1_url)
+
+        self.assertEqual(data_2['pk'], self.message_thread_2.id)
+        self.assertEqual(data_2['resident'], 'All Residents')
+        # self.assertEqual(data_2['messages'], self.message_thread_2_url) todo implement/activate (line 111)
+
+    def test_validation(self):
+        self.serializer_data = 123
+        invalid_serializer = MessageThreadSerializer(data=self.serializer_data)
+
+        self.assertFalse(invalid_serializer.is_valid(), "Dictionary value is valid. Need to pass other than "
+                                                        "Dictionary to check if validation works")
+
+
 class TestPhotoGallerySerializer(TestCase):
     def setUp(self) -> None:
         self.facility = mommy.make(SeniorLivingFacility, facility_id='CA.Fremont.XYZ')
@@ -75,6 +151,7 @@ class TestPhotoGallerySerializer(TestCase):
 
         relative_url = '/api/photo-galleries/{id}/days/{iso_date}/'.format(id=self.facility.id,
                                                                            iso_date=self.gallery_view_date.isoformat())
+        self.date = '2019-04-24'
         self.day_url = '{API_URL}{relative_url}'.format(API_URL=API_URL, relative_url=relative_url)
 
         self.serializer_data = {
@@ -94,7 +171,7 @@ class TestPhotoGallerySerializer(TestCase):
         data = self.serializer.data
 
         self.assertEqual(data['day']['url'], self.day_url)
-        self.assertEqual(data['day']['date'], self.gallery_view_date.isoformat())
+        self.assertEqual(data['day']['date'], self.date)
 
     def test_validation(self):
         self.serializer_data = 123
