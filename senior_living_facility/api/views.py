@@ -308,7 +308,7 @@ class CalendarViewSet(views.APIView):
 @api_view(['POST'])
 def new_profile_picture(request, **kwargs):
     instance_type = kwargs.get('instance', None)
-    instance_model = SeniorLivingFacility if instance_type == 'facility' else User
+    instance_model = SeniorLivingFacility if instance_type == 'facilities' else User
     instance_id = kwargs.get('id', None)
 
     instance = instance_model.objects.filter(pk=instance_id)[0]
