@@ -217,7 +217,10 @@ class MessageThreadParticipantSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_resident(message_thread_participant: facility_models.MessageThreadParticipant):
         if not message_thread_participant.user:
-            return 'All Residents'
+            return {
+                'All Residents': True,
+                'message-thread-url': reverse('message-thread', kwargs={'pk': message_thread_participant.id})
+            }
         return AdminAppSeniorListSerializer(message_thread_participant.user).data
 
     @staticmethod
