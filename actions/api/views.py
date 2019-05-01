@@ -237,7 +237,7 @@ def new_profile_picture(request):
 
     save_picture_format = 'jpg'
     picture_set = profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version, save_picture_format)
-    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id, 'user')
+    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, 'user', user.id)
 
     user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     user.save()

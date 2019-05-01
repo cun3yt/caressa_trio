@@ -65,7 +65,7 @@ def download_to_tmp_from_s3(file_name, bucket):
     return download_path
 
 
-def upload_to_s3_from_tmp(bucket, files: list, instance_id, instance_type):
+def upload_to_s3_from_tmp(bucket, files: list, instance_type, instance_id):
     s3_client = boto3.client('s3')
     for file in files:
         file_path = '/tmp/{file_name}'.format(file_name=file['file_name'])

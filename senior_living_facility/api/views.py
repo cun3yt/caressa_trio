@@ -307,6 +307,15 @@ class CalendarViewSet(views.APIView):
 @permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
 def new_profile_picture(request, **kwargs):
+    """
+    The purpose of this view is informing backend about the new profile picture creation.
+    After this call profile pic will be formatted (thumbnail etc.) and current entry for
+    profile pic will be updated in database.
+
+    :param request:
+    :param kwargs:
+    :return: Respopnse with profile picture url
+    """
     instance_type = kwargs.get('instance', None)
     instance_model = SeniorLivingFacility if instance_type == 'facilities' else User
     instance_id = kwargs.get('id', None)
@@ -323,7 +332,7 @@ def new_profile_picture(request, **kwargs):
     save_picture_format = 'jpg'
     picture_set = file_ops.profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version,
                                                             save_picture_format)
-    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, instance.id, instance_type)
+    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, instance_type, instance.id)
 
     instance.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     instance.save()
