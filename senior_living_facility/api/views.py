@@ -18,8 +18,9 @@ from senior_living_facility import models as facility_models
 from django.utils import timezone
 from datetime import datetime, timedelta
 
-from senior_living_facility.models import SeniorLivingFacility
+from senior_living_facility.models import SeniorLivingFacility, Photo
 from utilities import file_operations as file_ops
+from utilities.aws_operations import move_file_from_upload_to_prod_bucket
 from utilities.time import now_in_tz, today_in_tz, time_today_in_tz
 from utilities.views.mixins import ForAdminApplicationMixin
 
@@ -231,10 +232,15 @@ class SeniorLivingFacilityContentViewSet(mixins.ListModelMixin, viewsets.Generic
             .filter(Q(delivery_rule__recipient_ids__isnull=True) | Q(delivery_rule__recipient_ids__contains=[user.id]))
 
 
-class PhotoGalleryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class PhotoGalleryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, )
     serializer_class = facility_serializers.PhotoGallerySerializer
+
+    @property
+    def facility(self):
+        pk = self.kwargs.get('pk')
+        return SeniorLivingFacility.objects.get(pk=pk)
 
     class _Pagination(PageNumberPagination):
         max_page_size = 20
@@ -243,9 +249,36 @@ class PhotoGalleryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     pagination_class = _Pagination
 
+    def create(self, request, *args, **kwargs):
+        """
+        AWS operations and creating new database entry for the photo.
+        """
+
+        today = today_in_tz(self.facility.timezone)
+        photo_gallery = self.facility.photogallery
+
+        lst = []
+        for file_dict in request.data:
+            source_file_key = file_dict['key']
+            dest_file_key = 'images/facility/{id}/photo_gallery/{key}'.format(id=self.facility.id, key=source_file_key)
+
+            file_url = move_file_from_upload_to_prod_bucket(source_file_key=source_file_key,
+                                                            dest_file_key=dest_file_key)
+
+            Photo.objects.create(photo_gallery=photo_gallery, date=today, url=file_url)
+
+            obj = {
+                'key': source_file_key,
+                'url': file_url
+            }
+            lst.append(obj)
+
+        return Response(lst, status=status.HTTP_201_CREATED)
+
     def get_queryset(self):
-        dist = facility_models.Photo.objects.values('date').annotate(date_count=Count('date')).filter(date_count=1)
-        single_dates = facility_models.Photo.objects.filter(date__in=[item['date'] for item in dist])
+        dist = Photo.objects.values('date').annotate(date_count=Count('date'))\
+            .filter(photo_gallery=self.facility.photogallery)
+        single_dates = facility_models.Photo.objects.filter(date__in=[item['date'] for item in dist]).distinct('date')
         return single_dates
 
 

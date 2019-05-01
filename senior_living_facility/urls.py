@@ -56,6 +56,8 @@ api_urls = [
          api_views.ServiceRequestViewSet.as_view({'post': 'create'})),
     path('api/photo-galleries/<int:pk>/',
          api_views.PhotoGalleryViewSet.as_view({'get': 'list', }), name='photo-gallery'),
+    path('api/photo-galleries/<int:pk>/photos/',
+         api_views.PhotoGalleryViewSet.as_view({'post': 'create', }), name='new-photo-to-gallery'),
     path('api/photo-galleries/<int:pk>/days/<slug:date>/',
          api_views.PhotosDayViewSet.as_view({'get': 'list', }), name='photo-day-view'),
     path('api/calendars/<int:pk>/',

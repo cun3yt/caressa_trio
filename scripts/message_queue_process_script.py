@@ -51,7 +51,7 @@ def audio_worker(publisher, next_queued_job: Messages):
         file_key = _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key)
     else:
         file_key = ios_file_key
-        move_file_from_upload_to_prod_bucket(ios_file_key)
+        move_file_from_upload_to_prod_bucket(ios_file_key, ios_file_key)
 
     audio_type = '{publisher}_voice_record'.format(publisher=publisher)
     description = 'Audio Record from {publisher}'.format(publisher=publisher)
