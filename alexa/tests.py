@@ -41,13 +41,13 @@ class UserModelTestCase(TestCase):
 
     def test_get_profile_object(self):
         self.assertEqual(self.user_one.get_profile_pic(),
-                         'https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_250.jpg')
+                         'https://s3-us-west-1.amazonaws.com/caressa-prod/images/users/no_user/default_profile_pic_w_250.jpg')
 
     def test_get_profile_pictures(self):
         assert_value = {
-            'w_250': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_250.jpg',
-            'w_25': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_w_25.jpg',
-            'raw': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/user/no_user/default_profile_pic_raw.png',
+            'w_250': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/users/no_user/default_profile_pic_w_250.jpg',
+            'w_25': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/users/no_user/default_profile_pic_w_25.jpg',
+            'raw': 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/users/no_user/default_profile_pic_raw.png',
         }
         self.assertEqual(self.user_one.get_profile_pictures(), assert_value)
 
