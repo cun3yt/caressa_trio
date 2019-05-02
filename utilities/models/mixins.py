@@ -8,7 +8,7 @@ class ProfilePictureMixin:
         user = get_user_model()
         upper_dir = self.id if self.profile_pic else 'no_user'
         profile_picture = self.profile_pic if self.profile_pic else 'default_profile_pic'
-        picture_owner_type = 'user' if isinstance(self, user) else 'facility'
+        picture_owner_type = 'users' if isinstance(self, user) else 'facilities'
         format_string = "{region}/{bucket}/images/{picture_owner_type}" \
                         "/{upper_dir}/{profile_picture}_{dimensions}.{file_format}"
         return format_string.format(region=S3_REGION,
