@@ -67,6 +67,22 @@ class TestServiceRequest(TestCase):
         mock_send_sms.assert_called_once_with('+1 415-533-7523', context, 'sms/service-request.txt')
 
 
+class TestFacilitySerializer(TestCase):
+    pass
+
+
+class TestFacilityMessageSerializer(TestCase):
+    pass
+
+
+class TestAdminAppSeniorListSerializer(TestCase):
+    pass
+
+
+class TestFacilityStaffSerializer(TestCase):
+    pass
+
+
 class TestMessageThreadSerializer(TestCase):
     def setUp(self) -> None:
         facility = mommy.make(SeniorLivingFacility, facility_id='CA.Fremont.XYZ')
