@@ -59,6 +59,7 @@
         </div>
       </div>
     </q-modal>
+
     <q-modal v-model="loginModal" maximized>
       <div style="padding: 2.5em; margin-top: 1.5em">
         <div class="q-display-3 text-weight-light">
@@ -331,9 +332,4 @@ export default {
   text-align: center
 .q-tabs-scroller
   margin: 0 auto
-/*.main-content1*/
-  /*width: 500px*/
-  /*max-width: 90vw*/
-/*.docs-btn .q-btn*/
-  /*margin 5px*/
 </style>

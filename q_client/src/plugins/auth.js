@@ -4,6 +4,7 @@ import {Cookies} from 'quasar'
 export const bus = new Vue()
 
 let authModule
+
 authModule = {
   access_token: Cookies.get('access_token'),
   refresh_token: Cookies.get('refresh_token'),
@@ -175,6 +176,7 @@ authModule = {
     })
   }
 }
+
 export default ({Vue}) => {
   Vue.prototype.$auth = authModule
 }
