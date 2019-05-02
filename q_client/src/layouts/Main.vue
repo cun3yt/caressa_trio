@@ -9,11 +9,7 @@
         <q-toolbar-title>
           {{header.title}}
         </q-toolbar-title>
-        <q-btn v-if="header.cta"
-               class="within-iframe-hide"
-               flat
-               @click="header.cta.clickHandler"
-               style="margin-right: 15px">
+        <q-btn v-if="header.cta" class="within-iframe-hide" flat @click="header.cta.clickHandler" style="margin-right: 15px">
           <q-icon name="add" />
           {{header.cta.label}}
         </q-btn>
@@ -25,142 +21,119 @@
 
       <q-modal v-model="signUpModal" maximized>
       <div style="padding: 2.5em; margin-top: 1.5em">
-        <div class="q-display-3 text-weight-light">
-          <span style="color:#2FCD8C">Care</span>
-          <span style="color:#83ddba">ssa</span>
+        <div class="q-display-3">
+          <img class="logo" alt="Caressa logo" src="~assets/caressa-logo-full.png">
         </div>
         <div style="padding-top: 3em">
           <p class="q-display-1 text-weight-thin">Welcome,</p>
           <p class="q-display-1 text-weight-thin">Lets get started.</p>
           <div>
-          <q-input
-          v-model="signUpEmail"
-          type="email"
-          float-label="e-mail"
-          color="#2FCD8C"
-          />
-          <q-input
-           v-model="signUpPassword"
-           type="password"
-           float-label="password"
-           color="#2FCD8C"
-           />
+            <q-input v-model="signUpEmail" type="email" float-label="e-mail" color="#2FCD8C" />
+            <q-input v-model="signUpPassword" type="password" float-label="password" color="#2FCD8C" />
           </div>
-      </div>
-      <q-btn style="color:#2FCD8C; margin-top: 2em"
-      @click="signUpModal = !signUpModal; noSeniorModal = !noSeniorModal"
-      label="SIGN UP"
-      />
+        </div>
+      <q-btn class="navigation" @click="signUpModal = !signUpModal; noSeniorModal = !noSeniorModal" label="SIGN UP" />
      </div>
       <div style="padding: 2.5em; margin-top: 1.5em">
-        <p @click="loginRedirect('signUpModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+        <p @click="loginRedirect('signUpModal')" class="q-title text-weight-light">
+          <span class="secondary-link">Have an account</span>?
+        </p>
         <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
-          What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+          What is <span style="color:#2FCD8C; text-decoration: underline">Caressa</span>?
         </div>
       </div>
     </q-modal>
 
     <q-modal v-model="loginModal" maximized>
       <div style="padding: 2.5em; margin-top: 1.5em">
-        <div class="q-display-3 text-weight-light">
-          <span style="color:#2FCD8C">Care</span>
-          <span style="color:#83ddba">ssa</span>
+        <div class="q-display-3">
+          <img class="logo" alt="Caressa logo" src="~assets/caressa-logo-full.png">
         </div>
         <div style="padding-top: 3em">
           <p class="q-display-1 text-weight-thin">Welcome,</p>
           <p class="q-display-1 text-weight-thin">Enter Credentials</p>
           <div>
-            <q-input
-              v-model="loginEmail"
-              type="email"
-              float-label="e-mail"
-              color="#2FCD8C"
-            />
-            <q-input
-              v-model="loginPassword"
-              type="password"
-              float-label="password"
-              color="#2FCD8C"
-            />
+            <q-input v-model="loginEmail" type="email" float-label="e-mail" color="#2FCD8C" />
+            <q-input v-model="loginPassword" type="password" float-label="password" color="#2FCD8C" />
           </div>
         </div>
-        <q-btn style="color:#2FCD8C; margin-top: 2em"
-               @click=submitLogin()
-               label="LOGIN"
-        />
+        <q-btn class="navigation" @click=submitLogin() label="LOGIN" />
       </div>
       <div style="padding: 2.5em; margin-top: 1.5em">
-        <p @click="signUpRedirect('loginModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Sign Up</span></p>
+        <p @click="signUpRedirect('loginModal')" class="q-title text-weight-light">
+          <span style="text-decoration: underline">Sign Up</span>
+        </p>
         <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
-          What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+          What is <span style="color:#2FCD8C; text-decoration: underline">Caressa</span>?
         </div>
       </div>
     </q-modal>
 
     <q-modal v-model="noSeniorModal" maximized>
       <div style="padding: 1.5em 2.5em; margin-top: 1.5em">
-        <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+        <div class="q-display-3">
+          <img class="logo" alt="Caressa logo" src="~assets/caressa-logo-full.png">
+        </div>
         <div style="padding-top: 3em">
           <p class="q-display-2 text-weight-thin">Oops!</p>
           <p class="q-display-1 text-weight-light">Nobody is in your list.</p>
       </div>
-      <q-btn class="q-display-1 text-weight-light"
-      style="color:#83ddba; padding: 0.2em; margin-top: 2em"
-      @click="noSeniorModal = false; addSeniorModal = true"
-      label="add your beloved elder"
-      />
+      <q-btn class="q-display-1 text-weight-light" style="color:#83ddba; padding: 0.2em; margin-top: 2em"
+             @click="noSeniorModal = false; addSeniorModal = true" label="add your beloved elder" />
       </div>
       <div style="padding: 1.5em; margin-top: 1.5em">
         <div @click="videoDirection('noSeniorModal')" class="q-title text-weight-light">
           <p @click="loginRedirect('noSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Login</span></p>
-          What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+          What is <span style="color:#2FCD8C; text-decoration: underline">Caressa</span>?
         </div>
       </div>
     </q-modal>
 
     <q-modal v-model="videoModal" maximized>
       <div style="padding: 0.8em; margin-top: 5em">
-        <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+        <div class="q-display-3">
+          <img class="logo" alt="Caressa logo" src="~assets/caressa-logo-full.png">
+        </div>
         <p class="q-title text-weight-thin">Connecting Seniors with their Family</p>
         <q-video
           src="https://www.youtube.com/embed/uilkmUoXoLU?rel=0&amp;showinfo=0"
           style="width: 22.2em; height: 18em"
         />
-      <q-btn
-      align="between"
-      class="btn-fixed-width"
-      style="color:#2FCD8C; padding: 1em; margin-top: 2em"
-      @click="goBacktoPreviousModal"
-      icon="fas fa-arrow-left"
-      label="GO BACK"
-      />
+      <q-btn align="between" class="btn-fixed-width navigation go-back"
+             @click="goBacktoPreviousModal" icon="fas fa-arrow-left" label="GO BACK" />
       </div>
     </q-modal>
 
     <q-modal v-model="addSeniorModal" maximized>
-    <div style="padding: 2.5em; margin-top: 1.5em">
-      <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
-      <div style="padding-top: 3em">
-        <p class="q-display-1 text-weight-thin">Connect your beloved. &lt;3</p>
-        <div>
-        <q-input v-model="appPhoneNumber" type="number" float-label="Your Phone Number" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em" />
-        <q-input v-model="seniorPhoneNumber" type="number" float-label="Elder Phone Number" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
-        <q-input v-model="deviceCode" type="number" float-label="Number On Device" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
+      <div style="padding: 2.5em; margin-top: 1.5em">
+        <div class="q-display-3">
+          <img class="logo" alt="Caressa logo" src="~assets/caressa-logo-full.png">
         </div>
-    </div>
-    <q-btn style="color:#2FCD8C; margin-top: 2em" @click="addSeniorModal = false; foundSeniorModal = true" icon="fas fa-user-plus" label="Add" />
-    </div>
-    <div style="padding: 2.5em; margin-top: 1.5em">
-      <p @click="loginRedirect('addSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
-      <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
-        What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+        <div style="padding-top: 3em">
+          <p class="q-display-1 text-weight-thin">Connect your beloved. &lt;3</p>
+          <div>
+          <q-input v-model="appPhoneNumber" type="number" float-label="Your Phone Number" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em" />
+          <q-input v-model="seniorPhoneNumber" type="number" float-label="Elder Phone Number" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
+          <q-input v-model="deviceCode" type="number" float-label="Number On Device" color="#2FCD8C" style="color:#2FCD8C; margin-top: 1em"  />
+          </div>
+        </div>
+
+        <q-btn style="color:#2FCD8C; margin-top: 2em" @click="addSeniorModal = false; foundSeniorModal = true" icon="fas fa-user-plus" label="Add" />
       </div>
-    </div>
-  </q-modal>
+
+      <div style="padding: 2.5em; margin-top: 1.5em">
+        <p @click="loginRedirect('addSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
+        <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+          What is <span style="color:#2FCD8C; text-decoration: underline">Caressa</span>?
+        </div>
+      </div>
+    </q-modal>
 
   <q-modal v-model="foundSeniorModal" maximized>
   <div style="padding: 2.5em; margin-top: 1.5em">
-    <div class="q-display-3 text-weight-light"><span style="color:#2FCD8C">Care</span><span style="color:#83ddba">ssa</span></div>
+    <div class="q-display-3">
+      <img class="logo" alt="Caressa logo" src="~assets/caressa-logo-full.png">
+    </div>
     <div style="padding-top: 3em">
       <div>
         <q-icon size="5em" style="color:#2FCD8C" name="check_circle_outline" />
@@ -179,7 +152,7 @@
   <div style="padding: 2.5em; margin-top: 1.5em">
     <p @click="loginRedirect('foundSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
     <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
-      What is <span style="color:#2FCD8C; text-decoration: underline">Care</span><span style="color:#83ddba; text-decoration: underline">ssa</span>?
+      What is <span style="color:#2FCD8C; text-decoration: underline">Caressa</span>?
     </div>
   </div>
 </q-modal>
@@ -275,6 +248,10 @@ export default {
       this.$auth.tokenRevoke()
       this.loginModal = true
     },
+    resetLoginForm: function () {
+      this.loginEmail = 'john@caressa.ai' // todo change for production
+      this.loginPassword = 'qwer1234'
+    },
     submitLogin: function () {
       let data = {
         'username': this.loginEmail,
@@ -283,8 +260,7 @@ export default {
       this.$auth.login(data).then(
         response => {
           console.log(response, 'success')
-          this.loginEmail = ''
-          this.loginPassword = ''
+          this.resetLoginForm()
           this.loginModal = false
           bus.$emit('addFeeds')
         }, response => {
@@ -315,6 +291,7 @@ export default {
     }
   },
   mounted () {
+    this.resetLoginForm()
     bus.$on('loginRedirect', this.loginRedirect)
     bus.$on('loginSuccessRedirect', this.loginSuccessRedirect)
   },
@@ -332,4 +309,13 @@ export default {
   text-align: center
 .q-tabs-scroller
   margin: 0 auto
+img.logo
+  width: 200px
+.secondary-link
+  text-decoration: underline
+.navigation
+  color: #2FCD8C
+  margin-top: 2em
+.go-back
+  padding: 1em
 </style>
