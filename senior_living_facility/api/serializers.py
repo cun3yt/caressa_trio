@@ -202,7 +202,9 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_reply(message: Message):
         if not message.is_response_expected:
             return None
-        message_response = facility_models.MessageResponse.objects.get(message=message)
+        message_response = facility_models.MessageResponse.objects.filter(message=message)
+        if message_response.count() == 0:
+            return 'No Reply Yet'
         return ResponseSerializer(message_response).data
 
 
