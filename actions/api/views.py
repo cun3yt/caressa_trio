@@ -8,6 +8,8 @@ from actions.api.serializers import ActionSerializer, CommentSerializer, Reactio
 from actions.models import UserAction, Comment, UserReaction, Joke, UserPost, CommentResponse, UserQuery
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
+
+from senior_living_facility.models import SeniorLivingFacility
 from streaming.models import Messages
 import boto3
 from caressa import settings
@@ -157,29 +159,7 @@ def new_post(request):
 @authentication_classes((OAuth2Authentication, ))
 @permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
-def pre_signed_url_for_s3(request):  # todo find and replace with pre_signed_url_for_s3_multiple all usages and remove
-    key = request.data['key']
-    content_type = request.data.get('content-type')
-    request_type = request.data.get('request-type')
-    client_method = request.data.get('client-method')
-    s3 = boto3.client('s3')
-
-    url = s3.generate_presigned_url(
-        ClientMethod=client_method,
-        Params={
-            'Bucket': settings.S3_RAW_UPLOAD_BUCKET,
-            'Key': key,
-            'ContentType': content_type
-        },
-        HttpMethod=request_type
-    )
-    return Response(url)
-
-
-@authentication_classes((OAuth2Authentication, ))
-@permission_classes((IsAuthenticated, ))
-@api_view(['POST'])
-def pre_signed_url_for_s3_multiple(request):
+def pre_signed_url_for_s3(request):
 
     assert isinstance(request.data, list), "Invalid format of POST data."
     assert not len(request.data) > 15, "Request count cannot be higher than 15."
@@ -257,7 +237,7 @@ def new_profile_picture(request):
 
     save_picture_format = 'jpg'
     picture_set = profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version, save_picture_format)
-    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
+    upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, 'user', user.id)
 
     user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     user.save()

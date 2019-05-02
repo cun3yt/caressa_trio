@@ -197,12 +197,12 @@ export default {
       myMedia.play()
     },
     uploadRecord: function () {
-      this.$auth.post(`${this.$root.$options.hosts.rest}/generate_signed_url/`, {
+      this.$auth.post(`${this.$root.$options.hosts.rest}/generate-signed-url/`, [{
         'key': this.audioMessageObj.key,
         'content-type': 'audio/wav',
         'client-method': 'put_object',
         'request-type': 'PUT'
-      }).then(response => {
+      }]).then(response => {
         console.log('response :' + response.body)
 
         let vm = this

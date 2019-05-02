@@ -3,12 +3,12 @@ from datetime import timedelta
 from django.utils import timezone
 
 from rest_framework import serializers
-from caressa.settings import REST_FRAMEWORK, API_URL
+from caressa.settings import REST_FRAMEWORK
 
 from alexa.models import User
 from senior_living_facility.api import mixins as facility_mixins
 from senior_living_facility import models as facility_models
-from alexa.api.serializers import SeniorSerializer, UserSerializer
+from alexa.api.serializers import UserSerializer
 from senior_living_facility.models import ContentDeliveryRule, ServiceRequest, Message, MessageThread
 from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from utilities.api.urls import reverse
@@ -87,8 +87,13 @@ class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplication
             content_audio_file = tts.tts_to_s3(text=text_content, return_format='url')
         else:
             text_content = None
-            file_key = message_data.get('content')
-            content_audio_file = move_file_from_upload_to_prod_bucket(file_key)
+            source_file_key = message_data.get('content')
+            dest_file_key = 'audio/facility/{id}/message/{key}'.format(id=source_user.senior_living_facility.id,
+                                                                       key=source_file_key)
+
+            content_audio_file = move_file_from_upload_to_prod_bucket(source_file_key=source_file_key,
+                                                                      dest_file_key=dest_file_key)
+
         validated_data['content'] = text_content
         validated_data['content_audio_file'] = content_audio_file
 
@@ -212,7 +217,10 @@ class MessageThreadParticipantSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_resident(message_thread_participant: facility_models.MessageThreadParticipant):
         if not message_thread_participant.user:
-            return 'All Residents'
+            return {
+                'All Residents': True,
+                'message-thread-url': reverse('message-thread', kwargs={'pk': message_thread_participant.id})
+            }
         return AdminAppSeniorListSerializer(message_thread_participant.user).data
 
     @staticmethod

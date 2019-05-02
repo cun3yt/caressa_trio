@@ -11,8 +11,6 @@ from unittest.mock import patch
 import pytz
 import re
 
-from utilities.logger import log
-
 
 class TestSeniorLivingFacility(TestCase):
     def test_phone_numbers(self):

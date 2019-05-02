@@ -23,9 +23,8 @@ from alexa.urls import register_nested_routes as register_nested_alexa_urls, \
     register_flat_routes as register_flat_alexa_routes
 from alexa.urls import individual_paths as individual_paths_alexa
 
-from actions.api.views import like_at_joke, comment_response, new_post, pre_signed_url_for_s3, \
-    new_job_for_message_queue, comment_response_delete, comment_backing_delete, new_profile_picture, \
-    pre_signed_url_for_s3_multiple
+from actions.api.views import like_at_joke, comment_response, new_post, new_job_for_message_queue, \
+    comment_response_delete, comment_backing_delete, new_profile_picture, pre_signed_url_for_s3
 from rest_framework import routers
 from rest_framework_extensions.routers import ExtendedSimpleRouter
 from voice_service.views import speech_to_text
@@ -62,8 +61,7 @@ urlpatterns = [
     path('comment_response_delete/', comment_response_delete),
     path('comment_backing_delete/', comment_backing_delete),
     path('post/', new_post),
-    path('generate_signed_url_multiple/', pre_signed_url_for_s3_multiple),
-    path('generate_signed_url/', pre_signed_url_for_s3),
+    path('generate-signed-url/', pre_signed_url_for_s3),
     path('new_message/', new_job_for_message_queue),
     path('new_profile_picture/', new_profile_picture),
     path('accounts/', include(senior_living_facility_urls)),

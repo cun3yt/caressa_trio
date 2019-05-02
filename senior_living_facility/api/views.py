@@ -1,7 +1,7 @@
 import pytz
 
 from django.db.models import Q, Count
-from rest_framework import viewsets, mixins, status
+from rest_framework import viewsets, mixins, status, views
 from rest_framework.response import Response
 from rest_framework.decorators import authentication_classes, permission_classes, api_view
 from rest_framework.pagination import PageNumberPagination
@@ -13,12 +13,15 @@ from alexa.models import User
 from caressa import settings
 from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserInFacility, IsInSameFacility
 from senior_living_facility.api import serializers as facility_serializers
+from senior_living_facility.api import calendar_serializers as calendar_serializers
 from senior_living_facility import models as facility_models
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from senior_living_facility.models import SeniorLivingFacility, Photo
 from utilities import file_operations as file_ops
-from utilities.time import today_in_tz
+from utilities.aws_operations import move_file_from_upload_to_prod_bucket
+from utilities.time import now_in_tz, today_in_tz, time_today_in_tz
 from utilities.views.mixins import ForAdminApplicationMixin
 
 
@@ -34,6 +37,33 @@ class ServiceRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     permission_classes = (IsAuthenticated, IsSenior, )
     queryset = facility_models.ServiceRequest.objects.all()
     serializer_class = facility_serializers.ServiceRequestSerializer
+
+
+class FacilityTimeState(views.APIView):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
+
+    def get(self, request, pk, format=None):
+        assert self.facility == request.user.senior_living_facility, (
+            "No access for this calendar"
+        )
+
+        is_status_changeable = self.facility.is_morning_status_changeable
+        next_cut_off = self.facility.next_morning_status_cut_off_time
+
+        tz = self.facility.timezone
+
+        return Response({
+            'timezone': tz,
+            'current_time': now_in_tz(tz),
+            'status': "morning-status-available" if is_status_changeable else "morning-status-not-available",
+            'status_change_datetime': next_cut_off
+        })
+
+    @property
+    def facility(self):
+        pk = self.kwargs.get('pk')
+        return SeniorLivingFacility.objects.get(pk=pk)
 
 
 class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
@@ -143,7 +173,7 @@ class FacilityResidentTodayCheckInViewSet(mixins.DestroyModelMixin, mixins.Creat
         today = today_in_tz(staff.senior_living_facility.timezone)
         check_in, _ = facility_models.FacilityCheckInOperationForSenior.objects\
             .update_or_create(senior=self.senior, date=today, defaults={'checked': None, 'staff': staff})
-        return Response({'success': True}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'success': True}, status=status.HTTP_202_ACCEPTED)
 
 
 class MessageThreadMessagesViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -202,10 +232,15 @@ class SeniorLivingFacilityContentViewSet(mixins.ListModelMixin, viewsets.Generic
             .filter(Q(delivery_rule__recipient_ids__isnull=True) | Q(delivery_rule__recipient_ids__contains=[user.id]))
 
 
-class PhotoGalleryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+class PhotoGalleryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, )
     serializer_class = facility_serializers.PhotoGallerySerializer
+
+    @property
+    def facility(self):
+        pk = self.kwargs.get('pk')
+        return SeniorLivingFacility.objects.get(pk=pk)
 
     class _Pagination(PageNumberPagination):
         max_page_size = 20
@@ -214,9 +249,36 @@ class PhotoGalleryViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     pagination_class = _Pagination
 
+    def create(self, request, *args, **kwargs):
+        """
+        AWS operations and creating new database entry for the photo.
+        """
+
+        today = today_in_tz(self.facility.timezone)
+        photo_gallery = self.facility.photogallery
+
+        lst = []
+        for file_dict in request.data:
+            source_file_key = file_dict['key']
+            dest_file_key = 'images/facility/{id}/photo_gallery/{key}'.format(id=self.facility.id, key=source_file_key)
+
+            file_url = move_file_from_upload_to_prod_bucket(source_file_key=source_file_key,
+                                                            dest_file_key=dest_file_key)
+
+            Photo.objects.create(photo_gallery=photo_gallery, date=today, url=file_url)
+
+            obj = {
+                'key': source_file_key,
+                'url': file_url
+            }
+            lst.append(obj)
+
+        return Response(lst, status=status.HTTP_201_CREATED)
+
     def get_queryset(self):
-        dist = facility_models.Photo.objects.values('date').annotate(date_count=Count('date')).filter(date_count=1)
-        single_dates = facility_models.Photo.objects.filter(date__in=[item['date'] for item in dist])
+        dist = Photo.objects.values('date').annotate(date_count=Count('date'))\
+            .filter(photo_gallery=self.facility.photogallery)
+        single_dates = facility_models.Photo.objects.filter(date__in=[item['date'] for item in dist]).distinct('date')
         return single_dates
 
 
@@ -241,29 +303,73 @@ class PhotosDayViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return facility_models.Photo.objects.filter(date=datetime_obj)
 
 
+class CalendarViewSet(views.APIView):
+    authentication_classes = (OAuth2Authentication, )
+    permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
+
+    def get(self, request, pk, format=None):
+        """
+        Returns the calendar events for the days of the given day GET parameter `start` +/- day_delta.
+        """
+
+        plus_minus_day_delta = 7
+        date_format = "%A, %B %d, %Y"   # e.g. Monday, April 08, 2019
+        start = request.query_params.get('start')
+        start_datetime = datetime.strptime(start, '%Y-%m-%d') - timedelta(days=plus_minus_day_delta)
+
+        assert self.facility == request.user.senior_living_facility, (
+            "No access for this calendar"
+        )
+
+        interval = [
+            {
+                'date': (start_datetime + timedelta(days=day_increment)).strftime(date_format),
+                'events': self.facility.get_given_day_events(start_datetime + timedelta(days=day_increment))
+            } for day_increment in range(0, (2 * plus_minus_day_delta + 1))
+        ]
+        data = calendar_serializers.CalendarDateSerializer(interval, many=True).data
+        return Response(data)
+
+    @property
+    def facility(self):
+        pk = self.kwargs.get('pk')
+        return SeniorLivingFacility.objects.get(pk=pk)
+
+
 @authentication_classes((OAuth2Authentication, ))
 @permission_classes((IsAuthenticated, ))
 @api_view(['POST'])
-def uploaded_new_profile_picture(request, **kwargs):
-    user_id = kwargs.get('id', None)
+def new_profile_picture(request, **kwargs):
+    """
+    The purpose of this view is informing backend about the new profile picture creation.
+    After this call profile pic will be formatted (thumbnail etc.) and current entry for
+    profile pic will be updated in database.
 
-    user = User.objects.filter(pk=user_id)[0]
+    :param request:
+    :param kwargs:
+    :return: Respopnse with profile picture url
+    """
+    instance_type = kwargs.get('instance', None)
+    instance_model = SeniorLivingFacility if instance_type == 'facilities' else User
+    instance_id = kwargs.get('id', None)
+
+    instance = instance_model.objects.filter(pk=instance_id)[0]
     file_name = request.data.get('key')
 
-    current_user_profile_pic = user.profile_pic
+    current_instance_profile_pic = instance.profile_pic
 
-    new_profile_pic_hash_version = file_ops.generate_versioned_picture_name(current_user_profile_pic)
+    new_profile_pic_hash_version = file_ops.generate_versioned_picture_name(current_instance_profile_pic)
 
     file_ops.download_to_tmp_from_s3(file_name, settings.S3_RAW_UPLOAD_BUCKET)
 
     save_picture_format = 'jpg'
     picture_set = file_ops.profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version,
                                                             save_picture_format)
-    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, user.id)
+    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, instance_type, instance.id)
 
-    user.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
-    user.save()
-    pics = user.get_profile_pictures()
+    instance.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
+    instance.save()
+    pics = instance.get_profile_pictures()
 
     return Response({
         'message': 'Profile Picture Updated',
