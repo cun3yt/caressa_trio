@@ -130,32 +130,34 @@
     </q-modal>
 
   <q-modal v-model="foundSeniorModal" maximized>
-  <div style="padding: 2.5em; margin-top: 1.5em">
-    <div class="q-display-3">
-      <img class="logo" alt="Caressa logo" src="~assets/caressa-logo-full.png">
-    </div>
-    <div style="padding-top: 3em">
-      <div>
-        <q-icon size="5em" style="color:#2FCD8C" name="check_circle_outline" />
+    <div style="padding: 2.5em; margin-top: 1.5em">
+      <div class="q-display-3">
+        <img class="logo" alt="Caressa logo" src="~assets/caressa-logo-full.png">
       </div>
-      <p class="q-display-1 text-weight-thin" style="margin-top: 2em">Found Beloved &lt;3</p>
-      <q-btn
-      v-for="(senior, index) in seniors"
-      :key="index"
-      style="color:#2FCD8C; margin-top: 1em; padding:0 1em 0 1em"
-      class="q-title"
-      @click="foundSeniorModal = false"
-      icon-right="arrow_forward_ios"
-      :label="senior.name" />
-      </div>
-  </div>
-  <div style="padding: 2.5em; margin-top: 1.5em">
-    <p @click="loginRedirect('foundSeniorModal')" class="q-title text-weight-light"><span style="text-decoration: underline">Have an account</span>?</p>
-    <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
-      What is <span style="color:#2FCD8C; text-decoration: underline">Caressa</span>?
+      <div style="padding-top: 3em">
+        <div>
+          <q-icon size="5em" style="color:#2FCD8C" name="check_circle_outline" />
+        </div>
+        <p class="q-display-1 text-weight-thin" style="margin-top: 2em">Found Beloved &lt;3</p>
+        <q-btn
+        v-for="(senior, index) in seniors"
+        :key="index"
+        style="color:#2FCD8C; margin-top: 1em; padding:0 1em 0 1em"
+        class="q-title"
+        @click="foundSeniorModal = false"
+        icon-right="arrow_forward_ios"
+        :label="senior.name" />
+        </div>
     </div>
-  </div>
-</q-modal>
+    <div style="padding: 2.5em; margin-top: 1.5em">
+      <p @click="loginRedirect('foundSeniorModal')" class="q-title text-weight-light">
+        <span style="text-decoration: underline">Have an account</span>?
+      </p>
+      <div @click="videoDirection('signUpModal')" class="q-title text-weight-light">
+        What is <span style="color:#2FCD8C; text-decoration: underline">Caressa</span>?
+      </div>
+    </div>
+  </q-modal>
 
     </q-page-container>
     <q-layout-footer>
