@@ -1,11 +1,11 @@
 from datetime import date
+from unittest import mock
 
 from django.test import TestCase, RequestFactory
-from ipdb import set_trace
 
 from caressa.settings import API_URL, S3_PRODUCTION_BUCKET, S3_REGION
 from senior_living_facility.api.serializers import PhotoGallerySerializer, PhotosDaySerializer, MessageThreadSerializer, \
-    FacilitySerializer, FacilityMessageSerializer
+    FacilitySerializer, FacilityMessageSerializer, AdminAppSeniorListSerializer, FacilityStaffSerializer
 from senior_living_facility.models import SeniorLivingFacility, ServiceRequest, Photo, PhotoGallery, MessageThread, \
     MessageThreadParticipant, Message, ContentDeliveryRule
 from model_mommy import mommy
@@ -164,50 +164,144 @@ class TestFacilityMessageSerializer(TestCase):
         self.assertEqual(created_message_instance.content, 'Hi Pamela, I hope you are feeling okay.')
         self.assertEqual(created_message_instance.source_user, self.staff)
 
-    def test_message_format_audio(self):
+    @mock.patch('senior_living_facility.api.serializers.move_file_from_upload_to_prod_bucket')
+    def test_message_format_audio(self, mock_aws_ops):
+        mock_aws_ops.return_value = 'https://caressa.com/prod/test_audio_key'
+        self.rf = RequestFactory()
+        self.rf.user = self.staff
         self.rf.data = {
             "to": self.senior.id,
             "message_type": "Message",
             "message": {
                 "format": "audio",
-                "content": "test_audio_key.mp3"
+                "content": "test_audio_key"
             },
             "request_reply": False
         }
 
+        self.context = {
+            'request': self.rf
+        }
+
         serializer = FacilityMessageSerializer(context=self.context)
 
-        created_message_instance = serializer.create({})  # todo mock aws call
+        created_message_instance = serializer.create({})
         self.assertIsNone(created_message_instance.content)
         self.assertEqual(created_message_instance.source_user, self.staff)
 
 
 class TestAdminAppSeniorListSerializer(TestCase):
     def setUp(self) -> None:
-        pass
+        facility = mommy.make(SeniorLivingFacility, facility_id='CA.Fremont.XYZ')
+        self.senior = mommy.make('alexa.user', user_type='SENIOR', email='senior1@example.com',
+                                 senior_living_facility=facility, phone_number='+1 493-903-1032',
+                                 first_name='Pamela', last_name='Martin', room_no=123,)
+
+        fac_user = mommy.make('alexa.user', user_type='CAREGIVER_ORG', email='user2@facility.com',
+                              senior_living_facility=facility, phone_number='+1 987-788-4561')
+
+        content_delivery_rule = mommy.make(ContentDeliveryRule, recipient_ids=[self.senior.id])
+        self.message_thread = mommy.make(MessageThread)
+        mommy.make(MessageThreadParticipant,
+                   message_thread=self.message_thread,
+                   user=self.senior,
+                   senior_living_facility=facility,
+                   is_all_recipients=False, )
+        mommy.make(Message,
+                   message_thread=self.message_thread,
+                   content='message_text_1',
+                   content_audio_file=None,
+                   source_user=fac_user,
+                   delivery_rule=content_delivery_rule, )
+
+        self.message_thread_url = '{API_URL}/api/message-thread/{id}/'.format(API_URL=API_URL,
+                                                                              id=self.message_thread.id)
+
+        self.profile_picture_url = '{region}/{bucket}/images/users/no_user/' \
+                                   'default_profile_pic_w_250.jpg'.format(region=S3_REGION,
+                                                                          bucket=S3_PRODUCTION_BUCKET,)
+
+        self.serializer = AdminAppSeniorListSerializer(instance=self.senior)
 
     def test_contains_exptected_fields(self):
-        pass
+        data = self.serializer.data
+        self.assertCountEqual(data.keys(), ['id',
+                                            'first_name',
+                                            'last_name',
+                                            'room_no',
+                                            'device_status',
+                                            'message_thread_url',
+                                            'profile_picture_url'])
 
     def test_field_contents(self):
-        pass
+        data = self.serializer.data
+
+        self.assertEqual(data['id'], self.senior.id)
+        self.assertEqual(data['first_name'], 'Pamela')
+        self.assertEqual(data['last_name'], 'Martin')
+        self.assertEqual(data['room_no'], '123')
+        self.assertEqual(data['device_status']['is_there_device'], False)
+        self.assertEqual(data['device_status']['status'], {})
+        self.assertEqual(data['message_thread_url']['url'], self.message_thread_url)
+        self.assertEqual(data['profile_picture_url'], self.profile_picture_url)
 
     def test_validation(self):
-        pass
+        serializer_data = {'first_name': 'This CharField Has More Than 30 Chars',
+                           'last_name': 'This CharField Has More Than 150 Chars'
+                                        'This CharField Has More Than 150 Chars'
+                                        'This CharField Has More Than 150 Chars'
+                                        'This CharField Has More Than 150 Chars'
+                                        'This CharField Has More Than 150 Chars',
+                           'room_no': 'This CharField Has More Than 8 Chars'}
+        invalid_serializer = AdminAppSeniorListSerializer(data=serializer_data)
+        self.assertFalse(invalid_serializer.is_valid())
+        self.assertCountEqual(invalid_serializer.errors.keys(), ['first_name', 'last_name', 'room_no'])
 
 
 class TestFacilityStaffSerializer(TestCase):
     def setUp(self) -> None:
-        pass
+        facility = mommy.make(SeniorLivingFacility, facility_id='CA.Fremont.XYZ')
+        self.fac_user = mommy.make('alexa.user', user_type='CAREGIVER_ORG', email='user2@facility.com',
+                                   senior_living_facility=facility, phone_number='+1 987-788-4561')
+
+        self.serializer = FacilityStaffSerializer(instance=self.fac_user)
 
     def test_contains_exptected_fields(self):
-        pass
+        data = self.serializer.data
+
+        self.assertCountEqual(data.keys(), ['pk',
+                                            'first_name',
+                                            'last_name',
+                                            'user_type',
+                                            'senior_living_facility'])
 
     def test_field_contents(self):
-        pass
+        data = self.serializer.data
+
+        self.assertEqual(data['pk'], self.fac_user.id)
+        self.assertEqual(data['first_name'], self.fac_user.first_name)
+        self.assertEqual(data['last_name'], self.fac_user.last_name)
+        self.assertEqual(data['user_type'], 'CAREGIVER_ORG')
+        self.assertEqual(data['senior_living_facility'], self.fac_user.senior_living_facility.id)
 
     def test_validation(self):
-        pass
+        serializer_data = {
+            'first_name': 'This CharField Has More Than 30 Chars',
+            'last_name': 'This CharField Has More Than 150 Chars'
+                         'This CharField Has More Than 150 Chars'
+                         'This CharField Has More Than 150 Chars'
+                         'This CharField Has More Than 150 Chars'
+                         'This CharField Has More Than 150 Chars',
+            'user_type': 'This is should be considered wrong choice for a ChoiceField',
+            'senior_living_facility': 'This should be considered wrong for PrimaryKeyRelatedField'
+        }
+
+        invalid_serializer = FacilityStaffSerializer(data=serializer_data)
+        self.assertFalse(invalid_serializer.is_valid())
+        self.assertCountEqual(invalid_serializer.errors.keys(), ['first_name',
+                                                                 'last_name',
+                                                                 'user_type',
+                                                                 'senior_living_facility'])
 
 
 class TestMessageThreadSerializer(TestCase):
