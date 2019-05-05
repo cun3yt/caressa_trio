@@ -247,37 +247,7 @@ export default {
       circleMembership: {},
       isAdmin: false,
       newMemberEmail: '',
-      circleId: null,
-      option: 'opt1',
-      select: 'fb',
-      multipleSelect: ['goog', 'twtr'],
-      selectOptions: [
-        {
-          label: 'Google',
-          value: 'goog'
-        },
-        {
-          label: 'Facebook',
-          value: 'fb'
-        },
-        {
-          label: 'Twitter',
-          value: 'twtr'
-        },
-        {
-          label: 'Apple Inc.',
-          value: 'appl'
-        },
-        {
-          label: 'Oracle',
-          value: 'ora'
-        }
-      ],
-      range: 20,
-      doubleRange: {
-        min: 10,
-        max: 35
-      }
+      circleId: null
     }
   },
   methods: {

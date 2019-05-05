@@ -1,17 +1,24 @@
 <template>
       <q-list flat>
+
         <q-item v-for="(response, key) in responses" :key="key">
-          <q-item-side><img class="fit" style="max-width: 2em" :src="response.profile_pic" alt="image"> </q-item-side>
+          <q-item-side><img class="fit profile-pic" :src="response.profile_pic" alt="image"> </q-item-side>
           <q-item-side class="q-caption">{{response.response}}</q-item-side>
-          <q-item-side class=""><q-btn  flat @click="deleteResponse(response.id)" icon="fas fa-times"></q-btn></q-item-side>
+          <q-item-side>
+            <q-btn flat @click="deleteResponse(response.id)" icon="fas fa-times"></q-btn>
+          </q-item-side>
         </q-item>
+
         <q-item>
-          <q-input :max-height="25" v-model="new_response" clearable type="textarea" name="new-response" placeholder="New Response">
+          <q-input :max-height="25" v-model="new_response" clearable type="textarea" name="new-response"
+                   class="new-response" placeholder="New Response">
             <q-item-side :color="isOverLimit ? 'negative' : 'neutral'">{{charactersLeft}} / 70</q-item-side>
           </q-input>
-          <q-btn :disable=isOverLimit @click="post()" class="action-btn" flat color="primary" icon="fas fa-greater-than"></q-btn>
+          <q-btn :disable=isOverLimit @click="post()" class="action-btn" flat color="primary"
+                 icon="fas fa-greater-than"></q-btn>
         </q-item>
         <q-item-separator inset />
+
       </q-list>
 </template>
 
@@ -60,3 +67,10 @@ export default {
   }
 }
 </script>
+
+<style scoped lang="stylus">
+.new-response
+  margin-top 20px
+.profile-pic
+  max-width: 2em
+</style>

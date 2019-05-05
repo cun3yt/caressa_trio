@@ -2,18 +2,23 @@
   <q-page padding class="row justify-center">
     <div class="main-content">
 
+      <div v-if="isLoading">
+        <img src="https://s3-us-west-1.amazonaws.com/caressa-prod/images/site/loader.gif">
+      </div>
+      <div v-else-if="error && feeds.length===0">
+        There is a connection problem, please try again later.
+      </div>
+
       <q-card class="q-ma-sm" v-for="feed in feeds" v-bind:key="feed.id">
         <template v-if="feed.action_object_type==='Joke'">
           <joke-feed :feed="feed"
-                     :joke="feed.action_object"
-                     >
+                     :joke="feed.action_object">
             <comment-section :actionId="feed.id" :comments="feed.paginated_comments" />
           </joke-feed>
         </template>
         <template v-else-if="feed.action_object_type==='News'">
           <news-feed :feed="feed"
-                     :news="feed.action_object"
-                     >
+                     :news="feed.action_object">
             <comment-section :actionId="feed.id" :comments="feed.paginated_comments" />
           </news-feed>
         </template>
@@ -59,7 +64,9 @@ export default {
       pageNumber: 0,
       feeds: [],
       moreFeedsNeeded: false,
-      feedPushed: false
+      feedPushed: false,
+      isLoading: true,
+      error: false
     }
   },
   methods: {
@@ -70,7 +77,7 @@ export default {
       const bottomOfPage = visible + scrollY >= pageHeight
       return bottomOfPage || pageHeight < visible
     },
-    addFeeds () {
+    addFeeds (successCallback, errorCallback) {
       let vm = this
       ++this.pageNumber
       this.$auth.get(`${this.$root.$options.hosts.rest}/act/actions/?id=${this.$root.$options.user.id}&page=${this.pageNumber}`)
@@ -78,6 +85,12 @@ export default {
           vm.feeds = vm.feeds.concat(response.data['results'])
           if (vm.bottomVisible()) {
             vm.addFeeds()
+          }
+          vm.isLoading = false
+        }, response => {
+          vm.isLoading = false
+          if (response.status !== 404) {
+            vm.error = true
           }
         })
     },
