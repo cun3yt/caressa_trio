@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import Q
 from django.db.models import signals
 from actstream import action
 from actstream.models import Action
@@ -8,9 +7,6 @@ from alexa.models import User, Joke, Circle
 from django.utils.translation import ugettext as _
 from django.contrib.contenttypes.models import ContentType
 from jsonfield import JSONField
-from utilities.logger import log
-import timeago
-from django.utils import timezone
 
 
 class UserAction(Action):
