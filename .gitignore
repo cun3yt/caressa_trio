@@ -8,3 +8,4 @@ caressa/sensitive/
 caressa/uploads/
 node_modules/
 static/dist/
+htmlcov/
