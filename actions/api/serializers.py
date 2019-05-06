@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from actions import models as action_models
 from actions.models import UserAction, Comment, UserReaction, UserPost, CommentResponse, UserQuery
 from caressa.settings import REST_FRAMEWORK, SUPPORT_EMAIL_ACCOUNTS
 from alexa.models import Joke, User
@@ -139,6 +140,21 @@ class UserPostSerializer(serializers.ModelSerializer):
         return str(user_post)
 
 
+class ActionGenericSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = action_models.ActionGeneric
+        fields = ('id',
+                  'data',
+                  'selection_url', )
+
+    data = serializers.JSONField()
+    selection_url = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_selection_url(action_generic: action_models.ActionGeneric):
+        return "/"
+
+
 class ActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserAction
@@ -156,6 +172,7 @@ class ActionSerializer(serializers.ModelSerializer):
     action_object = GenericRelatedField({
         Joke: JokeSerializer(),
         UserPost: UserPostSerializer(),
+        action_models.ActionGeneric: ActionGenericSerializer(),
     })
 
     def get_actor(self, user_action: UserAction):

@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Family Application",
   "productName": "Caressa",
-  "cordovaId": "com.caressa.mobile.app.dev",
+  "cordovaId": "com.caressa.mobile.app.dev2",
   "author": "Cuneyt Mertayak <cuneyt@ceng.metu.edu.tr>",
   "private": true,
   "scripts": {

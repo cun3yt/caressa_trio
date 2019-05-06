@@ -162,13 +162,14 @@
     </q-page-container>
     <q-layout-footer>
       <q-tabs>
-        <q-route-tab v-for="(item, index) in pages"
-        :key="index"
-        slot="title"
-        :icon="item.icon"
-        :to="{name: item.name}"
-        replace
-        :label="item.label" />
+        <q-route-tab :keep-alive="index"
+                     v-for="(item, index) in pages"
+                     :key="index"
+                     slot="title"
+                     :icon="item.icon"
+                     :to="{name: item.name}"
+                     replace
+                     :label="item.label" />
       </q-tabs>
     </q-layout-footer>
 
