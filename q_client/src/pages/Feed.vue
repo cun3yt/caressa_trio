@@ -20,6 +20,16 @@
           </e-commerce-feed>
         </template>
 
+        <template v-else-if="feed.action_object_type==='ActionGeneric' && feed.action_object.data.type==='event'">
+          <event-feed :feed="feed" :action="feed.action_object">
+          </event-feed>
+        </template>
+
+        <template v-else-if="feed.action_object_type==='ActionGeneric' && feed.action_object.data.type==='photo-gallery'">
+          <photo-gallery-feed :feed="feed" :action="feed.action_object">
+          </photo-gallery-feed>
+        </template>
+
         <template v-else-if="feed.action_object_type==='Joke'">
           <joke-feed :feed="feed"
                      :joke="feed.action_object">
@@ -57,6 +67,8 @@ import UserPostFeed from 'components/UserPostFeed'
 import RegularFeed from 'components/RegularFeed'
 import ActionGenericFeed from 'components/ActionGenericFeed'
 import ECommerceFeed from 'components/ECommerceFeed'
+import EventFeed from 'components/EventFeed'
+import PhotoGalleryFeed from 'components/PhotoGalleryFeed'
 import CommentSection from 'components/CommentSection'
 import Pusher from 'pusher-js'
 import {bus} from '../plugins/auth.js'
@@ -73,7 +85,9 @@ export default {
     RegularFeed,
     CommentSection,
     ActionGenericFeed,
-    ECommerceFeed
+    ECommerceFeed,
+    EventFeed,
+    PhotoGalleryFeed
   },
   data () {
     return {

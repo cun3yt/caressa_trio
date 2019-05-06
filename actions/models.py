@@ -154,6 +154,8 @@ class ActionGeneric(TimeStampedModel):
                                 help_text="The user that will see this act/action")
     data = JSONField(default={})
     '''
+    Example data segments are below:
+    
     Genre selection:
     
     {
@@ -171,7 +173,7 @@ class ActionGeneric(TimeStampedModel):
             "value": "country",
             "label": "Country"
         }],
-    "selected_value": 0
+    "selected_value": "jazz"
     }
     
     ~~~~~~~~~~~~~~~~~~~
@@ -179,7 +181,7 @@ class ActionGeneric(TimeStampedModel):
     
     {
     "type": "e-commerce",
-    "cta": "Mother's day is coming. Which flower do you wish to send to Elizabeth?",
+    "question": "Mother's day is coming. Which flower do you wish to send to Elizabeth?",
     "selections": [{
             "value": 0,
             "label": "Mother's Forever Love",
@@ -193,6 +195,51 @@ class ActionGeneric(TimeStampedModel):
             "price": 39.99
         }],
     "selected_value": 0
+    }
+    
+    ~~~~~~~~~~~~~~~~~~~
+    Event Notification & Registration:
+    
+    {
+    "type": "event",
+    "question": "BBQ Event is coming! It is May 14 Tuesday 5pm, PST. Would you like to join Elizabeth?",
+    "selections": [{
+            "value": "yes",
+            "label": "Yes"
+        },
+        {
+            "value": "no",
+            "label": "No"
+        }],
+    "selected_value": null
+    }
+    
+    ~~~~~~~~~~~~~~~~~~~
+    Photo Gallery:
+    
+    {
+    "type": "photo-gallery",
+    "question": "We had great time in 50s' party!",
+    "selections": [{
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_2658.jpg",
+            "label": "Party Photo 1"
+        },
+        {
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_3662.jpg",
+            "label": "Party Photo 2"
+        },
+        {
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_4841.jpg",
+            "label": "Party Photo 3"
+        },
+        {
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_6974.jpg",
+            "label": "Party Photo 4"
+        },
+        {
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_8234.jpg",
+            "label": "Party Photo 5"
+        }]
     }
     '''
 

@@ -6,7 +6,7 @@
           <img src="~assets/hand-heart.png">
         </q-item-tile>
       </q-item-side>
-      <q-item-main v-bind:label="action.data.cta" />
+      <q-item-main v-bind:label="action.data.question" />
     </q-item>
 
     <q-item v-bind:key="product.value"

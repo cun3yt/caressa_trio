@@ -75,6 +75,8 @@ module.exports = function (ctx) {
         'QInput',
         'QSpinnerDots',
         'QSpinnerBars',
+        'QCarousel',
+        'QCarouselSlide',
         'QSlider',
         'QCardActions',
         'QChip',
