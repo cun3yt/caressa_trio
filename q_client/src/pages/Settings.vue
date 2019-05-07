@@ -209,7 +209,7 @@ export default {
   props: ['setupContent', 'logOut'],
   created () {
     this.setupContent({
-      title: this.user
+      title: 'Settings'
     })
   },
   data () {

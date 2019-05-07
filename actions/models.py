@@ -141,6 +141,127 @@ def user_post_activity_save(sender: UserPost, instance, created, **kwargs):
 signals.post_save.connect(receiver=user_post_activity_save, sender=UserPost)
 
 
+class ActionGeneric(TimeStampedModel):
+    """
+    Purpose: Create a new act_action for generic purpose.
+
+    Example: "Which of the following music genres Elizabeth likes more?"
+    """
+    class Meta:
+        db_table = 'action_generic'
+
+    to_user = models.ForeignKey(to=User, on_delete=models.DO_NOTHING, related_name='generic_actions',
+                                help_text="The user that will see this act/action")
+    data = JSONField(default={})
+    '''
+    Example data segments are below:
+    
+    Genre selection:
+    
+    {
+    "type": "genre",
+    "question": "Which of the following music genres Elizabeth likes more?",
+    "selections": [{
+            "value": "jazz",
+            "label": "Jazz"
+        },
+        {
+            "value": "blues",
+            "label": "Blues"
+        },
+        {
+            "value": "country",
+            "label": "Country"
+        }],
+    "selected_value": "jazz"
+    }
+    
+    ~~~~~~~~~~~~~~~~~~~
+    E-commerce:
+    
+    {
+    "type": "e-commerce",
+    "question": "Mother's day is coming. Which flower do you wish to send to Elizabeth?",
+    "selections": [{
+            "value": 0,
+            "label": "Mother's Forever Love",
+            "img": "https://cdn2.1800flowers.com/wcsstore/Flowers/images/catalog/163066lx.jpg?height=378&width=345",
+            "price": 54.99
+        },
+        {
+            "value": 1,
+            "label": "Mother's Day Butterfly Kisses",
+            "img": "https://cdn1.1800flowers.com/wcsstore/Flowers/images/catalog/90786stv4ch9x.jpg?height=378&width=345",
+            "price": 39.99
+        }],
+    "selected_value": 0
+    }
+    
+    ~~~~~~~~~~~~~~~~~~~
+    Event Notification & Registration:
+    
+    {
+    "type": "event",
+    "question": "BBQ Event is coming! It is May 14 Tuesday 5pm, PST. Would you like to join Elizabeth?",
+    "selections": [{
+            "value": "yes",
+            "label": "Yes"
+        },
+        {
+            "value": "no",
+            "label": "No"
+        }],
+    "selected_value": null
+    }
+    
+    ~~~~~~~~~~~~~~~~~~~
+    Photo Gallery:
+    
+    {
+    "type": "photo-gallery",
+    "question": "We had great time in 50s' party!",
+    "selections": [{
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_2658.jpg",
+            "label": "Party Photo 1"
+        },
+        {
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_3662.jpg",
+            "label": "Party Photo 2"
+        },
+        {
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_4841.jpg",
+            "label": "Party Photo 3"
+        },
+        {
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_6974.jpg",
+            "label": "Party Photo 4"
+        },
+        {
+            "img": "https://s3.amazonaws.com/caressa-demo/photo-galleries/sample/IMG_8234.jpg",
+            "label": "Party Photo 5"
+        }]
+    }
+    '''
+
+
+def action_generic_post_save(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    to_user = instance.to_user
+    circle = to_user.circle_set.all()[0] if to_user.circle_set.all().count() > 0 else None  # type: Circle
+
+    if circle:
+        action.send(circle.person_of_interest,
+                    verb='has something for you',
+                    description=kwargs.get('description', ''),
+                    action_object=instance,
+                    target=circle, )
+
+
+signals.post_save.connect(receiver=action_generic_post_save, sender=ActionGeneric)
+
+
 class UserQuery(TimeStampedModel):
     class Meta:
         db_table = 'user_query'

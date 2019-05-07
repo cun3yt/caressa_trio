@@ -8,9 +8,15 @@
 import Gift from '../components/Gift'
 
 export default {
-  name: 'Shop',
+  name: 'shop',
+  props: ['setupContent'],
   components: {
     Gift
+  },
+  created () {
+    this.setupContent({
+      title: 'Shop'
+    })
   },
   data () {
     return {

@@ -162,13 +162,14 @@
     </q-page-container>
     <q-layout-footer>
       <q-tabs>
-        <q-route-tab v-for="(item, index) in pages"
-        :key="index"
-        slot="title"
-        :icon="item.icon"
-        :to="{name: item.name}"
-        replace
-        :label="item.label" />
+        <q-route-tab :keep-alive="index"
+                     v-for="(item, index) in pages"
+                     :key="index"
+                     slot="title"
+                     :icon="item.icon"
+                     :to="{name: item.name}"
+                     replace
+                     :label="item.label" />
       </q-tabs>
     </q-layout-footer>
 
@@ -224,6 +225,11 @@ export default {
           icon: 'fas fa-comments'
         },
         {
+          name: 'shop',
+          label: 'Shop',
+          icon: 'fas fa-shopping-cart'
+        },
+        {
           name: 'settings',
           label: 'Settings',
           icon: 'fas fa-cog'
@@ -232,11 +238,6 @@ export default {
           name: 'contact',
           label: 'Contact',
           icon: 'fas fa-hand-holding-heart' // todo find a better icon e.g. headset
-        },
-        {
-          name: 'shop',
-          label: 'Shop',
-          icon: 'fas fa-shopping-cart'
         }
       ]
     }

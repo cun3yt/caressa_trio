@@ -106,7 +106,7 @@ export default {
   props: ['setupContent'],
   created () {
     this.setupContent({
-      title: 'Maggy'
+      title: 'Messages with Elizabeth'
     })
   },
   methods: {

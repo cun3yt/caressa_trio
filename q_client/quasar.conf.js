@@ -66,6 +66,7 @@ module.exports = function (ctx) {
         'QItemTile',
         'QCheckbox',
         'QRadio',
+        'QBtnToggle',
         'QToggle',
         'QRange',
         'QSelect',

@@ -1,15 +1,14 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_extensions.mixins import NestedViewSetMixin
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import IsAuthenticated
 from actions.api.serializers import ActionSerializer, CommentSerializer, ReactionSerializer, QuerySerializer
-from actions.models import UserAction, Comment, UserReaction, Joke, UserPost, CommentResponse, UserQuery
+from actions.models import UserAction, Comment, UserReaction, Joke, UserPost, CommentResponse, UserQuery, ActionGeneric
 from alexa.models import User, UserActOnContent
 from actstream.models import action_object_stream
 
-from senior_living_facility.models import SeniorLivingFacility
 from streaming.models import Messages
 import boto3
 from caressa import settings
@@ -55,6 +54,24 @@ class QueryViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = UserQuery.objects.all().filter(user=user).order_by('-created')
         return queryset
+
+
+@authentication_classes((OAuth2Authentication, ))
+@permission_classes((IsAuthenticated, ))
+@api_view(['PATCH'])
+def select_on_action(request):
+    action_generic_id = request.data['id']  # this is id of an ActionGeneric model instance
+
+    actions = ActionGeneric.objects.all().filter(id=action_generic_id)
+
+    if actions.count() == 0 or actions.count() > 1:
+        return Response({"message": "action cannot be found"})
+
+    action = actions[0]
+    selected_key = request.date.get('selection')
+    action.data["selected_key"] = selected_key
+
+    return Response({"success": True})
 
 
 @authentication_classes((OAuth2Authentication, ))
