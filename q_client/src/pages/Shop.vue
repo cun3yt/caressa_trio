@@ -16,43 +16,63 @@ export default {
     return {
       products: [
         {
-          name: 'Product1',
+          name: 'Pink Pearl Roses',
           images: [
             {
-              name: 'Product 1 First Image',
-              url: 'http://dummyimage.com/242x185.bmp/ff4444/ffffff'
+              name: 'Pink Pearl Roses 1',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/flower1.jpg'
             },
             {
-              name: 'Product 1 Second Image',
-              url: 'http://dummyimage.com/186x138.bmp/cc0000/ffffff'
+              name: 'Pink Pearl Roses 2',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/flower2.jpg'
             },
             {
-              name: 'Product 1 Third Image',
-              url: 'http://dummyimage.com/126x182.png/5fa2dd/ffffff'
+              name: 'Pink Pearl Roses 2',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/flower3.jpg'
             }
           ],
           price: '23.99',
-          details: 'Lorem ipsum dolor sit amet consectetur, adipisicing elit. Natus, ratione eum minus fuga.'
+          details: 'Lovely and luxurious, Pink Pearl Roses are the perfect gift for your loved ones!'
         },
         {
-          name: 'Product2',
+          name: 'Personalized Pillow',
           images: [
             {
-              name: 'Product 2 First Image',
-              url: 'http://dummyimage.com/225x210.png/ff4444/ffffff'
+              name: 'Custom Pillow 1',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/pillow1.jpg'
             },
             {
-              name: 'Product 2 Second Image',
-              url: 'http://dummyimage.com/154x208.png/cc0000/ffffff'
+              name: 'Custom Pillow 2',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/pillow2.jpg'
             },
             {
-              name: 'Product 2 Third Image',
-              url: 'http://dummyimage.com/112x194.png/5fa2dd/ffffff'
+              name: 'Custom Pillow 3',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/pillow3.jpg'
             }
           ],
           price: '13.99',
-          details: 'Adipisicing elit. Natus, ratione eum minus fuga. Lorem ipsum dolor sit amet consectetur.'
+          details: 'One of a kind designs featuring the calligraphy of our own pillows. Contact us for designs!'
+        },
+        {
+          name: 'Personalized Coffee Mugs',
+          images: [
+            {
+              name: 'Custom Mug 1',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/mug1.jpg'
+            },
+            {
+              name: 'Custom Mug 2',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/mug2.jpg'
+            },
+            {
+              name: 'Custom Mug 3',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/mug3.jpg'
+            }
+          ],
+          price: '11.99',
+          details: 'One of a kind designs featuring the calligraphy of our own mugs. Contact us for designs!'
         }
+
       ]
     }
   }
