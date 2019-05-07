@@ -15,7 +15,6 @@
           <q-carousel-slide v-for="photo in action.data.selections"
                             v-bind:key="photo.img"
                             :img-src="photo.img">
-<!--            <img :src="photo.img" style="width: 100%; ">-->
           </q-carousel-slide>
         </q-carousel>
       </q-item-main>
