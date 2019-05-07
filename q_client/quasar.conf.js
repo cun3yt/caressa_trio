@@ -84,6 +84,9 @@ module.exports = function (ctx) {
         'QCollapsible',
         'QPopover',
         'QUploader',
+        'QCarousel',
+        'QCarouselSlide',
+        'QCarouselControl',
       ],
       directives: [
         'Ripple',

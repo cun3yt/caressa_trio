@@ -3,6 +3,7 @@ import Feed from '../pages/Feed'
 import Chat from '../pages/Chat'
 import Settings from '../pages/Settings'
 import Contact from '../pages/Contact'
+import Shop from '../pages/Shop'
 import PageNotFound from '../pages/404'
 
 export default [
@@ -29,6 +30,12 @@ export default [
         path: 'contact',
         component: Contact,
         name: 'contact'
+      },
+
+      {
+        path: 'shop',
+        component: Shop,
+        name: 'shop'
       },
       {
         path: '*',

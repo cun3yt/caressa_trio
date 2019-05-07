@@ -232,6 +232,11 @@ export default {
           name: 'contact',
           label: 'Contact',
           icon: 'fas fa-hand-holding-heart' // todo find a better icon e.g. headset
+        },
+        {
+          name: 'shop',
+          label: 'Shop',
+          icon: 'fas fa-shopping-cart'
         }
       ]
     }
