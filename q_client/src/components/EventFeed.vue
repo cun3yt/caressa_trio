@@ -1,7 +1,7 @@
 <template>
   <div>
     <q-item class="header">
-      <q-item-side>
+      <q-item-side class="avatar">
         <q-item-tile avatar>
           <img src="~assets/event.png">
         </q-item-tile>
@@ -51,5 +51,9 @@ export default {
 <style scoped>
   .header {
     padding-top: 20px;
+  }
+
+  .avatar {
+    margin-right: 2px;
   }
 </style>
