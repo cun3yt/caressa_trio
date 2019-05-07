@@ -117,7 +117,7 @@ def text_worker(publisher, next_queued_job: Messages):
     assert user_id is not None, "User ID supposed to be in the message as `user` field in JSON `message`"
     source = User.objects.get(pk=user_id)
 
-    destination = source.circle_set.all()[0].person_of_interest
+    destination = source.circle_set.all()[0].person_of_interest     # todo from the senior living community part ???
     _realtime_message(destination.senior_communication_channel, mail_type, {'url': url, 'hash': new_audio.hash})
 
     return 'Job Finished...'
