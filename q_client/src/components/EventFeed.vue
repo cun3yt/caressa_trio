@@ -2,7 +2,7 @@
   <div>
     <q-item class="header">
       <q-item-side class="avatar">
-        <q-item-tile avatar>
+        <q-item-tile>
           <img src="~assets/event.png">
         </q-item-tile>
       </q-item-side>
