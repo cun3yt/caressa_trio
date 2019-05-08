@@ -15,7 +15,7 @@
         <q-item-side color="primary">$ {{product.price}}</q-item-side>
       </q-item>
       <q-card-actions>
-      <q-btn @click="purchase" color="primary">Buy as a gift to Elizabeth</q-btn>
+      <q-btn @click="purchase" color="primary">Buy for {{forWhom}}</q-btn>
       </q-card-actions>
     </q-card-main>
   </q-card>
@@ -25,6 +25,11 @@
 export default {
   name: 'Gift',
   props: ['product'],
+  data () {
+    return {
+      forWhom: 'Elizabeth'
+    }
+  },
   methods: {
     purchase () {
       this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {

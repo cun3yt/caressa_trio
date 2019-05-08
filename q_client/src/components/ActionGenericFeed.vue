@@ -15,13 +15,13 @@
           v-model="selection"
           toggle-color="primary"
           :options="action.data.selections"
-          @input="update()"
+          @input="update(selection)"
         />
       </q-item-main>
     </q-item>
 
     <q-item v-if="selection!==null">
-      <q-item-main>Thank you!</q-item-main>
+      <q-item-main>Caressa will play more {{selection}}.</q-item-main>
     </q-item>
 
     <slot></slot>
@@ -41,8 +41,8 @@ export default {
     }
   },
   methods: {
-    update () {
-
+    update (selection) {
+      this.selection = selection
     }
   }
 }

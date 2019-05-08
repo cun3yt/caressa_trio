@@ -305,13 +305,13 @@ export default {
       if (!this.senior.device_status) {
         return 'Device Not Found'
       }
-      if (this.senior.device_status.is_online) {
+      if (this.senior.device_status.status.is_online) {
         return 'Online'
       }
       return 'Offline'
     },
     isOnline: function () {
-      return this.senior.device_status && this.senior.device_status.is_online
+      return this.senior.device_status && this.senior.device_status.status.is_online
     }
   }
 }

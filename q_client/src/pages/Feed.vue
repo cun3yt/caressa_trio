@@ -20,6 +20,11 @@
           </e-commerce-feed>
         </template>
 
+        <template v-else-if="feed.action_object_type==='ActionGeneric' && feed.action_object.data.type==='news'">
+          <generic-news-feed :feed="feed" :action="feed.action_object">
+          </generic-news-feed>
+        </template>
+
         <template v-else-if="feed.action_object_type==='ActionGeneric' && feed.action_object.data.type==='event'">
           <event-feed :feed="feed" :action="feed.action_object">
           </event-feed>
@@ -67,6 +72,7 @@ import UserPostFeed from 'components/UserPostFeed'
 import RegularFeed from 'components/RegularFeed'
 import ActionGenericFeed from 'components/ActionGenericFeed'
 import ECommerceFeed from 'components/ECommerceFeed'
+import GenericNewsFeed from 'components/GenericNewsFeed'
 import EventFeed from 'components/EventFeed'
 import PhotoGalleryFeed from 'components/PhotoGalleryFeed'
 import CommentSection from 'components/CommentSection'
@@ -86,6 +92,7 @@ export default {
     CommentSection,
     ActionGenericFeed,
     ECommerceFeed,
+    GenericNewsFeed,
     EventFeed,
     PhotoGalleryFeed
   },
