@@ -143,7 +143,7 @@ authModule = {
     let promise = Vue.http({
       method: 'POST',
       url: url,
-      emulateJSON: true,
+      emulateJSON: false,
       body: data,
       headers: {'Authorization': `Bearer ${this.access_token}`}
     })
