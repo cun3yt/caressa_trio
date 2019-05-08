@@ -93,7 +93,8 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         """
         Can the morning status be changed, i.e. is the morning status in the changeable zone.
         """
-        return self.check_in_time_today_in_tz <= now_in_tz(self.timezone) <= self.deadline_in_time_today_in_tz
+        return True     # todo hardcoding for demo
+        # return self.check_in_time_today_in_tz <= now_in_tz(self.timezone) <= self.deadline_in_time_today_in_tz
 
     @property
     def next_morning_status_cut_off_time(self):
