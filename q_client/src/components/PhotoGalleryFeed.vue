@@ -2,7 +2,7 @@
   <div>
     <q-item class="header">
       <q-item-side>
-        <q-item-tile avatar>
+        <q-item-tile>
           <img src="~assets/photo-gallery.png">
         </q-item-tile>
       </q-item-side>

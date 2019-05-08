@@ -77,6 +77,17 @@ export default {
           ],
           price: '11.99',
           details: 'One of a kind designs featuring the calligraphy of our own mugs. Contact us for designs!'
+        },
+        {
+          name: '1000 Piece Frank Sinatra Jigsaw Puzzle',
+          images: [
+            {
+              name: 'Frank Sinatra Puzzle',
+              url: 'https://s3-us-west-1.amazonaws.com/caressa-prod/images/demo/frank-sinatra-puzzle.jpg'
+            }
+          ],
+          price: '49.99',
+          details: 'Challenging and exciting Frank Sinatra puzzle made from recycled material.'
         }
 
       ]
