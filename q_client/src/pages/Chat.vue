@@ -203,7 +203,7 @@ export default {
         'client-method': 'put_object',
         'request-type': 'PUT'
       }]).then(response => {
-        console.log('response :' + response.body)
+        console.log('response :' + response.body[0])
 
         let vm = this
         let ft = new window.FileTransfer()
@@ -221,7 +221,7 @@ export default {
           dir.getFile(vm.audioMessageObj.key + '.wav', {create: true}, function (file) {
             console.log('file itself', file)
 
-            ft.upload(file.nativeURL, response.body,
+            ft.upload(file.nativeURL, response.body[0].url,
               function (response) {
                 console.log(response)
                 vm.$auth.post(`${vm.$root.$options.hosts.rest}/new_message/`, {
