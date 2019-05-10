@@ -20,6 +20,8 @@ from os import environ
 import dj_database_url
 import pusher
 from django.contrib import admin
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = dirname(dirname(abspath(__file__)))
@@ -275,3 +277,10 @@ DATETIME_FORMATS = {
         'time': "%I:%M %p"  # e.g. '06:30 PM'
     }
 }
+
+SENTRY_DSN = environ.get('SENTRY_DSN')
+
+sentry_sdk.init(
+    dsn=SENTRY_DSN,
+    integrations=[DjangoIntegration()]
+)

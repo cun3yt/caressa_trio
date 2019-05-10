@@ -39,3 +39,4 @@ coverage==4.5.2
 pillow==5.4.1
 coreapi-cli==1.0.9
 pytz==2018.9
+sentry-sdk==0.7.14
