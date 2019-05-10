@@ -81,6 +81,11 @@ This setup is written for Mac OS.
         `export GOOGLE_APPLICATION_CREDENTIALS_RAW="$(< your-google_key-file.json)"`
         * The credentials can be set as the content of the file on the server, e.g. for Heroku, 
         `heroku config:set GOOGLE_APPLICATION_CREDENTIALS="$(< credentials.json)"`
+    * SENTRY_DSN 
+        * Get an invite for Sentry
+        * Head [Sentry Caressa Page](https://sentry.io/settings/caressa/projects/)
+        * Create new project as django and you will have the DSN 
+        
 1. Javascript codebase 
     * JS codes are based on VueJS, with application definitions under /static/javascript/pages/
     * You need to setup webpack to compile the Vue files:
