@@ -864,6 +864,20 @@ class Photo(TimeStampedModel):
                           help_text='Photo URL, it must be publicly accessible')
 
 
+class FeatureFlagCommunityApp(TimeStampedModel):
+    class Meta:
+        db_table = 'feature_flag_community_app'
+
+    senior_living_facility = models.OneToOneField(to=SeniorLivingFacility,
+                                                  primary_key=True,
+                                                  null=False,
+                                                  blank=False,
+                                                  on_delete=models.DO_NOTHING, )
+
+    morning_check_in = models.BooleanField(default=False)
+
+
+
 #                 ______      _                 _        ___  _ _
 #                 | ___ \    | |               (_)      / _ \| | |
 #  ______ ______  | |_/ / ___| | _____      __  _ ___  / /_\ | | |  ______ ______
