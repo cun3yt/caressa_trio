@@ -21,6 +21,10 @@ node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.env.dev.js
+.env.test.js
+.env.stage.js
+.env.prod.js
 .env.js
 
 # Editor directories and files
