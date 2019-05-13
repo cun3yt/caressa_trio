@@ -224,7 +224,7 @@
             },
             editEntry (senior) {
                 this.modalOperationData.editModal.show = true
-                this.modalOperationData.editModal.pk = senior.pk
+                this.modalOperationData.editModal.pk = senior.id
                 this.modalOperationData.editModal.isContactEditable = senior.is_contact_editable
 
                 let contact = {
