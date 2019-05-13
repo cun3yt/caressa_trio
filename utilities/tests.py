@@ -11,6 +11,7 @@ from utilities.sms import send_sms
 from utilities.time import time_today_in_tz
 from django.utils.timezone import localtime
 from utilities.dictionaries import deep_get, deep_set
+from utilities import statistics
 
 
 class _Response:
@@ -266,3 +267,57 @@ class UrlTestCases(unittest.TestCase):
         self.assertEqual(self.full_path, self.expected_full_path)
         self.assertEqual(self.full_path_with_pk, self.expected_full_path_with_pk)
 
+
+class TestStatisticsUniformDistribution(unittest.TestCase):
+    def test_out_of_range_assertions(self):
+        with self.assertRaises(AssertionError):
+            statistics.check_event_uniform_distribution(-0.1)
+        with self.assertRaises(AssertionError):
+            statistics.check_event_uniform_distribution(1.1)
+
+    def test_in_range_no_assertion(self):
+        self.assertIsInstance(statistics.check_event_uniform_distribution(0), bool)
+        self.assertIsInstance(statistics.check_event_uniform_distribution(1), bool)
+        self.assertIsInstance(statistics.check_event_uniform_distribution(0.5), bool)
+
+    @patch('random.randint')
+    def test_zero_probability_with_lowest_random_value(self, mock_randint):
+        mock_randint.return_value = 0
+        did_event_happen = statistics.check_event_uniform_distribution(0)
+        mock_randint.assert_called_once_with(0, 100)
+        self.assertFalse(did_event_happen)
+
+    @patch('random.randint')
+    def test_zero_probability_with_highest_random_value(self, mock_randint):
+        mock_randint.return_value = 100
+        did_event_happen = statistics.check_event_uniform_distribution(0)
+        mock_randint.assert_called_once_with(0, 100)
+        self.assertFalse(did_event_happen)
+
+    @patch('random.randint')
+    def test_low_probability_with_lowest_random_value(self, mock_randint):
+        mock_randint.return_value = 0
+        did_event_happen = statistics.check_event_uniform_distribution(0.0001)  # 0.01% probability
+        mock_randint.assert_called_once_with(0, 100)
+        self.assertTrue(did_event_happen)
+
+    @patch('random.randint')
+    def test_low_probability_with_mid_random_value(self, mock_randint):
+        mock_randint.return_value = 50
+        did_event_happen = statistics.check_event_uniform_distribution(0.0001)  # 0.01% probability
+        mock_randint.assert_called_once_with(0, 100)
+        self.assertFalse(did_event_happen)
+
+    @patch('random.randint')
+    def test_high_probability_with_mid_random_value(self, mock_randint):
+        mock_randint.return_value = 50
+        did_event_happen = statistics.check_event_uniform_distribution(0.9999)    # 99.99% probability
+        mock_randint.assert_called_once_with(0, 100)
+        self.assertTrue(did_event_happen)
+
+    @patch('random.randint')
+    def test_high_probability_with_highest_random_value(self, mock_randint):
+        mock_randint.return_value = 100
+        did_event_happen = statistics.check_event_uniform_distribution(0.9999)    # 99.99% probability
+        mock_randint.assert_called_once_with(0, 100)
+        self.assertFalse(did_event_happen)
