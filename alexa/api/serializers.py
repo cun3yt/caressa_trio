@@ -161,7 +161,7 @@ class FamilyMemberSerializer(serializers.ModelSerializer):
     phone_number = serializers.SerializerMethodField()
 
     def get_phone_number(self, user: User):
-        return user.phone_number.as_national if user.phone_number else ''
+        return user.phone_number.as_e164 if user.phone_number else ''
 
     def get_is_temporary(self, prospect: FamilyProspect):
         return False
@@ -190,7 +190,7 @@ class FamilyProspectSerializer(serializers.ModelSerializer):
     def get_phone_number(self, prospect: FamilyProspect):
         if not prospect.phone_number:
             return ''
-        return prospect.phone_number.as_national
+        return prospect.phone_number.as_e164
 
     def get_is_temporary(self, prospect: FamilyProspect):
         return True
@@ -217,7 +217,7 @@ class SeniorSerializer(MorningCheckInSerializerMixin,
         return [{
             "first_name": caregiver.first_name,
             "last_name": caregiver.last_name,
-            "phone_number": caregiver.phone_number.as_national if caregiver.phone_number else '',
+            "phone_number": caregiver.phone_number.as_e164 if caregiver.phone_number else '',
         } for caregiver in senior.caregivers.all()]
 
     @staticmethod
