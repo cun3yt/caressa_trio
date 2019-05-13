@@ -7,6 +7,7 @@ from utilities.aws_operations import move_file_from_upload_to_prod_bucket
 from utilities.logger import log, log_error
 from pydub import AudioSegment
 from caressa.settings import pusher_client
+from utilities.statistics import check_event_uniform_distribution
 from voice_service.google import tts
 from time import sleep
 import traceback
@@ -199,7 +200,8 @@ def run():
         messages_count = messages_qs.count()
 
         if messages_count == 0:
-            log('Queue is empty, waiting for 2 seconds...')
+            if check_event_uniform_distribution(0.05):
+                log('Queue is empty, waiting for 2 seconds...')
             sleep(2)
             continue
 

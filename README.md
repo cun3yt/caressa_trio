@@ -195,7 +195,9 @@ where you are serving your REST globally. Check it out [Serveo](serveo.net). You
 * You can run the script with this command. `./manage.py runscript  message_queue_process_script` It has infinite loop inside with 2 sec sleep time.
 
 ## Tests and Coverage Report
-* Run `coverage run manage.py test` to generate `.coverage` file
+* Run `coverage run manage.py test` to generate `.coverage` file. Optionally, you can run a specific
+test by adding the path of the test to the end of the command: `coverage run manage.py test utilities.tests`. 
+Event specific unittest class can run: `coverage run manage.py test utilities.tests.TestStatisticsUniformDistribution` 
 * See the test coverage report (interprets `.coverage` file): `coverage report`
 * See `.coveragerc` for default configuration. You can also use command line arguments to change behavior
 
