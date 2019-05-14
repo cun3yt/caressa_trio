@@ -5,7 +5,7 @@ import pytz
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from django.db.models import signals, Q
+from django.db.models import signals, Q, FilteredRelation
 from django.utils import timezone
 from django.utils.functional import cached_property
 from model_utils.models import TimeStampedModel, StatusField
@@ -815,16 +815,20 @@ class FacilityCheckInOperationForSenior(TimeStampedModel):
 
             # todo Simplify if you can
 
-            qs = User.objects.all().filter((Q(user_type=User.CARETAKER)
-                                            & Q(senior_living_facility=facility)
-                                            & Q(facility_check_in_operations__date=today_in_tz(facility.timezone))
-                                            & ~Q(pk__in=self_checked_in_user_ids)
-                                            & Q(facility_check_in_operations__checked__isnull=True)
-                                            & Q(facility_check_in_operations__notified__isnull=True))
-                                           | (Q(user_type=User.CARETAKER)
-                                              & Q(senior_living_facility=facility)
-                                              & ~Q(pk__in=self_checked_in_user_ids)
-                                              & Q(facility_check_in_operations__id__isnull=True)))
+            qs = User.objects.annotate(check_in_op=FilteredRelation('facility_check_in_operations',
+                                                                    condition=
+                                                                    Q(facility_check_in_operations__date=today_in_tz(
+                                                                        facility.timezone))))\
+                .filter(
+                (Q(user_type=User.CARETAKER)
+                 & Q(senior_living_facility=facility)
+                 & ~Q(pk__in=self_checked_in_user_ids)
+                 & Q(check_in_op__checked__isnull=True)
+                 & Q(check_in_op__notified__isnull=True))
+                | (Q(user_type=User.CARETAKER)
+                   & Q(senior_living_facility=facility)
+                   & ~Q(pk__in=self_checked_in_user_ids)
+                   & Q(check_in_op__id__isnull=True)))
             return qs
         else:
             raise Exception('Cannot compute!')
