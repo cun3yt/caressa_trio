@@ -864,9 +864,9 @@ class Photo(TimeStampedModel):
                           help_text='Photo URL, it must be publicly accessible')
 
 
-class FeatureFlagCommunityApp(TimeStampedModel):
+class SeniorLivingFacilityFeatureFlags(TimeStampedModel):
     class Meta:
-        db_table = 'feature_flag_community_app'
+        db_table = 'senior_living_facility_feature_flags'
 
     senior_living_facility = models.OneToOneField(to=SeniorLivingFacility,
                                                   primary_key=True,
@@ -876,6 +876,9 @@ class FeatureFlagCommunityApp(TimeStampedModel):
 
     morning_check_in = models.BooleanField(default=False)
 
+    @classmethod
+    def get_feature_flags_for(cls, facility: SeniorLivingFacility):
+        return cls.objects.get_or_create(senior_living_facility=facility)
 
 
 #                 ______      _                 _        ___  _ _

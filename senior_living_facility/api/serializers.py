@@ -37,7 +37,7 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
                   'photo_gallery_url',
                   'profile_picture',
                   'real_time_communication_channels',
-                  'feature_flag',
+                  'feature_flags',
                   'mock_status', )
         read_only_fields = ('name', 'timezone', )
 
@@ -45,7 +45,7 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
     number_of_unread_notifications = serializers.SerializerMethodField()
     photo_gallery_url = serializers.SerializerMethodField()
     profile_picture = serializers.SerializerMethodField()
-    feature_flag = serializers.SerializerMethodField()
+    feature_flags = serializers.SerializerMethodField()
 
     @staticmethod
     def get_profile_picture(facility: facility_models.SeniorLivingFacility):
@@ -64,14 +64,14 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
         return reverse('photo-gallery', kwargs={'pk': facility.id})
 
     @staticmethod
-    def get_feature_flag(facility: facility_models.SeniorLivingFacility):
-        feature_flag, _ = facility_models.FeatureFlagCommunityApp.objects.get_or_create(senior_living_facility=facility)
-        return FacilityFeatureFlagSerializer(feature_flag).data
+    def get_feature_flags(facility: facility_models.SeniorLivingFacility):
+        feature_flags, _ = facility_models.SeniorLivingFacilityFeatureFlags.get_feature_flags_for(facility=facility)
+        return FacilityFeatureFlagsSerializer(feature_flags).data
 
 
-class FacilityFeatureFlagSerializer(serializers.ModelSerializer):
+class FacilityFeatureFlagsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = facility_models.FeatureFlagCommunityApp
+        model = facility_models.SeniorLivingFacilityFeatureFlags
         fields = ('morning_check_in', )
 
 

@@ -108,7 +108,7 @@ class TestFacilitySerializer(TestCase):
                                             'photo_gallery_url',
                                             'profile_picture',
                                             'real_time_communication_channels',
-                                            'feature_flag',
+                                            'feature_flags',
                                             'mock_status', ])
 
     def test_field_contents(self):
@@ -121,7 +121,7 @@ class TestFacilitySerializer(TestCase):
         self.assertEqual(data['photo_gallery_url'], self.photo_gallery_url )
         self.assertEqual(data['profile_picture'], self.profile_pic)
         self.assertEqual(data['real_time_communication_channels'], self.real_time_communication_channels)
-        self.assertEqual(data['feature_flag'], {'morning_check_in': False})
+        self.assertEqual(data['feature_flags'], {'morning_check_in': False})
         self.assertEqual(data['mock_status'], True)
 
     def test_validation(self):
