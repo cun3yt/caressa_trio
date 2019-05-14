@@ -121,7 +121,6 @@ class FacilityMessageViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 class MessagesThreadParticipantViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication,)
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )  # todo add check for message readability for user
-    queryset = facility_models.SeniorLivingFacilityMockMessageData.objects.all()
     serializer_class = facility_serializers.MessageThreadParticipantSerializer
 
     @property

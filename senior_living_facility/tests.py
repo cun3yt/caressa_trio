@@ -103,26 +103,22 @@ class TestFacilitySerializer(TestCase):
         self.assertCountEqual(data.keys(), ['id',
                                             'name',
                                             'number_of_residents',
-                                            'number_of_unread_notifications',
                                             'timezone',
                                             'photo_gallery_url',
                                             'profile_picture',
                                             'real_time_communication_channels',
-                                            'feature_flags',
-                                            'mock_status', ])
+                                            'feature_flags', ])
 
     def test_field_contents(self):
         data = self.serializer.data
         self.assertEqual(data['id'], self.facility.id)
         self.assertEqual(data['name'], self.facility.name)
         self.assertEqual(data['number_of_residents'], 2)
-        self.assertEqual(data['number_of_unread_notifications'], 3)
         self.assertEqual(data['timezone'], self.facility.timezone)
         self.assertEqual(data['photo_gallery_url'], self.photo_gallery_url )
         self.assertEqual(data['profile_picture'], self.profile_pic)
         self.assertEqual(data['real_time_communication_channels'], self.real_time_communication_channels)
         self.assertEqual(data['feature_flags'], {'morning_check_in': False})
-        self.assertEqual(data['mock_status'], True)
 
     def test_validation(self):
         serializer_data = 123
