@@ -633,9 +633,9 @@ class MessageThread(CreatedTimeStampedModel):
         db_table = 'message_thread'
 
     @staticmethod
-    def get_or_create_new_thread(sender_user: 'alexa_models.User', reciever_user: Optional['alexa_models.User']):
+    def get_or_create_new_thread(sender_user: 'alexa_models.User', receiver_user: Optional['alexa_models.User']):
 
-        is_all_recipients = True if reciever_user is None else False
+        is_all_recipients = True if receiver_user is None else False
 
         assert sender_user.user_type == alexa_models.User.CAREGIVER_ORG, (
             "Message Threads defined for Senior Living Facility Admin Users. "
@@ -644,14 +644,14 @@ class MessageThread(CreatedTimeStampedModel):
         )
 
         sender_user_facility = sender_user.senior_living_facility
-        qs = MessageThreadParticipant.objects.all().filter(user=reciever_user,
+        qs = MessageThreadParticipant.objects.all().filter(user=receiver_user,
                                                            senior_living_facility=sender_user_facility)
         created = False
         if qs.count() == 0:
             message_thread = MessageThread.objects.create()
             created = True
             MessageThreadParticipant.objects.create(message_thread=message_thread,
-                                                    user=reciever_user,
+                                                    user=receiver_user,
                                                     senior_living_facility=sender_user_facility,
                                                     is_all_recipients=is_all_recipients,
                                                     )
