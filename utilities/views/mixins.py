@@ -9,7 +9,3 @@ class SerializerRequestViewSetMixin:
         return {
             'request': self.request
         }
-
-
-class ForAdminApplicationMixin:  # Temporary For End Point Coordination With the Remote Office
-    pass

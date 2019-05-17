@@ -13,7 +13,6 @@ from senior_living_facility.models import ContentDeliveryRule, ServiceRequest, M
 from streaming.models import Messages
 from utilities.api.urls import reverse
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
-from utilities.views.mixins import ForAdminApplicationMixin
 from voice_service.google import tts
 
 
@@ -25,7 +24,7 @@ class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
         read_only_fields = ('facility_id', 'calendar_url', 'timezone', )
 
 
-class FacilitySerializer(serializers.ModelSerializer, ForAdminApplicationMixin):
+class FacilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = facility_models.SeniorLivingFacility
         fields = ('id',
@@ -67,7 +66,7 @@ class FacilityFeatureFlagsSerializer(serializers.ModelSerializer):
         fields = ('morning_check_in', )
 
 
-class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplicationMixin):
+class FacilityMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ('id',

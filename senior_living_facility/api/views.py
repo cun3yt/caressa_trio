@@ -22,7 +22,6 @@ from senior_living_facility.models import SeniorLivingFacility, Photo
 from utilities import file_operations as file_ops
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
 from utilities.time import now_in_tz, today_in_tz, time_today_in_tz
-from utilities.views.mixins import ForAdminApplicationMixin
 
 
 class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -66,7 +65,7 @@ class FacilityTimeState(views.APIView):
         return SeniorLivingFacility.objects.get(pk=pk)
 
 
-class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet, ForAdminApplicationMixin):
+class FacilityViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, IsUserInFacility, )
     queryset = facility_models.SeniorLivingFacility.objects.all()
