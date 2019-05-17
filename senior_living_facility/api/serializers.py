@@ -10,11 +10,9 @@ from senior_living_facility.api import mixins as facility_mixins
 from senior_living_facility import models as facility_models
 from alexa.api.serializers import UserSerializer
 from senior_living_facility.models import ContentDeliveryRule, ServiceRequest, Message, MessageThread
-from senior_living_facility.models import SeniorLivingFacilityMockMessageData as MockMessageData
 from streaming.models import Messages
 from utilities.api.urls import reverse
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
-from utilities.views.mixins import MockStatusMixin, ForAdminApplicationMixin
 from voice_service.google import tts
 
 
@@ -26,23 +24,20 @@ class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
         read_only_fields = ('facility_id', 'calendar_url', 'timezone', )
 
 
-class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminApplicationMixin):
+class FacilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = facility_models.SeniorLivingFacility
         fields = ('id',
                   'name',
                   'number_of_residents',
-                  'number_of_unread_notifications',
                   'timezone',
                   'photo_gallery_url',
                   'profile_picture',
                   'real_time_communication_channels',
-                  'feature_flags',
-                  'mock_status', )
+                  'feature_flags', )
         read_only_fields = ('name', 'timezone', )
 
     number_of_residents = serializers.SerializerMethodField()
-    number_of_unread_notifications = serializers.SerializerMethodField()
     photo_gallery_url = serializers.SerializerMethodField()
     profile_picture = serializers.SerializerMethodField()
     feature_flags = serializers.SerializerMethodField()
@@ -54,10 +49,6 @@ class FacilitySerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminA
     @staticmethod
     def get_number_of_residents(facility: facility_models.SeniorLivingFacility):
         return facility.residents.count()
-
-    @staticmethod
-    def get_number_of_unread_notifications(facility: facility_models.SeniorLivingFacility):  # todo hardcode
-        return 3
 
     @staticmethod
     def get_photo_gallery_url(facility: facility_models.SeniorLivingFacility):
@@ -75,7 +66,7 @@ class FacilityFeatureFlagsSerializer(serializers.ModelSerializer):
         fields = ('morning_check_in', )
 
 
-class FacilityMessageSerializer(serializers.ModelSerializer, ForAdminApplicationMixin):
+class FacilityMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ('id',
@@ -261,31 +252,6 @@ class MessageThreadParticipantSerializer(serializers.ModelSerializer):
     def get_last_message(message_thread_participant: facility_models.MessageThreadParticipant):
         last_message = message_thread_participant.message_thread.last_message
         return MessageSerializer(last_message).data
-
-
-class FacilityMessagesSerializer(serializers.ModelSerializer, MockStatusMixin, ForAdminApplicationMixin):
-    class Meta:
-        model = MockMessageData
-        fields = ('id', 'resident', 'last_message', 'mock_status', 'message_from', )
-
-    resident = serializers.SerializerMethodField()
-    last_message = serializers.SerializerMethodField()
-    message_from = serializers.SerializerMethodField()
-
-    @staticmethod
-    def get_resident(mock_message_data: MockMessageData):
-        if not mock_message_data.senior:
-            return 'All Residents'
-        return AdminAppSeniorListSerializer(mock_message_data.senior).data
-
-    @staticmethod
-    def get_last_message(mock_message_data: MockMessageData):
-        return mock_message_data.message
-
-    @staticmethod
-    def get_message_from(mock_message_data: MockMessageData):
-        return mock_message_data.message_from
-
 
 class MorningCheckInDoneByStaffSerializer(facility_mixins.MorningCheckInSerializerMixin, serializers.ModelSerializer):
     class Meta:
