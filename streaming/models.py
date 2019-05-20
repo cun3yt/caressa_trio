@@ -71,12 +71,14 @@ class AudioFile(TimeStampedModel):
 
     TYPE_SONG = 'song'
     TYPE_FACILITY_AUTO_GENERATED_CONTENT = 'facility-auto-generated-content'
+    TYPE_FACILITY_MESSAGE = 'facility-message'
     TYPE_FAMILY_UPDATE = 'family_update'
     TYPE_MISC = 'miscellaneous'
 
     TYPE_SET = (
         (TYPE_SONG, 'Song'),
         (TYPE_FACILITY_AUTO_GENERATED_CONTENT, 'Facility Auto Generated Content'),
+        (TYPE_FACILITY_MESSAGE, 'Facility Message'),
         (TYPE_FAMILY_UPDATE, 'Family Update'),
         (TYPE_MISC, 'Miscellaneous'),
     )

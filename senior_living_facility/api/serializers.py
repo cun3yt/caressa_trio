@@ -10,7 +10,7 @@ from senior_living_facility.api import mixins as facility_mixins
 from senior_living_facility import models as facility_models
 from alexa.api.serializers import UserSerializer
 from senior_living_facility.models import ContentDeliveryRule, ServiceRequest, Message, MessageThread
-from streaming.models import Messages
+from streaming.models import Messages, AudioFile
 from utilities.api.urls import reverse
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
 from voice_service.google import tts
@@ -72,8 +72,13 @@ class FacilityMessageSerializer(serializers.ModelSerializer):
         fields = ('id',
                   'content',
                   'content_audio_file',
-                  'is_response_expected',
-                  )
+                  'is_response_expected', )
+
+    content_audio_file = serializers.SerializerMethodField()
+
+    @staticmethod
+    def get_content_audio_file(message: facility_models.Message):
+        return message.audio_url
 
     def create(self, validated_data):
         def _create_message(user, text_message):
@@ -106,19 +111,21 @@ class FacilityMessageSerializer(serializers.ModelSerializer):
 
         if message_format == 'text':
             text_content = message_data.get('content')
-            _create_message(source_user, text_content)      # todo this is an adaptor (see the function definition)
-            content_audio_file = tts.tts_to_s3(text=text_content, return_format='url')
+            # _create_message(source_user, text_content)      # todo this is an adaptor (see the function definition)
         else:
-            text_content = None
+            text_content = ""
             source_file_key = message_data.get('content')
             dest_file_key = 'audio/facility/{id}/message/{key}'.format(id=source_user.senior_living_facility.id,
                                                                        key=source_file_key)
 
-            content_audio_file = move_file_from_upload_to_prod_bucket(source_file_key=source_file_key,
-                                                                      dest_file_key=dest_file_key)
+            audio_url = move_file_from_upload_to_prod_bucket(source_file_key=source_file_key,
+                                                             dest_file_key=dest_file_key)
+            audio_file = AudioFile.objects.create(audio_type=AudioFile.TYPE_FACILITY_MESSAGE,
+                                                  url=audio_url, )
+
+            validated_data['audio_file'] = audio_file
 
         validated_data['content'] = text_content
-        validated_data['content_audio_file'] = content_audio_file
 
         message_types = {
             "Message": 'voice-mail',
@@ -137,6 +144,9 @@ class FacilityMessageSerializer(serializers.ModelSerializer):
         validated_data['is_response_expected'] = self.context['request'].data['request_reply']
 
         instance = super(FacilityMessageSerializer, self).create(validated_data)
+
+        # todo sending the pusher message here instead of _create_message() fn usage?
+
         return instance     # type: Message
 
 
@@ -200,8 +210,13 @@ class MessageSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_content(message: Message):
-        content_type, content_details = ('Audio', message.content_audio_file,) if message.content is None \
-            else ('Text', message.content,)
+        assert message.audio_file or message.content, (
+            "For Message instance either audio_file or content is supposed to be set. "
+            "It is not so for ID: {}".format(message.id)
+        )
+
+        content_type, content_details = ('Audio', message.audio_file.url, ) if message.content is None \
+            else ('Text', message.content, )
 
         return {
             "type": content_type,
