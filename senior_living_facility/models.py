@@ -1,7 +1,6 @@
-from copy import deepcopy
-
 import pytz
 
+from copy import deepcopy
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -19,13 +18,12 @@ from model_utils import Choices
 from streaming.models import AudioFile
 
 from utilities.models.mixins import ProfilePictureMixin
-from voice_service.google.tts import tts_to_s3
-from utilities.models.abstract_models import CreatedTimeStampedModel, AudioFileAndDeliveryRuleMixin
+from utilities.models.abstract_models import CreatedTimeStampedModel
+from senior_living_facility.mixins import AudioFileAndDeliveryRuleMixin
 from datetime import datetime, time, date, timedelta
 from icalevents.icalevents import events as query_events
 from utilities.speech import ssml_post_process
 
-from utilities.cryptography import compute_hash
 from utilities.sms import send_sms
 from utilities.time import time_today_in_tz as time_in_tz, today_in_tz, now_in_tz
 
