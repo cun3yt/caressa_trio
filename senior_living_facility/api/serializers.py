@@ -10,10 +10,9 @@ from senior_living_facility.api import mixins as facility_mixins
 from senior_living_facility import models as facility_models
 from alexa.api.serializers import UserSerializer
 from senior_living_facility.models import ContentDeliveryRule, ServiceRequest, Message, MessageThread
-from streaming.models import Messages, AudioFile
+from streaming.models import AudioFile
 from utilities.api.urls import reverse
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
-from voice_service.google import tts
 
 
 class SeniorLivingFacilitySerializer(serializers.ModelSerializer):
@@ -56,7 +55,7 @@ class FacilitySerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_feature_flags(facility: facility_models.SeniorLivingFacility):
-        feature_flags, _ = facility_models.SeniorLivingFacilityFeatureFlags.get_feature_flags_for(facility=facility)
+        feature_flags = facility_models.SeniorLivingFacilityFeatureFlags.get_feature_flags_for(facility=facility)
         return FacilityFeatureFlagsSerializer(feature_flags).data
 
 
@@ -81,23 +80,6 @@ class FacilityMessageSerializer(serializers.ModelSerializer):
         return message.audio_url
 
     def create(self, validated_data):
-        def _create_message(user, text_message):
-            """
-            Purpose: Create an adaptor between Message and Messages for Device's content delivery through message_queue
-
-            user: source_user
-            text_message: text content
-            """
-            
-            message = {
-                'user': user.id,
-                'message_type': 'facility_ios_text',
-                'key': "something-important",   # todo ???
-                'content': text_message
-            }
-            new_message = Messages(message=message)
-            new_message.save()
-
         source_user = self.context['request'].user
         receiver_user_id = self.context['request'].data['to']
 
@@ -111,7 +93,6 @@ class FacilityMessageSerializer(serializers.ModelSerializer):
 
         if message_format == 'text':
             text_content = message_data.get('content')
-            # _create_message(source_user, text_content)      # todo this is an adaptor (see the function definition)
         else:
             text_content = ""
             source_file_key = message_data.get('content')

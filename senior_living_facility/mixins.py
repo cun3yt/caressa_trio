@@ -99,8 +99,18 @@ class AudioFileAndDeliveryRuleMixin(models.Model):
                                               hash=self._generate_hash())
         self.audio_file = audio_file
 
-    @staticmethod
-    def pre_save_operations(**kwargs):
+    @classmethod
+    def pre_save_before_hook(cls, **kwargs):
+        pass
+
+    @classmethod
+    def pre_save_after_hook(cls, **kwargs):
+        pass
+
+    @classmethod
+    def pre_save_operations(cls, **kwargs):
+        cls.pre_save_before_hook(**kwargs)
         instance = kwargs.get('instance')
         audio_type = instance.get_audio_type()
         instance.set_audio_file(audio_type)
+        cls.pre_save_after_hook(**kwargs)

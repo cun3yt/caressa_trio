@@ -1,3 +1,5 @@
+import re
+
 import pytz
 
 from copy import deepcopy
@@ -24,6 +26,7 @@ from datetime import datetime, time, date, timedelta
 from icalevents.icalevents import events as query_events
 from utilities.speech import ssml_post_process
 
+from utilities.real_time_communication import send_instance_message
 from utilities.sms import send_sms
 from utilities.time import time_today_in_tz as time_in_tz, today_in_tz, now_in_tz
 
@@ -110,9 +113,12 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         check_in_reminder_in_tz = self.time_today_in_tz(self.check_in_reminder)
         return check_in_reminder_in_tz <= now_in_tz(self.timezone)
 
+    def get_facility_realtime_channel(self):
+        return alexa_models.User.get_facility_channel(self.facility_id)
+
     @property
     def real_time_communication_channels(self):
-        channel = alexa_models.User.get_facility_channel(self.facility_id)
+        channel = self.get_facility_realtime_channel()
 
         return {
             'check-in': {
@@ -550,6 +556,9 @@ class Message(CreatedTimeStampedModel, AudioFileAndDeliveryRuleMixin):
     class Meta:
         db_table = 'message'
         ordering = ['-created']
+        indexes = [
+            models.Index(fields=['-created', ]),
+        ]
 
     message_thread = models.ForeignKey(to='MessageThread',
                                        help_text='Collection of messages between related participants.',
@@ -578,6 +587,25 @@ class Message(CreatedTimeStampedModel, AudioFileAndDeliveryRuleMixin):
 
     def get_audio_type(self):
         return AudioFile.TYPE_FACILITY_MESSAGE
+
+    @classmethod
+    def pre_save_after_hook(cls, **kwargs):
+        message = kwargs.get('instance')   # type: Message
+        channel = message.source_user.senior_living_facility.get_facility_realtime_channel()
+
+        delivery_rule = message.delivery_rule
+
+        # todo fix this dirty naming problem
+        event_name = re.sub('-', '_', delivery_rule.type)
+        event_name = 'injectable_content' if event_name == 'injectable' else event_name
+
+        send_instance_message(channel, event_name,
+                              {
+                                  'url': message.audio_url,
+                                  'hash': message.hash,
+                                  'is_selected_recipient_type': True,
+                                  'selected_recipient_ids': delivery_rule.recipient_ids
+                              })
 
 
 signals.pre_save.connect(receiver=Message.pre_save_operations,
@@ -857,4 +885,5 @@ class SeniorLivingFacilityFeatureFlags(TimeStampedModel):
 
     @classmethod
     def get_feature_flags_for(cls, facility: SeniorLivingFacility):
-        return cls.objects.get_or_create(senior_living_facility=facility)
+        flags, _ = cls.objects.get_or_create(senior_living_facility=facility)
+        return flags

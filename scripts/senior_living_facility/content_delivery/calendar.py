@@ -2,7 +2,7 @@ from utilities.logger import log, log_error
 from senior_living_facility.models import SeniorLivingFacility, SeniorLivingFacilityContent, ContentDeliveryRule
 from alexa.models import User
 from typing import Union
-from caressa.settings import pusher_client
+from utilities.real_time_communication import send_instance_message
 from utilities.time import time_today_in_tz
 from datetime import timedelta
 
@@ -38,7 +38,7 @@ def _send_realtime_message(facility: SeniorLivingFacility, content: SeniorLiving
 
     rule = content.delivery_rule
     channel = User.get_facility_channel(facility.facility_id)
-    pusher_client.trigger(channel,
+    send_instance_message(channel,
                           'injectable_content',
                           {
                               'url': content.audio_url,
