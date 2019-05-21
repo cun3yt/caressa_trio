@@ -1,10 +1,10 @@
 from utilities.logger import log, log_error
 from senior_living_facility.models import SeniorLivingFacility, SeniorDevice, SeniorLivingFacilityContent, \
     SeniorLivingFacilityMessageLog as MsgLog
-from caressa.settings import pusher_client
 from alexa.models import User
 from datetime import datetime, timedelta
 from senior_living_facility.models import ContentDeliveryRule
+from utilities.real_time_communication import send_instance_message
 from utilities.time import time_today_in_tz
 from typing import Union
 import pytz
@@ -93,7 +93,7 @@ def send_check_in_call_for_one_facility(facility: Union[SeniorLivingFacility, in
                           delivery_type=MsgLog.DELIVERY_TYPE_URGENT_MAIL,
                           data={'recipient_ids': recipient_ids})
 
-    pusher_client.trigger(channel,
+    send_instance_message(channel,
                           'urgent_mail',
                           {
                               'url': content.audio_url,

@@ -9,7 +9,13 @@ def aws_url_creator(bucket, file_key):
                                                  file_key=file_key)
 
 
-def move_file_from_upload_to_prod_bucket(source_file_key, dest_file_key):
+def move_file_from_upload_to_prod_bucket(source_file_key, dest_file_key) -> str:
+    """
+
+    :param source_file_key:
+    :param dest_file_key:
+    :return: public url of the object
+    """
     s3 = boto3.resource('s3')
     copy_source = {
         'Bucket': S3_RAW_UPLOAD_BUCKET,

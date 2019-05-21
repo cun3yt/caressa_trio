@@ -1,7 +1,8 @@
-from copy import deepcopy
+import re
 
 import pytz
 
+from copy import deepcopy
 from django.contrib.auth import get_user_model
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -19,13 +20,13 @@ from model_utils import Choices
 from streaming.models import AudioFile
 
 from utilities.models.mixins import ProfilePictureMixin
-from voice_service.google.tts import tts_to_s3
 from utilities.models.abstract_models import CreatedTimeStampedModel
+from senior_living_facility.mixins import AudioFileAndDeliveryRuleMixin
 from datetime import datetime, time, date, timedelta
 from icalevents.icalevents import events as query_events
 from utilities.speech import ssml_post_process
 
-from utilities.cryptography import compute_hash
+from utilities.real_time_communication import send_instance_message
 from utilities.sms import send_sms
 from utilities.time import time_today_in_tz as time_in_tz, today_in_tz, now_in_tz
 
@@ -112,9 +113,12 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         check_in_reminder_in_tz = self.time_today_in_tz(self.check_in_reminder)
         return check_in_reminder_in_tz <= now_in_tz(self.timezone)
 
+    def get_facility_realtime_channel(self):
+        return alexa_models.User.get_facility_channel(self.facility_id)
+
     @property
     def real_time_communication_channels(self):
-        channel = alexa_models.User.get_facility_channel(self.facility_id)
+        channel = self.get_facility_realtime_channel()
 
         return {
             'check-in': {
@@ -385,7 +389,7 @@ class ContentDeliveryRule(models.Model):
         return "ContentDeliveryRule({},{},{})".format(self.start.timestamp(), self.end.timestamp(), self.frequency)
 
 
-class SeniorLivingFacilityContent(CreatedTimeStampedModel):
+class SeniorLivingFacilityContent(CreatedTimeStampedModel, AudioFileAndDeliveryRuleMixin):
     """
     Purpose: Keeping the Auto-generated TTS content from the Senior Living Facility to the senior devices.
     Example contents:
@@ -424,55 +428,18 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel):
                                     blank=True,
                                     default='', )
 
-    # `audio_file` is filled with pre-save signal
-    audio_file = models.ForeignKey(to=AudioFile,
-                                   null=True,   # todo: set this to False later
-                                   blank=False,
-                                   default=None,
-                                   on_delete=models.DO_NOTHING, )
+    def get_text_content(self):
+        return self.text_content
 
-    delivery_rule = models.ForeignKey(to=ContentDeliveryRule,
-                                      null=False,
-                                      on_delete=models.DO_NOTHING, )
+    def get_content_type(self):
+        return self.content_type
 
-    @property
-    def audio_url(self):
-        assert self.audio_file, (
-            "audio_file is not set"
-        )
-        return self.audio_file.url
+    def get_payload_for_audio_file(self):
+        return {'text': self.get_text_content(),
+                'facility_id': self.senior_living_facility.id}
 
-    @property
-    def hash(self):
-        assert self.audio_file, (
-            "audio_file is not set"
-        )
-        return self.audio_file.hash
-
-    @staticmethod
-    def find(delivery_type, start, end, frequency=ContentDeliveryRule.FREQUENCY_ONE_TIME,
-             recipient_ids=None, **kwargs) -> 'SeniorLivingFacilityContent':
-        delivery_rule = ContentDeliveryRule.find(delivery_type, start, end, frequency, recipient_ids)
-        inst, _ = SeniorLivingFacilityContent.objects.get_or_create(delivery_rule=delivery_rule, **kwargs)
-        return inst
-
-    def _generate_hash(self):
-        txt = "{}-{}-{}".format(str(self.delivery_rule), self.text_content, self.content_type)
-        return compute_hash(txt)
-
-    def _set_audio_file(self):
-        url = tts_to_s3(return_format='url', text=self.text_content)
-        audio_file = AudioFile.objects.create(audio_type=AudioFile.TYPE_FACILITY_AUTO_GENERATED_CONTENT,
-                                              url=url,
-                                              payload={'text': self.text_content,
-                                                       'facility_id': self.senior_living_facility.id},
-                                              hash=self._generate_hash())
-        self.audio_file = audio_file
-
-    @staticmethod
-    def pre_save_operations(**kwargs):
-        instance = kwargs.get('instance')   # type: 'SeniorLivingFacilityContent'
-        instance._set_audio_file()
+    def get_audio_type(self):
+        return AudioFile.TYPE_FACILITY_AUTO_GENERATED_CONTENT
 
 
 signals.pre_save.connect(receiver=SeniorLivingFacilityContent.pre_save_operations,
@@ -577,32 +544,73 @@ class ServiceRequest(CreatedTimeStampedModel):
             send_sms(number.as_international, context, 'sms/service-request.txt')
 
 
-class Message(CreatedTimeStampedModel):
+class Message(CreatedTimeStampedModel, AudioFileAndDeliveryRuleMixin):
+    """
+    Purpose: Keeping the messages sent from the community app to the senior device.
+
+    It includes both message types:
+        1. `content` to be TTS'ed and audio to be stored in `audio_file`
+        2. Audio recordings stored directly in `audio_file`
+    """
+
     class Meta:
         db_table = 'message'
         ordering = ['-created']
+        indexes = [
+            models.Index(fields=['-created', ]),
+        ]
 
     message_thread = models.ForeignKey(to='MessageThread',
                                        help_text='Collection of messages between related participants.',
-                                       on_delete=models.DO_NOTHING,
-                                       )
-    content = models.TextField(null=True,
-                               help_text='Content which will be processed with text to speech.',
-                               )
-    content_audio_file = models.TextField(null=True,
-                                          help_text='This field will be populated either from an '
-                                                    'voice record audio url or text to speech process.',
-                                          )
+                                       on_delete=models.DO_NOTHING, )
+
+    content = models.TextField(blank=True,
+                               default="",
+                               help_text='Content which will be processed with text to speech.', )
+
     source_user = models.ForeignKey(to='alexa.User',
                                     help_text='The user who sent the message.',
-                                    on_delete=models.DO_NOTHING,
-                                    )
+                                    on_delete=models.DO_NOTHING, )
 
-    delivery_rule = models.ForeignKey(to=ContentDeliveryRule,
-                                      on_delete=models.DO_NOTHING,
-                                      )
-    is_response_expected = models.BooleanField(default=False,
-                                               )
+    is_response_expected = models.BooleanField(default=False, )
+
+    def get_text_content(self):
+        return self.content
+
+    def get_content_type(self):
+        return "Text" if self.get_text_content() else "Audio"
+
+    def get_payload_for_audio_file(self):
+        return {
+            'text': self.get_text_content(),
+        }
+
+    def get_audio_type(self):
+        return AudioFile.TYPE_FACILITY_MESSAGE
+
+    @classmethod
+    def pre_save_after_hook(cls, **kwargs):
+        message = kwargs.get('instance')   # type: Message
+        channel = message.source_user.senior_living_facility.get_facility_realtime_channel()
+
+        delivery_rule = message.delivery_rule
+
+        # todo fix this dirty naming problem
+        event_name = re.sub('-', '_', delivery_rule.type)
+        event_name = 'injectable_content' if event_name == 'injectable' else event_name
+
+        send_instance_message(channel, event_name,
+                              {
+                                  'url': message.audio_url,
+                                  'hash': message.hash,
+                                  'is_selected_recipient_type': True,
+                                  'selected_recipient_ids': delivery_rule.recipient_ids
+                              })
+
+
+signals.pre_save.connect(receiver=Message.pre_save_operations,
+                         sender=Message,
+                         dispatch_uid='message.pre_save')
 
 
 class MessageResponse(TimeStampedModel):  # todo Not in use at the moment
@@ -614,18 +622,16 @@ class MessageResponse(TimeStampedModel):  # todo Not in use at the moment
 
     from_user = models.ForeignKey(to='alexa.User',
                                   help_text='User who responses the message',
-                                  on_delete=models.DO_NOTHING,
-                                  )
+                                  on_delete=models.DO_NOTHING, )
+
     message = models.ForeignKey(to=Message,
                                 help_text='Response Requested Message',
-                                on_delete=models.DO_NOTHING,
-                                )
+                                on_delete=models.DO_NOTHING, )
 
     response = models.NullBooleanField(help_text='Message response True represents Yes, '
                                                  'False Represents No, '
                                                  'Null represents No Reply',
-                                       default=None,
-                                       )
+                                       default=None, )
 
 
 class MessageThread(CreatedTimeStampedModel):
@@ -633,28 +639,27 @@ class MessageThread(CreatedTimeStampedModel):
         db_table = 'message_thread'
 
     @staticmethod
-    def get_or_create_new_thread(sender_user: 'alexa_models.User', reciever_user: Optional['alexa_models.User']):
+    def get_or_create_new_thread(sender_user: 'alexa_models.User', receiver_user: Optional['alexa_models.User']):
 
-        is_all_recipients = True if reciever_user is None else False
-
-        assert sender_user.user_type == alexa_models.User.CAREGIVER_ORG, (
-            "Message Threads defined for Senior Living Facility Admin Users. "
+        assert sender_user.is_provider(), (
+            "Message Threads defined for community providers. "
             "It is {user_type} for User id: {user_id}".format(user_type=sender_user.user_type,
                                                               user_id=sender_user.id)
         )
 
+        is_all_recipients = True if receiver_user is None else False
+
         sender_user_facility = sender_user.senior_living_facility
-        qs = MessageThreadParticipant.objects.all().filter(user=reciever_user,
+        qs = MessageThreadParticipant.objects.all().filter(user=receiver_user,
                                                            senior_living_facility=sender_user_facility)
         created = False
         if qs.count() == 0:
             message_thread = MessageThread.objects.create()
             created = True
             MessageThreadParticipant.objects.create(message_thread=message_thread,
-                                                    user=reciever_user,
+                                                    user=receiver_user,
                                                     senior_living_facility=sender_user_facility,
-                                                    is_all_recipients=is_all_recipients,
-                                                    )
+                                                    is_all_recipients=is_all_recipients, )
         else:
             message_thread = qs[0].message_thread
 
@@ -679,18 +684,17 @@ class MessageThreadParticipant(CreatedTimeStampedModel):
         unique_together = ('user', 'senior_living_facility')
 
     message_thread = models.ForeignKey(to=MessageThread,
-                                       on_delete=models.DO_NOTHING,
-                                       )
+                                       on_delete=models.DO_NOTHING, )
+
     user = models.ForeignKey(to='alexa.User',
                              null=True,
                              help_text='Message thread participating user',
-                             on_delete=models.DO_NOTHING,
-                             )
+                             on_delete=models.DO_NOTHING, )
 
     senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
                                                help_text='Message thread participating senior living facility',
-                                               on_delete=models.DO_NOTHING,
-                                               )
+                                               on_delete=models.DO_NOTHING, )
+
     is_all_recipients = models.BooleanField(help_text='If true user field needs to be empty',
                                             default=False, )
 
@@ -881,4 +885,5 @@ class SeniorLivingFacilityFeatureFlags(TimeStampedModel):
 
     @classmethod
     def get_feature_flags_for(cls, facility: SeniorLivingFacility):
-        return cls.objects.get_or_create(senior_living_facility=facility)
+        flags, _ = cls.objects.get_or_create(senior_living_facility=facility)
+        return flags

@@ -18,7 +18,6 @@ from os.path import (
 )
 from os import environ
 import dj_database_url
-import pusher
 from django.contrib import admin
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
@@ -31,6 +30,13 @@ UPLOADS_DIR = path_normpath(path_join(BASE_DIR, 'uploads/'))
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
 
 ENV = environ.get('ENV')
+
+# Test stubs are here, todo: conditional imports can be done similar to how it is done in the hardware code
+if ENV == 'test':
+    from utilities.test_stubs import pusher
+else:
+    import pusher
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = environ.get('ENV_KEY')

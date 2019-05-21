@@ -27,8 +27,9 @@ from uuid import uuid4
 from django.urls import reverse
 from caressa.settings import WEB_BASE_URL
 from utilities.email import send_email
-from utilities.sms import send_sms
 from utilities.models.mixins import ProfilePictureMixin
+from utilities.real_time_communication import send_instance_message
+from utilities.sms import send_sms
 
 
 class CaressaUserManager(BaseUserManager):
@@ -566,7 +567,7 @@ def user_act_on_content_activity_save(sender, instance, created, **kwargs):
     user_action = user_action_model.objects.my_actions(user, circle).order_by('-timestamp')[0]
     serializer = ActionSerializer(user_action)
     json = JSONRenderer().render(serializer.data).decode('utf8')
-    pusher_client.trigger(channel_name, 'feeds', json)
+    send_instance_message(channel_name, 'feeds', json)  # todo check if this is in use??
 
 
 def create_circle_for_user(sender, instance, created, **kwargs):

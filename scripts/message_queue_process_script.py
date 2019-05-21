@@ -6,20 +6,14 @@ import boto3
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
 from utilities.logger import log, log_error
 from pydub import AudioSegment
-from caressa.settings import pusher_client
 from utilities.statistics import check_event_uniform_distribution
+from utilities.real_time_communication import send_instance_message
 from voice_service.google import tts
 from time import sleep
 import traceback
 
 
 # todo revisit `senior_communication_channel` part, it may need to be `facility_channel` in some cases
-
-def _realtime_message(channel, event_name, data):
-    log("Sending realtime message, channel: {channel}\n "
-        "event_name: {event_name},\n "
-        "data: {data}".format(channel=channel, event_name=event_name, data=data))
-    pusher_client.trigger(channel, event_name, data)
 
 
 def _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key):
@@ -77,13 +71,13 @@ def audio_worker(publisher, next_queued_job: Messages):
     if source.is_provider():
         channels = source.communication_channels()
         assert len(channels) == 1, "Provider is supposed to have only one channel, which is a SLF channel"
-        _realtime_message(channels[0], mail_type, {'url': url, 'hash': new_audio.hash})
+        send_instance_message(channels[0], mail_type, {'url': url, 'hash': new_audio.hash})
     else:
         assert source.is_family(), (
             "Source must be family if not a provider since senior cannot trigger a message (at the moment)"
         )
         destination = source.circle_set.all()[0].person_of_interest
-        _realtime_message(destination.senior_communication_channel, mail_type, {'url': url, 'hash': new_audio.hash})
+        send_instance_message(destination.senior_communication_channel, mail_type, {'url': url, 'hash': new_audio.hash})
 
     return 'Job Finished...'
 
@@ -119,7 +113,7 @@ def text_worker(publisher, next_queued_job: Messages):
     source = User.objects.get(pk=user_id)
 
     destination = source.circle_set.all()[0].person_of_interest     # todo from the senior living community part ???
-    _realtime_message(destination.senior_communication_channel, mail_type, {'url': url, 'hash': new_audio.hash})
+    send_instance_message(destination.senior_communication_channel, mail_type, {'url': url, 'hash': new_audio.hash})
 
     return 'Job Finished...'
 
@@ -160,7 +154,7 @@ def personalization_worker(publisher, next_queued_job: Messages):
 
     destination = source.circle_set.all()[0].person_of_interest
 
-    _realtime_message(destination.senior_communication_channel, mail_type, {'url': url, 'hash': new_audio.hash})
+    send_instance_message(destination.senior_communication_channel, mail_type, {'url': url, 'hash': new_audio.hash})
 
     log('Job Finished...')
 
