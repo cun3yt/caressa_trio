@@ -167,34 +167,30 @@ class TestFacilityMessageSerializer(TestCase):
         self.assertEqual(created_message_instance.content, 'Hi Pamela, I hope you are feeling okay.')
         self.assertEqual(created_message_instance.source_user, self.staff)
 
-    # todo open the following test, currently it generates this error in streaming/models.py" in _set_duration:
-    #  "ssl.CertificateError: hostname 'caressa.com' doesn't match 'cc.sedoparking.com'"
-    #  author: Cuneyt M.
-    #
-    # @mock.patch('senior_living_facility.api.serializers.move_file_from_upload_to_prod_bucket')
-    # def test_message_format_audio(self, mock_aws_ops):
-    #     mock_aws_ops.return_value = 'https://caressa.com/prod/test_audio_key'
-    #     self.rf = RequestFactory()
-    #     self.rf.user = self.staff
-    #     self.rf.data = {
-    #         "to": self.senior.id,
-    #         "message_type": "Message",
-    #         "message": {
-    #             "format": "audio",
-    #             "content": "test_audio_key"
-    #         },
-    #         "request_reply": False
-    #     }
-    #
-    #     self.context = {
-    #         'request': self.rf
-    #     }
-    #
-    #     serializer = FacilityMessageSerializer(context=self.context)
-    #
-    #     created_message_instance = serializer.create({})
-    #     self.assertIsNone(created_message_instance.content)
-    #     self.assertEqual(created_message_instance.source_user, self.staff)
+    @mock.patch('senior_living_facility.api.serializers.move_file_from_upload_to_prod_bucket')
+    def test_message_format_audio(self, mock_aws_ops):
+        mock_aws_ops.return_value = 'https://www.caressa.ai/prod/test_audio_key'
+        self.rf = RequestFactory()
+        self.rf.user = self.staff
+        self.rf.data = {
+            "to": self.senior.id,
+            "message_type": "Message",
+            "message": {
+                "format": "audio",
+                "content": "test_audio_key"
+            },
+            "request_reply": False
+        }
+
+        self.context = {
+            'request': self.rf
+        }
+
+        serializer = FacilityMessageSerializer(context=self.context)
+
+        created_message_instance = serializer.create({})
+        self.assertEqual(created_message_instance.content, "")
+        self.assertEqual(created_message_instance.source_user, self.staff)
 
 
 class TestAdminAppSeniorListSerializer(TestCase):
