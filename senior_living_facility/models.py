@@ -870,6 +870,10 @@ class Photo(TimeStampedModel):
                           verbose_name='Photo URL',
                           help_text='Photo URL, it must be publicly accessible')
 
+    @property
+    def senior_living_facility(self):
+        return self.photo_gallery.senior_living_facility
+
 
 class SeniorLivingFacilityFeatureFlags(TimeStampedModel):
     class Meta:
