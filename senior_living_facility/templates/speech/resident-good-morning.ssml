@@ -1,0 +1,9 @@
+<speak>
+    <p>
+        <s>Good morning {{ name }}.</s>
+    </p>
+
+    {{ todays_date | safe }}
+
+    {% if weather %}{{ weather | safe }}{% endif %}
+</speak>

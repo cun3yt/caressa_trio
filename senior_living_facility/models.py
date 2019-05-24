@@ -57,6 +57,7 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
     check_in_reminder = models.TimeField(null=True,
                                          default=None, )    # todo check business value of having default value
     profile_pic = models.TextField(blank=True, default='')
+    zip_code = models.CharField(max_length=5, null=False, blank=True, default='', )
 
     @property
     def phone_numbers(self) -> list:
@@ -192,16 +193,18 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
 
         return events
 
-    def get_today_events(self) -> dict:
+    def get_now_in_tz(self):
         tz = pytz.timezone(self.timezone)
-        now = datetime.now(tz)
+        return datetime.now(tz)
+
+    def get_today_events(self) -> dict:
+        now = self.get_now_in_tz()
         return self.get_given_day_events(now)
 
     def today_events_summary_in_text(self) -> str:
         spoken_date_format = "%B %d %A"     # e.g. 'March 21 Thursday'
 
-        tz = pytz.timezone(self.timezone)
-        now = datetime.now(tz)
+        now = self.get_now_in_tz()
         today_formatted = now.strftime(spoken_date_format)
 
         events = self.get_today_events()
@@ -428,8 +431,15 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel, AudioFileAndDeliveryR
                                     blank=True,
                                     default='', )
 
+    ssml_content = models.TextField(null=False,
+                                    blank=True,
+                                    default='', )
+
     def get_text_content(self):
         return self.text_content
+
+    def get_ssml_content(self):
+        return self.ssml_content
 
     def get_content_type(self):
         return self.content_type
@@ -575,6 +585,9 @@ class Message(CreatedTimeStampedModel, AudioFileAndDeliveryRuleMixin):
     is_response_expected = models.BooleanField(default=False, )
 
     def get_text_content(self):
+        return self.content
+
+    def get_ssml_content(self):
         return self.content
 
     def get_content_type(self):

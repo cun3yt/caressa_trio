@@ -84,8 +84,11 @@ This setup is written for Mac OS.
     * SENTRY_DSN 
         * Get an invite for Sentry
         * Head [Sentry Caressa Page](https://sentry.io/settings/caressa/projects/)
-        * Create new project as django and you will have the DSN 
-        
+        * Create new project as django and you will have the DSN
+    * OPEN_WEATHER_API_KEY
+        * Hit to https://openweathermap.org/
+        * Sign up, then the service will send an API key for free. Use that API key as the variable.
+
 1. Javascript codebase 
     * JS codes are based on VueJS, with application definitions under /static/javascript/pages/
     * You need to setup webpack to compile the Vue files:
