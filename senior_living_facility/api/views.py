@@ -11,7 +11,8 @@ from alexa.api.permissions import IsSenior
 from alexa.api.serializers import UserSerializer
 from alexa.models import User
 from caressa import settings
-from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserInFacility, IsInSameFacility
+from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserInFacility, IsInSameFacility, \
+    IsUserFacilitySameWithPhotoGalleryFacility
 from senior_living_facility.api import serializers as facility_serializers
 from senior_living_facility.api import calendar_serializers as calendar_serializers
 from senior_living_facility import models as facility_models
@@ -280,10 +281,17 @@ class PhotoGalleryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewse
         return single_dates
 
 
+class PhotoViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, IsFacilityOrgMember, IsUserFacilitySameWithPhotoGalleryFacility, )
+    permission_classes = (IsAuthenticated, )
+    serializer_class = facility_serializers.PhotoSerializer
+    queryset = facility_models.Photo.objects.all()
+
+
 class PhotosDayViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, )
-    serializer_class = facility_serializers.PhotosDaySerializer
+    serializer_class = facility_serializers.PhotoSerializer
 
     @property
     def date(self):

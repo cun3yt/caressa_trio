@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 
 from alexa.models import User
-from senior_living_facility.models import SeniorLivingFacility
+from senior_living_facility.models import SeniorLivingFacility, Photo
 
 
 class IsFacilityOrgMember(BasePermission):
@@ -27,3 +27,14 @@ class IsInSameFacility(BasePermission):
         if not senior.senior_living_facility:
             return False
         return senior.senior_living_facility == request.user.senior_living_facility
+
+
+class IsUserFacilitySameWithPhotoGalleryFacility(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        assert isinstance(obj, Photo), (
+                "The object that is tried to be reached supposed to be Photo, found: '%s'" % type(obj)
+        )
+        photo = obj
+        if not photo.senior_living_facility:
+            return False
+        return photo.senior_living_facility == request.user.senior_living_facility

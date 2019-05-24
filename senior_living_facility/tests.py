@@ -5,7 +5,7 @@ from django.db.models import signals
 from django.test import TestCase, RequestFactory
 
 from caressa.settings import API_URL, S3_PRODUCTION_BUCKET, S3_REGION
-from senior_living_facility.api.serializers import PhotoGallerySerializer, PhotosDaySerializer, MessageThreadSerializer, \
+from senior_living_facility.api.serializers import PhotoGallerySerializer, PhotoSerializer, MessageThreadSerializer, \
     FacilitySerializer, FacilityMessageSerializer, AdminAppSeniorListSerializer, FacilityStaffSerializer
 from senior_living_facility.models import SeniorLivingFacility, ServiceRequest, Photo, PhotoGallery, MessageThread, \
     MessageThreadParticipant, Message, ContentDeliveryRule
@@ -195,6 +195,7 @@ class TestFacilityMessageSerializer(TestCase):
         created_message_instance = serializer.create({})
         self.assertEqual(created_message_instance.content, "")
         self.assertEqual(created_message_instance.source_user, self.staff)
+
 
 class TestAdminAppSeniorListSerializer(TestCase):
     def setUp(self) -> None:
@@ -424,7 +425,7 @@ class TestPhotoGallerySerializer(TestCase):
                                                         "Dictionary to check if validation works")
 
 
-class TestPhotosDaySerializer(TestCase):
+class TestPhotoSerializer(TestCase):
     def setUp(self) -> None:
         self.facility = mommy.make(SeniorLivingFacility, facility_id='CA.Fremont.XYZ')
         self.photo_gallery = mommy.make(PhotoGallery, senior_living_facility=self.facility)
@@ -439,12 +440,12 @@ class TestPhotosDaySerializer(TestCase):
         }
 
         self.photo = Photo.objects.create(**self.photo_attributes)
-        self.serializer = PhotosDaySerializer(instance=self.photo)
+        self.serializer = PhotoSerializer(instance=self.photo)
 
     def test_contains_expected_fields(self):
         data = self.serializer.data
 
-        self.assertCountEqual(data.keys(), ['url'])
+        self.assertCountEqual(data.keys(), ['id', 'url',])
 
     def test_photo_field_content(self):
         data = self.serializer.data
@@ -454,7 +455,7 @@ class TestPhotosDaySerializer(TestCase):
     def test_validation(self):
         self.serializer_data = 'http://dummyimage.com/143x220.jpg/dddddd/000000'
 
-        invalid_serializer = PhotosDaySerializer(data=self.serializer_data)
+        invalid_serializer = PhotoSerializer(data=self.serializer_data)
 
         self.assertFalse(invalid_serializer.is_valid(),)
 
