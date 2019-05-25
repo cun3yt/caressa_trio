@@ -250,7 +250,7 @@ AWS_ACCESS_KEY_ID = environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = environ.get('AWS_SECRET_ACCESS_KEY')
 MEDIA_BUCKET = environ.get('MEDIA_BUCKET')
 S3_RAW_UPLOAD_BUCKET = 'caressa-upload'
-S3_PRODUCTION_BUCKET = 'caressa-prod'
+S3_BUCKET = 'caressa-prod' if ENV == 'PROD' else 'caressa-dev'
 S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 
 admin.site.empty_value_display = '-empty-'
