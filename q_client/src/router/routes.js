@@ -1,10 +1,4 @@
 import Main from '../layouts/Main'
-import Feed from '../pages/Feed'
-import Chat from '../pages/Chat'
-import Settings from '../pages/Settings'
-import Contact from '../pages/Contact'
-import Shop from '../pages/Shop'
-import PageNotFound from '../pages/404'
 
 export default [
   {
@@ -13,39 +7,38 @@ export default [
     children: [
       {
         path: '/',
-        component: Feed,
+        component: () => import('../pages/Feed'),
         name: 'feed'
       },
       {
         path: 'chat',
-        component: Chat,
+        component: () => import('../pages/Chat'),
         name: 'chat'
       },
       {
         path: 'settings',
-        component: Settings,
+        component: () => import('../pages/Settings'),
         name: 'settings'
       },
       {
         path: 'contact',
-        component: Contact,
+        component: () => import('../pages/Contact'),
         name: 'contact'
       },
-
       {
         path: 'shop',
-        component: Shop,
+        component: () => import('../pages/Shop'),
         name: 'shop'
       },
       {
         path: '*',
-        component: PageNotFound
+        component: () => import('../pages/404')
       }
     ]
   },
 
   {
     path: '*',
-    component: PageNotFound
+    component: () => import('../pages/404')
   }
 ]
