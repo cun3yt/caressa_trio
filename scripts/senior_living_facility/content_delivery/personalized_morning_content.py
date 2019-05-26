@@ -47,10 +47,6 @@ def _get_todays_date_text(user: User):
 def send_for_individual(user: Union[User, int, str]):
     user = _get_user(user)
 
-    # todo do the content generation
-
-    content = "something here..."
-
     date_text = _get_todays_date_text(user)
 
     facility = user.senior_living_facility
@@ -76,6 +72,9 @@ def send_for_individual(user: Union[User, int, str]):
                                                senior_living_facility=facility,
                                                content_type=SeniorLivingFacilityContent.TYPE_DAILY_CALENDAR,
                                                ssml_content=output)
+
+    # todo 1. Should `SeniorLivingFacilityContent` have its own method to deliver according to the `delivery_rule`?
+    # todo 2. Delivery and Delivery analytics require a design
 
     # _send_realtime_message(user, content)
 
