@@ -11,7 +11,6 @@ from django.db.models import signals
 from actstream import action
 from actstream.actions import follow as act_follow
 from actstream.models import Action
-from caressa.settings import pusher_client
 from alexa.mixins import FetchRandomMixin
 from rest_framework.renderers import JSONRenderer
 from django.utils import timezone

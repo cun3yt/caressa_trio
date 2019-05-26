@@ -1,0 +1,8 @@
+<p>
+    <s>
+        It is {{ weekday }},
+        <say-as interpret-as="date" format="md">
+            {{ month }}-{{ day }}
+        </say-as>
+    </s>
+</p>

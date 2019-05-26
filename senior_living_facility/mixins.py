@@ -40,6 +40,12 @@ class AudioFileAndDeliveryRuleMixin(models.Model):
         raise NotImplementedError("get_text_content function needed to be implemented by "
                                   "the class using `AudioFileAndDeliveryMixin`")
 
+    def get_ssml_content(self):
+        # todo for SeniorLivingFacilityContent this needs to be returned: `self.ssml_content`
+
+        raise NotImplementedError("get_ssml_content function needed to be implemented by "
+                                  "the class using `AudioFileAndDeliveryMixin`")
+
     def get_content_type(self):
         # todo for SeniorLivingFacilityContent this needs to be returned: `self.content_type`
 
@@ -89,7 +95,16 @@ class AudioFileAndDeliveryRuleMixin(models.Model):
         if self.audio_file is not None:
             return
 
-        url = tts_to_s3(return_format='url', text=self.get_text_content())
+        kwargs = {'return_format': 'url'}
+
+        text = self.get_text_content()
+
+        if text:
+            kwargs = {**kwargs, 'text': text}
+        else:
+            kwargs = {**kwargs, 'ssml': self.get_ssml_content()}
+
+        url = tts_to_s3(**kwargs)
 
         AudioFile = apps.get_model('streaming.AudioFile')
 
