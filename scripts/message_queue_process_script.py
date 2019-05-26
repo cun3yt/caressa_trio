@@ -1,6 +1,6 @@
 from streaming.models import Messages, AudioFile, Tag
 from alexa.models import User
-from caressa.settings import S3_RAW_UPLOAD_BUCKET, S3_REGION, S3_PRODUCTION_BUCKET
+from caressa.settings import S3_RAW_UPLOAD_BUCKET, S3_REGION, S3_BUCKET
 import boto3
 
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket
@@ -24,7 +24,7 @@ def _encode_audio_from_aws_and_upload_to_prod_bucket(ios_file_key):
     webm_audio.export('/tmp/{}'.format(file_key), format='mp3')
     s3_client = boto3.client('s3')
     s3_client.upload_file('/tmp/{}'.format(file_key),
-                          S3_PRODUCTION_BUCKET,
+                          S3_BUCKET,
                           '{file_key}'.format(file_key=file_key),
                           ExtraArgs={'ACL': 'public-read', 'ContentType': 'audio/mp3'})
     return file_key
@@ -51,7 +51,7 @@ def audio_worker(publisher, next_queued_job: Messages):
     audio_type = '{publisher}_voice_record'.format(publisher=publisher)
     description = 'Audio Record from {publisher}'.format(publisher=publisher)
     url = '{region}/{bucket}/{file_key}'.format(region=S3_REGION,
-                                                bucket=S3_PRODUCTION_BUCKET,
+                                                bucket=S3_BUCKET,
                                                 file_key=file_key)
 
     new_audio = AudioFile(audio_type=audio_type, url=url, name=file_key, description=description)
@@ -97,7 +97,7 @@ def text_worker(publisher, next_queued_job: Messages):
     audio_type = '{publisher}_text_message'.format(publisher=publisher)
     description = 'Audio Record from {publisher}'.format(publisher=publisher)
     url = '{region}/{bucket}/{file_key}'.format(region=S3_REGION,
-                                                bucket=S3_PRODUCTION_BUCKET,
+                                                bucket=S3_BUCKET,
                                                 file_key=file_key)
 
     new_audio = AudioFile(audio_type=audio_type, url=url, name=file_key, description=description)
@@ -137,7 +137,7 @@ def personalization_worker(publisher, next_queued_job: Messages):
     audio_type = '{publisher}_text_message'.format(publisher=publisher)
     description = 'Audio Record from {publisher}'.format(publisher=publisher)
     url = '{region}/{bucket}/{file_key}'.format(region=S3_REGION,
-                                                bucket=S3_PRODUCTION_BUCKET,
+                                                bucket=S3_BUCKET,
                                                 file_key=file_key)
 
     new_audio = AudioFile(audio_type=audio_type, url=url, name=file_key, description=description)

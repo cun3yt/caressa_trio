@@ -1,0 +1,10 @@
+<p>
+    <s>
+        The weather is currently {{ temperature_current }} degrees, {{ description }}; with a high of {{ temperature_max }} degrees
+        and a low of {{ temperature_min }} degrees.
+    </s>
+
+    {% if comment %}
+        <s>{{ comment }}</s>
+    {% endif %}
+</p>

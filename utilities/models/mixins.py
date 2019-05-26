@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 
-from caressa.settings import S3_REGION, S3_PRODUCTION_BUCKET
+from caressa.settings import S3_REGION, S3_BUCKET
 
 
 class ProfilePictureMixin:
@@ -12,7 +12,7 @@ class ProfilePictureMixin:
         format_string = "{region}/{bucket}/images/{picture_owner_type}" \
                         "/{upper_dir}/{profile_picture}_{dimensions}.{file_format}"
         return format_string.format(region=S3_REGION,
-                                    bucket=S3_PRODUCTION_BUCKET,
+                                    bucket=S3_BUCKET,
                                     profile_picture=profile_picture,
                                     picture_owner_type=picture_owner_type,
                                     upper_dir=upper_dir,

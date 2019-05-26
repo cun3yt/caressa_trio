@@ -84,8 +84,11 @@ This setup is written for Mac OS.
     * SENTRY_DSN 
         * Get an invite for Sentry
         * Head [Sentry Caressa Page](https://sentry.io/settings/caressa/projects/)
-        * Create new project as django and you will have the DSN 
-        
+        * Create new project as django and you will have the DSN
+    * OPEN_WEATHER_API_KEY
+        * Hit to https://openweathermap.org/
+        * Sign up, then the service will send an API key for free. Use that API key as the variable.
+
 1. Javascript codebase 
     * JS codes are based on VueJS, with application definitions under /static/javascript/pages/
     * You need to setup webpack to compile the Vue files:
@@ -154,13 +157,14 @@ where you are serving your REST globally. Check it out [Serveo](serveo.net). You
 1. We need to use legacy build option for Cordova built. To do that in XCode open your project. File > Workspace Settings > Build System choose Legacy Build System
 1. npm i cordova-plugin-ios-microphone-permissions
 
+## Debugging Your IOS Build
 
-## Debugging Your IOS Build.  
 1. IOS Device: Go to Settings > Safari > Advanced > Enable : Web Inspector / Javascript
 1. Safari Browser : Preferences > Advanced > Enable : Show Develop Menu Bar
 1. Safari Browser : Menu Bar >  Develop >  Your IOS Device > Index is your debugger
 
-## Setting Pusher For Live Updates on Mobile App
+## Setting Pusher For Live Updates on the Clients: Mobile & IoT Device
+
 * Export these environment variables. You can put these in `.envrc` if you are using direnv.
     * PUSHER_APP_ID set to 'some_app_id': `export PUSHER_APP_ID='some_app_id'`
     * PUSHER_KEY set to 'some_pusher_key': `export PUSHER_KEY='some_pusher_key'`
@@ -168,7 +172,8 @@ where you are serving your REST globally. Check it out [Serveo](serveo.net). You
     * PUSHER_CLUSTER set to 'us2': `export PUSHER_CLUSTER='us2'`
     * Don't forget to add these environment variables into pycharm if you are using it.
 
-## Testflight Testing & iOS App Store publish
+## Testing with TestFlight & Publishing to The (iOS) App Store
+
 * Uploading app for testing is can be done with XCODE:
     * In order to release a new build, you need to increment at least build number on XCODE before archive / upload. Version number can stay same.
     * XCODE > Product > Archive > Click
@@ -187,7 +192,8 @@ where you are serving your REST globally. Check it out [Serveo](serveo.net). You
     * Internal testing is limited to 25 person.
 
 ## How Message Queue Process Script Works
-* Relative location of the script : scripts/message_queue_process_script.py
+
+* The script running the queue: scripts/message_queue_process_script.py
 * Script has 3 worker function inside, these are:
     * audio_worker: This one takes audio from s3 (recorded and upload by mobile app) format it to mp3 if needed and pushes its URL with pusher to client.
     * text_worker: This one takes text message from app uses tts_to_s3 function and pushes its URL with pusher to client.
@@ -195,13 +201,16 @@ where you are serving your REST globally. Check it out [Serveo](serveo.net). You
 * You can run the script with this command. `./manage.py runscript  message_queue_process_script` It has infinite loop inside with 2 sec sleep time.
 
 ## Tests and Coverage Report
+
 * Run `coverage run manage.py test` to generate `.coverage` file. Optionally, you can run a specific
 test by adding the path of the test to the end of the command: `coverage run manage.py test utilities.tests`. 
 Event specific unittest class can run: `coverage run manage.py test utilities.tests.TestStatisticsUniformDistribution` 
 * See the test coverage report (interprets `.coverage` file): `coverage report`
 * See `.coveragerc` for default configuration. You can also use command line arguments to change behavior
+* If you are going to run tests in your local and you want to activate test stubs you'll need to change your environment to 'test'. See the environment variables item in the installation part of this document.
 
 ## Email Templates
+
 * Email templates are planned as tables as it is the most convenient way.
 * There is two main part in the templates. Head and Body.
     * Head keeps styles

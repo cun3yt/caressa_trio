@@ -6,11 +6,13 @@ from senior_living_facility.models import SeniorLivingFacility, SeniorDevice
 class SeniorLivingFacilityAdmin(admin.ModelAdmin):
     fields = ('name',
               'facility_id',
+              'zip_code',
               'created',
               'modified', )
     list_display = ('id',
                     'name',
-                    'facility_id', )
+                    'facility_id',
+                    'zip_code', )
     readonly_fields = ('id',
                        'created',
                        'modified', )

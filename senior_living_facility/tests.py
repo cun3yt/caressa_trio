@@ -4,7 +4,7 @@ from unittest import mock
 from django.db.models import signals
 from django.test import TestCase, RequestFactory
 
-from caressa.settings import API_URL, S3_PRODUCTION_BUCKET, S3_REGION
+from caressa.settings import API_URL, S3_BUCKET, S3_REGION
 from senior_living_facility.api.serializers import PhotoGallerySerializer, PhotoSerializer, MessageThreadSerializer, \
     FacilitySerializer, FacilityMessageSerializer, AdminAppSeniorListSerializer, FacilityStaffSerializer
 from senior_living_facility.models import SeniorLivingFacility, ServiceRequest, Photo, PhotoGallery, MessageThread, \
@@ -91,7 +91,7 @@ class TestFacilitySerializer(TestCase):
                                                                               id=self.facility.id, )
         self.profile_pic = "{region}/{bucket}/images/facilities/no_user/" \
                            "default_profile_pic_w_250.jpg".format(region=S3_REGION,
-                                                                  bucket=S3_PRODUCTION_BUCKET,)
+                                                                  bucket=S3_BUCKET, )
 
         self.real_time_communication_channels = {
             'check-in': {
@@ -226,7 +226,7 @@ class TestAdminAppSeniorListSerializer(TestCase):
 
         self.profile_picture_url = '{region}/{bucket}/images/users/no_user/' \
                                    'default_profile_pic_w_250.jpg'.format(region=S3_REGION,
-                                                                          bucket=S3_PRODUCTION_BUCKET,)
+                                                                          bucket=S3_BUCKET, )
 
         self.serializer = AdminAppSeniorListSerializer(instance=self.senior)
 

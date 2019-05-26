@@ -371,7 +371,7 @@ def new_profile_picture(request, **kwargs):
     save_picture_format = 'jpg'
     picture_set = file_ops.profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version,
                                                             save_picture_format)
-    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, instance_type, instance.id)
+    file_ops.upload_to_s3_from_tmp(settings.S3_BUCKET, picture_set, instance_type, instance.id)
 
     instance.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     instance.save()
