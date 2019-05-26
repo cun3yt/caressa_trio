@@ -58,6 +58,8 @@ api_urls = [
          api_views.PhotoGalleryViewSet.as_view({'post': 'create', }), name='new-photo-to-gallery'),
     path('api/photo-galleries/<int:pk>/days/<slug:date>/',
          api_views.PhotosDayViewSet.as_view({'get': 'list', }), name='photo-day-view'),
+    path('api/photos/<int:pk>/',
+         api_views.PhotoViewSet.as_view({'delete': 'destroy', })),
     path('api/calendars/<int:pk>/',
          api_views.CalendarViewSet.as_view(), name='calendar'),
     path('api/<slug:instance>/<int:id>/profile-picture/',

@@ -11,7 +11,8 @@ from alexa.api.permissions import IsSenior
 from alexa.api.serializers import UserSerializer
 from alexa.models import User
 from caressa import settings
-from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserInFacility, IsInSameFacility
+from senior_living_facility.api.permissions import IsFacilityOrgMember, IsUserInFacility, IsInSameFacility, \
+    IsUserFacilitySameWithPhotoGalleryFacility
 from senior_living_facility.api import serializers as facility_serializers
 from senior_living_facility.api import calendar_serializers as calendar_serializers
 from senior_living_facility import models as facility_models
@@ -280,10 +281,17 @@ class PhotoGalleryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewse
         return single_dates
 
 
+class PhotoViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    authentication_classes = (OAuth2Authentication, IsFacilityOrgMember, IsUserFacilitySameWithPhotoGalleryFacility, )
+    permission_classes = (IsAuthenticated, )
+    serializer_class = facility_serializers.PhotoSerializer
+    queryset = facility_models.Photo.objects.all()
+
+
 class PhotosDayViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, )
-    serializer_class = facility_serializers.PhotosDaySerializer
+    serializer_class = facility_serializers.PhotoSerializer
 
     @property
     def date(self):
@@ -363,7 +371,7 @@ def new_profile_picture(request, **kwargs):
     save_picture_format = 'jpg'
     picture_set = file_ops.profile_picture_resizing_wrapper(file_name, new_profile_pic_hash_version,
                                                             save_picture_format)
-    file_ops.upload_to_s3_from_tmp(settings.S3_PRODUCTION_BUCKET, picture_set, instance_type, instance.id)
+    file_ops.upload_to_s3_from_tmp(settings.S3_BUCKET, picture_set, instance_type, instance.id)
 
     instance.profile_pic = new_profile_pic_hash_version.rsplit('.')[0]
     instance.save()

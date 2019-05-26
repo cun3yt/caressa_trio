@@ -19,6 +19,13 @@ UPLOADS_DIR = path_normpath(path_join(BASE_DIR, 'uploads/'))
 
 ENV = environ.get('ENV')
 
+# Production specific changes
+if ENV == 'PROD':
+    s3_bucket_name = 'caressa-prod'
+else:
+    s3_bucket_name = 'caressa-dev'
+
+
 # Test stubs are here, todo: conditional imports can be done similar to how it is done in the hardware code
 if ENV == 'test':
     from utilities.test_stubs import pusher
@@ -239,7 +246,7 @@ AWS_ACCESS_KEY_ID = environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = environ.get('AWS_SECRET_ACCESS_KEY')
 MEDIA_BUCKET = environ.get('MEDIA_BUCKET')
 S3_RAW_UPLOAD_BUCKET = 'caressa-upload'
-S3_PRODUCTION_BUCKET = 'caressa-prod'
+S3_BUCKET = s3_bucket_name
 S3_REGION = 'https://s3-us-west-1.amazonaws.com'
 
 admin.site.empty_value_display = '-empty-'

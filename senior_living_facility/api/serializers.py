@@ -379,7 +379,7 @@ class PhotoGallerySerializer(serializers.ModelSerializer):
         }
 
 
-class PhotosDaySerializer(serializers.ModelSerializer):
+class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = facility_models.Photo
-        fields = ('url', )
+        fields = ('id', 'url', )
