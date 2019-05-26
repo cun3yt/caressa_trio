@@ -23,4 +23,11 @@ export default ({ app, router, Vue }) => {
     pusherKey: vars.PUSHER_KEY,
     pusherCluster: vars.PUSHER_CLUSTER
   }
+  app.scrollData = {
+    chat: 0,
+    contact: 0,
+    feed: 0,
+    settings: 0,
+    shop: 0
+  }
 }
