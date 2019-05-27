@@ -38,7 +38,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id': senior.id,
             'first_name': senior.first_name,
             'last_name': senior.last_name,
-            'profile_pic_url': senior.profile_pic,
+            'profile_pic_url': senior.get_thumbnail_url(),
         }
 
 

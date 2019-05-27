@@ -18,6 +18,18 @@ export default {
       title: 'Shop'
     })
   },
+  methods: {
+    getScrollLocation () {
+      this.$root.$options.scrollData.shop = window.scrollY
+    }
+  },
+  activated () {
+    document.addEventListener('scroll', this.getScrollLocation)
+    window.scrollTo(0, this.$root.$options.scrollData.shop)
+  },
+  deactivated () {
+    document.removeEventListener('scroll', this.getScrollLocation)
+  },
   data () {
     return {
       products: [
