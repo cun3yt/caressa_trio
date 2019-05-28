@@ -58,6 +58,8 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
                                          default=None, )    # todo check business value of having default value
     profile_pic = models.TextField(blank=True, default='')
     zip_code = models.CharField(max_length=5, null=False, blank=True, default='', )
+    mealtimes = JSONField(default={})
+    meal_calendar_url = models.URLField(null=True, blank=True, default=None)
 
     @property
     def phone_numbers(self) -> list:
@@ -193,6 +195,27 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
 
         return events
 
+    def get_given_day_meal_plan(self, time_: datetime):
+
+        tz = pytz.timezone(self.timezone)
+
+        meals = {'set': []}
+
+        if self.meal_calendar_url:
+            qs = query_events(url=self.meal_calendar_url,
+                              start=datetime(time_.year, time_.month, time_.day, 0, 0, 0, tzinfo=tz),
+                              end=datetime(time_.year, time_.month, time_.day, 23, 59, 59, tzinfo=tz),
+                              fix_apple=True)
+
+            meals['set'] = sorted([{'name': meal.summary,
+                                    'menu': meal.description,
+                                    'start': meal.start,
+                                    'end': meal.end, }
+                                   for meal in qs],
+                                  key=lambda meal: meal['start'])
+
+            return meals
+
     def get_now_in_tz(self):
         tz = pytz.timezone(self.timezone)
         return datetime.now(tz)
@@ -200,6 +223,10 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
     def get_today_events(self) -> dict:
         now = self.get_now_in_tz()
         return self.get_given_day_events(now)
+
+    def get_today_meal_plan(self):
+        now = self.get_now_in_tz()
+        return self.get_given_day_meal_plan(now)
 
     def today_events_summary_in_text(self) -> str:
         spoken_date_format = "%B %d %A"     # e.g. 'March 21 Thursday'
@@ -218,6 +245,28 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
 
         template_with_context = template_to_str('speech/whole-calendar-today.ssml', context)
         return ssml_post_process(template_with_context)
+
+    @staticmethod
+    def get_ssml_for_meal(meal: dict):
+        name = meal.get('name')
+        start = meal.get('start')
+        end = meal.get('end')
+        menu = meal.get('menu')
+
+        assert all([name, start, end, menu]), (
+            "`name`, `start`, `end` and `menu` must exist in the event dictionary"
+        )
+
+        context = {
+            'name': name,
+            'start': start,
+            'end': end,
+            'menu': menu
+        }
+
+        template_with_context = template_to_str('speech/meal.ssml', context)
+        return ssml_post_process(template_with_context)
+
 
     @cached_property
     def residents_grouped_by_state(self) -> dict:
@@ -412,10 +461,12 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel, AudioFileAndDeliveryR
     TYPE_DAILY_CALENDAR = 'Daily-Calendar'
     TYPE_CHECK_IN_CALL = 'Check-In-Call'
     TYPE_UPCOMING_INDIVIDUAL_EVENT = 'Upcoming-Individual-Event'
+    TYPE_MEAL_ANNOUNCEMENT = 'Meal-Announcement'
 
     CONTENT_TYPES = Choices(TYPE_DAILY_CALENDAR,
                             TYPE_CHECK_IN_CALL,
-                            TYPE_UPCOMING_INDIVIDUAL_EVENT, )
+                            TYPE_UPCOMING_INDIVIDUAL_EVENT,
+                            TYPE_MEAL_ANNOUNCEMENT, )
 
     senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,
                                                null=False,
