@@ -70,7 +70,7 @@ def send_for_individual(user: Union[User, int, str]):
                                                frequency=0,
                                                recipient_ids=None,
                                                senior_living_facility=facility,
-                                               content_type=SeniorLivingFacilityContent.TYPE_DAILY_CALENDAR,
+                                               content_type=SeniorLivingFacilityContent.TYPE_MORNING_FIRST_CONTENT,
                                                ssml_content=output)
 
     # todo 1. Should `SeniorLivingFacilityContent` have its own method to deliver according to the `delivery_rule`?
@@ -81,7 +81,7 @@ def send_for_individual(user: Union[User, int, str]):
 
 def run(fn_name=None, *args):
     """
-    Usage: See `errors` dictionary above for the script usage usage.
+    Usage: See `errors` dictionary above for the script usage.
     """
 
     if fn_name is None:
