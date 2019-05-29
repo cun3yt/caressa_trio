@@ -63,9 +63,13 @@ class InfoWeather(CreatedTimeStampedModel):
         temp_current = raw_data['main'].get('temp')
         temp_min = raw_data['main'].get('temp_min')
         temp_max = raw_data['main'].get('temp_max')
-        comment = "It is a good day to be out" \
-            if raw_data['weather'][0].get('main').lower() in ('clear', 'clouds', ) \
-            else ""
+
+        # todo this section is hardcoding for demo on May 29th, open it later.
+        #  author Cuneyt M.
+        comment = "It is a good day to be out"
+        # comment = "It is a good day to be out" \
+        #     if raw_data['weather'][0].get('main').lower() in ('clear', 'clouds', ) \
+        #     else ""
 
         weather = InfoWeather.objects.create(zip_code=zip_code,
                                              is_call_successful=response.status_code == 200,
