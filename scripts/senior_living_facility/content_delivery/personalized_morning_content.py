@@ -133,8 +133,8 @@ def send_for_individual(user: Union[User, int, str]):
     output = ssml_post_process(template_with_context)
 
     content = SeniorLivingFacilityContent.find(delivery_type=ContentDeliveryRule.TYPE_INJECTABLE,
-                                               start=time_today_in_tz(facility.timezone, 5, 0),
-                                               end=time_today_in_tz(facility.timezone, 11, 59),
+                                               start=time_today_in_tz(facility.timezone, 0, 1),
+                                               end=time_today_in_tz(facility.timezone, 23, 59),
                                                frequency=0,
                                                recipient_ids=None,
                                                senior_living_facility=facility,
