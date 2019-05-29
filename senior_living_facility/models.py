@@ -24,7 +24,7 @@ from utilities.models.abstract_models import CreatedTimeStampedModel
 from senior_living_facility.mixins import AudioFileAndDeliveryRuleMixin
 from datetime import datetime, time, date, timedelta
 from icalevents.icalevents import events as query_events
-from utilities.speech import ssml_post_process
+from utilities.speech import ssml_post_process, ssml_new_lines_to_breaks
 
 from utilities.real_time_communication import send_instance_message
 from utilities.sms import send_sms
@@ -206,9 +206,8 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
                               start=datetime(time_.year, time_.month, time_.day, 0, 0, 0, tzinfo=tz),
                               end=datetime(time_.year, time_.month, time_.day, 23, 59, 59, tzinfo=tz),
                               fix_apple=True)
-
             meals['set'] = sorted([{'name': meal.summary,
-                                    'menu': meal.description,
+                                    'menu': ssml_new_lines_to_breaks(meal.description),
                                     'start': meal.start,
                                     'end': meal.end, }
                                    for meal in qs],
