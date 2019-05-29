@@ -72,19 +72,19 @@ def _prepare_filler_content():
     }
     text_contents = [
         {
-            'ssml': 'speech/morning/filler-news.ssml',
-            'gender': 'female'
-        },
-        {
-            'ssml': 'speech/morning/filler-medicine-delivery.ssml',
-            'gender': 'male'
-        },
-        {
             'ssml': 'speech/morning/filler-activity.ssml',
             'gender': 'female'
         },
         {
             'ssml': 'speech/morning/filler-joke-feedback.ssml',
+            'gender': 'male'
+        },
+        {
+            'ssml': 'speech/morning/filler-news.ssml',
+            'gender': 'female'
+        },
+        {
+            'ssml': 'speech/morning/filler-medicine-delivery.ssml',
             'gender': 'male'
         },
         {
