@@ -44,25 +44,14 @@ def generate_daily_meal_content(facility: Union[SeniorLivingFacility, int, str])
                 'end': meal['end'] - timedelta(minutes=15),
             }
 
-            content = SeniorLivingFacilityContent.find(delivery_type=ContentDeliveryRule.TYPE_INJECTABLE,
-                                                       start=announcement_time['start'],
-                                                       end=announcement_time['end'],
-                                                       frequency=1,
-                                                       recipient_ids=None,
-                                                       senior_living_facility=facility,
-                                                       content_type=SeniorLivingFacilityContent.TYPE_MEAL_ANNOUNCEMENT,
-                                                       ssml_content=ssml_content, )
-
-            # rule = content.delivery_rule
-            # channel = User.get_facility_channel(facility.facility_id)
-            # send_instance_message(channel=channel,
-            #                       event_name='injectable_content',
-            #                       data={
-            #                           'url': content.audio_url,
-            #                           'hash': content.hash,
-            #                           'start': rule.start.timestamp(),
-            #                           'end': rule.end.timestamp()
-            #                       })
+            SeniorLivingFacilityContent.find(delivery_type=ContentDeliveryRule.TYPE_INJECTABLE,
+                                             start=announcement_time['start'],
+                                             end=announcement_time['end'],
+                                             frequency=1,
+                                             recipient_ids=None,
+                                             senior_living_facility=facility,
+                                             content_type=SeniorLivingFacilityContent.TYPE_MEAL_ANNOUNCEMENT,
+                                             ssml_content=ssml_content, )
 
 
 def run(fn_name=None, *args):
