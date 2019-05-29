@@ -1,4 +1,5 @@
 <speak>
-    There is an activity, "Yoga with Lorrie", at 3 PM. There are also other activities lined up for today. Have fun!
+    There is an activity, "Yoga with Lorrie", at 3 PM. There are also other activities lined up for today.
+    Please stay tuned for calendar updates.
     <break time="{{ after_break_ms }}ms"/>
 </speak>
