@@ -1,11 +1,9 @@
 from google.cloud.texttospeech import TextToSpeechClient, types, enums
-from boto3 import client as boto3_client
 from django.utils.crypto import get_random_string
 from datetime import datetime
 
-from caressa.settings import S3_BUCKET
 from utilities.logger import log_warning
-from utilities.aws_operations import aws_url_creator, upload_mp3_to_s3
+from utilities.aws_operations import upload_mp3_to_s3
 from .setup import credentials
 
 
