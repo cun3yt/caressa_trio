@@ -1,4 +1,4 @@
 <speak>
-    There is an activity, "B-fit with Lorrie", at 3 PM. And other activities lined up for today.
+    There is an activity, "Yoga with Lorrie", at 3 PM. There are also other activities lined up for today. Have fun!
     <break time="{{ after_break_ms }}ms"/>
 </speak>

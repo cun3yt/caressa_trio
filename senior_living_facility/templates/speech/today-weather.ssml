@@ -1,6 +1,6 @@
 <p>
     <s>
-        The weather is currently {{ temperature_current }} degrees, {{ description }}; with a high of {{ temperature_max }} degrees
+        The weather is currently {{ temperature_current }} degrees, you can expect {{ description }}; with a high of {{ temperature_max }} degrees
         and a low of {{ temperature_min }} degrees.
     </s>
 
