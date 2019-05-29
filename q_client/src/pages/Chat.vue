@@ -258,7 +258,17 @@ export default {
         icon: 'far fa-check-circle'
         // detail: this.toString()
       })
+    },
+    getScrollLocation () {
+      this.$root.$options.scrollData.chat = window.scrollY
     }
+  },
+  activated () {
+    document.addEventListener('scroll', this.getScrollLocation)
+    window.scrollTo(0, this.$root.$options.scrollData.chat)
+  },
+  deactivated () {
+    document.removeEventListener('scroll', this.getScrollLocation)
   },
   data () {
     return {

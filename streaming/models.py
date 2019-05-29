@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import signals
 from django.utils.html import format_html
+from filetype import filetype
 
 from alexa import models as alexa_models
 from caressa.settings import AUTH_USER_MODEL as User
@@ -11,6 +12,7 @@ from model_utils.models import TimeStampedModel
 from jsonfield import JSONField
 from urllib.request import urlretrieve
 from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
 from urllib.error import HTTPError
 
 from utilities.cryptography import compute_hash
@@ -181,7 +183,9 @@ class AudioFile(TimeStampedModel):
     def _set_duration(self):
         try:
             filename, headers = urlretrieve(self.url)
-            audio = MP3(filename)
+            file_type = filetype.guess(filename)
+            extension = file_type.extension if file_type else 'mp3'  # todo need better solution if extension is None
+            audio = MP3(filename) if extension == 'mp3' else MP4(filename)
             self.duration = round(audio.info.length)
         except HTTPError:
             self.duration = -1

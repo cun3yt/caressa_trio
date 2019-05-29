@@ -140,6 +140,12 @@ export default {
         vm.pushNotif()
       })
     },
+    addMoreFeeds () {
+      this.moreFeedsNeeded = this.bottomVisible()
+    },
+    getScrollLocation () {
+      this.$root.$options.scrollData.feed = window.scrollY
+    },
     pushNotif () {
       this.$q.notify({
         color: 'positive',
@@ -174,10 +180,16 @@ export default {
     this.setupContent({
       title: 'Latest'
     })
-    window.addEventListener('scroll', () => {
-      this.moreFeedsNeeded = this.bottomVisible()
-    })
     this.pushFeeds()
+  },
+  activated () {
+    document.addEventListener('scroll', this.addMoreFeeds)
+    document.addEventListener('scroll', this.getScrollLocation)
+    window.scrollTo(0, this.$root.$options.scrollData.feed)
+  },
+  deactivated () {
+    document.removeEventListener('scroll', this.addMoreFeeds)
+    document.removeEventListener('scroll', this.getScrollLocation)
   }
 }
 </script>

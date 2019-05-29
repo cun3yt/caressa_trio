@@ -17,8 +17,9 @@
     </q-layout-header>
 
     <q-page-container>
-      <router-view :setup-content="setupContent" :log-out="logOut"></router-view>
-
+      <keep-alive>
+        <router-view :setup-content="setupContent" :log-out="logOut"></router-view>
+      </keep-alive>
       <q-modal v-model="signUpModal" maximized>
       <div style="padding: 2.5em; margin-top: 1.5em">
         <div class="q-display-3">

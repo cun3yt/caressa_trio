@@ -100,7 +100,17 @@ export default {
         position: 'top-right',
         detail: `We will reach you from ${this.email}`
       })
+    },
+    getScrollLocation () {
+      this.$root.$options.scrollData.contact = window.scrollY
     }
+  },
+  activated () {
+    document.addEventListener('scroll', this.getScrollLocation)
+    window.scrollTo(0, this.$root.$options.scrollData.contact)
+  },
+  deactivated () {
+    document.removeEventListener('scroll', this.getScrollLocation)
   },
   data () {
     return {

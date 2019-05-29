@@ -455,6 +455,9 @@ export default {
           this.showNotif({message: 'Something went wrong, please try again.', icon: 'fas fa-times', color: 'negative'})
           console.error(err)
         })
+    },
+    getScrollLocation () {
+      this.$root.$options.scrollData.settings = window.scrollY
     }
   },
   mounted () {
@@ -468,6 +471,13 @@ export default {
       }
       return this.genres.settings.genres.filter((genre) => { return genre.is_selected }).length > 0
     }
+  },
+  activated () {
+    document.addEventListener('scroll', this.getScrollLocation)
+    window.scrollTo(0, this.$root.$options.scrollData.settings)
+  },
+  deactivated () {
+    document.removeEventListener('scroll', this.getScrollLocation)
   }
 }
 </script>
