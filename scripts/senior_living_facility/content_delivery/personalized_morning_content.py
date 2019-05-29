@@ -44,7 +44,7 @@ def _send_realtime_message(user: User, content: SeniorLivingFacilityContent):
     """
 
     rule = content.delivery_rule
-    channel = User.get_facility_channel(user.senior_living_facility.id)
+    channel = User.get_facility_channel(user.senior_living_facility.facility_id)
     send_instance_message(channel,
                           'injectable_content',
                           {
