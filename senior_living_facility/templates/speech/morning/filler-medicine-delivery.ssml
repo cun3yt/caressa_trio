@@ -1,0 +1,4 @@
+<speak>
+    Your medicine will be delivered to your room at 2 PM today. Please stay in your room to sign off.
+    <break time="{{ after_break_ms }}ms"/>
+</speak>

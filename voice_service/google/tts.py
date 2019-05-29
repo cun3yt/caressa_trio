@@ -3,16 +3,32 @@ from boto3 import client as boto3_client
 from django.utils.crypto import get_random_string
 from datetime import datetime
 
-from utilities.aws_operations import aws_url_creator
+from caressa.settings import S3_BUCKET
+from utilities.logger import log_warning
+from utilities.aws_operations import aws_url_creator, upload_mp3_to_s3
 from .setup import credentials
 
-S3_REGION = 'https://s3-us-west-1.amazonaws.com'
-S3_PRODUCTION_BUCKET = 'caressa-prod'
+
+def _gender_to_enum(gender='neutral'):
+    list_of_genders = ['neutral', 'male', 'female', ]
+    assert gender in list_of_genders, (
+        "gender parameter is supposed to be one of these: {}".format(', '.join(list_of_genders))
+    )
+    if gender == 'neutral':
+        return enums.SsmlVoiceGender.NEUTRAL
+    elif gender == 'male':
+        return enums.SsmlVoiceGender.MALE
+    elif gender == 'female':
+        return enums.SsmlVoiceGender.FEMALE
+    else:
+        log_warning("Gender is not known: {}".format(gender))
+        return enums.SsmlVoiceGender.SSML_VOICE_GENDER_UNSPECIFIED
 
 
-def tts(**kwargs) -> (str, str):
+def tts(gender='neutral', **kwargs) -> (str, str):
     text = kwargs.get('text', None)
     ssml = kwargs.get('ssml', None)
+    gender_enum = _gender_to_enum(gender)
 
     if not text and not ssml:
         raise ValueError('either text or ssml must be provided as a keyword argument, you provide nothing')
@@ -23,12 +39,8 @@ def tts(**kwargs) -> (str, str):
 
     synthesis_input = types.SynthesisInput(**kwargs)
 
-    voice = types.VoiceSelectionParams(
-        language_code='en-US',
-        ssml_gender=enums.SsmlVoiceGender.NEUTRAL)
-
+    voice = types.VoiceSelectionParams(language_code='en-US', ssml_gender=gender_enum)
     audio_config = types.AudioConfig(audio_encoding=enums.AudioEncoding.MP3)
-
     response = client.synthesize_speech(synthesis_input, voice, audio_config)
 
     filename = '{now}-{random}.mp3'.format(now=datetime.utcnow().strftime("%Y-%m-%d-%H-%M-%S"),
@@ -44,15 +56,4 @@ def tts(**kwargs) -> (str, str):
 def tts_to_s3(return_format: str, **kwargs) -> str:
     filename, local_file_path = tts(**kwargs)
     file_key = 'tts/{filename}'.format(filename=filename)
-    s3_client = boto3_client('s3')
-    s3_client.upload_file(local_file_path,
-                          S3_PRODUCTION_BUCKET,
-                          file_key,
-                          ExtraArgs={'ACL': 'public-read', 'ContentType': 'audio/mp3'})
-
-    if return_format == 'key':
-        return file_key
-
-    url = aws_url_creator(bucket=S3_PRODUCTION_BUCKET, file_key=file_key)
-
-    return url
+    return upload_mp3_to_s3(file_key, local_file_path, return_format)
