@@ -88,7 +88,8 @@ class AudioFileAndDeliveryRuleMixin(models.Model):
         return inst
 
     def _generate_hash(self):
-        txt = "{}-{}-{}".format(str(self.delivery_rule), self.get_text_content(), self.get_content_type())
+        txt = "{}-{}-{}-{}".format(str(self.delivery_rule), self.get_text_content(), self.get_ssml_content(),
+                                   self.get_content_type())
         return compute_hash(txt)
 
     def set_audio_file(self, audio_type):
