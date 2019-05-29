@@ -20,7 +20,7 @@ UPLOADS_DIR = path_normpath(path_join(BASE_DIR, 'uploads/'))
 ENV = environ.get('ENV')
 
 # Production specific changes
-if ENV == 'PROD':
+if ENV == 'prod':
     s3_bucket_name = 'caressa-prod'
 else:
     s3_bucket_name = 'caressa-dev'
