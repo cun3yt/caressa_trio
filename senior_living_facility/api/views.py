@@ -21,7 +21,8 @@ from datetime import datetime, timedelta
 
 from senior_living_facility.models import SeniorLivingFacility, Photo
 from utilities import file_operations as file_ops
-from utilities.aws_operations import move_file_from_upload_to_prod_bucket
+from utilities.aws_operations import move_file_from_upload_to_prod_bucket, \
+    resize_photo_from_aws_and_upload_to_prod_bucket
 from utilities.time import now_in_tz, today_in_tz, time_today_in_tz
 
 
@@ -260,9 +261,14 @@ class PhotoGalleryViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewse
         for file_dict in request.data:
             source_file_key = file_dict['key']
             dest_file_key = 'images/facility/{id}/photo_gallery/{key}'.format(id=self.facility.id, key=source_file_key)
+            raw_dest_file_key = 'images/facility/{id}/photo_gallery/raw_{key}'.format(id=self.facility.id,
+                                                                                      key=source_file_key)
 
-            file_url = move_file_from_upload_to_prod_bucket(source_file_key=source_file_key,
-                                                            dest_file_key=dest_file_key)
+            move_file_from_upload_to_prod_bucket(source_file_key=source_file_key,
+                                                 dest_file_key=raw_dest_file_key)
+
+            file_url = resize_photo_from_aws_and_upload_to_prod_bucket(source_file_key=source_file_key,
+                                                                       dest_file_key=dest_file_key)
 
             Photo.objects.create(photo_gallery=photo_gallery, date=today, url=file_url)
 
