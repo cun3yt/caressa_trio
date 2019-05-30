@@ -1,3 +1,4 @@
+import json
 import re
 
 import pytz
@@ -154,42 +155,59 @@ class SeniorLivingFacility(TimeStampedModel, ProfilePictureMixin):
         return result_list
 
     def get_given_day_events(self, time_: datetime) -> dict:
-        spoken_time_format = DATETIME_FORMATS['spoken']['time']
 
-        tz = pytz.timezone(self.timezone)
+        import redis
+        r = redis.Redis(host='localhost', port='6379', db=0)
 
-        events = {
-            'count': 0,
-            'all_day': {
+        given_day_events = r.get('facility::1::calendar::events::{day}'.format(day=time_.strftime('%Y-%m-%d')))
+
+        if given_day_events:
+            return json.loads(given_day_events)
+        else:
+            spoken_time_format = DATETIME_FORMATS['spoken']['time']
+
+            tz = pytz.timezone(self.timezone)
+
+            events = {
                 'count': 0,
-                'set': [],
-            },
-            'hourly_events': {
-                'count': 0,
-                'set': [],
-            },
-        }
+                'all_day': {
+                    'count': 0,
+                    'set': [],
+                },
+                'hourly_events': {
+                    'count': 0,
+                    'set': [],
+                },
+            }
 
-        if self.calendar_url:
-            qs = query_events(url=self.calendar_url,
-                              start=datetime(time_.year, time_.month, time_.day, 0, 0, 0, tzinfo=tz),
-                              end=datetime(time_.year, time_.month, time_.day, 23, 59, 59, tzinfo=tz),
-                              fix_apple=True)
+            if self.calendar_url:
+                qs = query_events(url=self.calendar_url,
+                                  start=datetime(time_.year, time_.month, time_.day, 0, 0, 0, tzinfo=tz),
+                                  end=datetime(time_.year, time_.month, time_.day, 23, 59, 59, tzinfo=tz),
+                                  fix_apple=True)
 
-            events['all_day']['set'] = [{'summary': event.summary,
-                                         'location': event.description, }
-                                        for event in qs if event.all_day]
-            events['all_day']['count'] = len(events['all_day']['set'])
+                events['all_day']['set'] = [{'summary': event.summary,
+                                             'location': event.description, }
+                                            for event in qs if event.all_day]
+                events['all_day']['count'] = len(events['all_day']['set'])
 
-            events['hourly_events']['set'] = sorted([{'summary': event.summary,
-                                                      'location': event.description,
-                                                      'start': event.start,
-                                                      'start_spoken':
-                                                          event.start.astimezone(tz).strftime(spoken_time_format), }
-                                                     for event in qs if not event.all_day],
-                                                    key=lambda event: event['start'])
-            events['hourly_events']['count'] = len(events['hourly_events']['set'])
-            events['count'] = events['all_day']['count'] + events['hourly_events']['count']
+                events['hourly_events']['set'] = sorted([{'summary': event.summary,
+                                                          'location': event.description,
+                                                          'start': event.start,
+                                                          'start_spoken':
+                                                              event.start.astimezone(tz).strftime(spoken_time_format), }
+                                                         for event in qs if not event.all_day],
+                                                        key=lambda event: event['start'])
+                events['hourly_events']['count'] = len(events['hourly_events']['set'])
+                events['count'] = events['all_day']['count'] + events['hourly_events']['count']
+
+                json_dump_events = json.dumps(events,  # todo extra args for quick & dirty to bypass datetime dump error
+                                              indent=4,
+                                              sort_keys=True,
+                                              default=str)
+                r.set(name='facility::1::calendar::events::{day}'.format(day=time_.strftime('%Y-%m-%d')),
+                      value=json_dump_events,
+                      ex=86400)  # info 86400 = 24 Hours
 
         return events
 
