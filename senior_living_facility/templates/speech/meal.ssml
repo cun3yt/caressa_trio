@@ -1,0 +1,20 @@
+<speak>
+    <p>
+        <s>
+		    {{ name }} is getting served now; from
+		    <say-as interpret-as='time' format='hms12'>
+		        {{ start | date:"g:iA"}}
+		    </say-as>
+		    to
+		    <say-as interpret-as='time' format='hms12'>
+		        {{ end | date:"g:iA"}}
+		    </say-as>
+        </s>
+        <s>
+            Today, we are serving {{ menu |safe}}
+        </s>
+        <s>
+            Don’t miss your {{ name }}.
+        </s>
+	</p>
+</speak>
