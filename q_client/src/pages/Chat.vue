@@ -10,35 +10,41 @@
       <div v-else>
         <div :class="isOnline ? 'online' : 'offline'"><i class="fas fa-circle"></i> {{ deviceStatus }}</div>
       </div>
-      <div style="width: 500px; max-width: 90vw;">
-        <div v-for="(msg, index) in messages" :key="`reg-${index}`">
-          <q-chat-message
-            v-if="msg.type === 'family_ios_text'"
-            :key="`reg-${index}`"
-            :label="msg.label"
-            :sent="msg.sent"
-            :text-color="msg.textColor"
-            :bg-color="msg.bgColor"
-            :name="msg.name"
-            :avatar="getAvatar(msg)"
-            :text="msg.text"
-            :stamp="msg.stamp"
-          />
-          <q-chat-message
-            v-else-if="msg.type === 'audio'"
-            :key="`reg-${index}`"
-            :label="msg.label"
-            :sent="msg.sent"
-            :text-color="msg.textColor"
-            :bg-color="msg.bgColor"
-            :name="msg.name"
-            :avatar="getAvatar(msg)"
-            :stamp="msg.stamp"
-          >
-            <q-btn round icon="fas fa-play" color="brown" @click="playRecord">  </q-btn>
-          </q-chat-message>
-        </div>
-      </div>
+        <q-scroll-area ref="chatScrollArea"
+                       style="width: 500px; max-width: 90vw; padding: 20px; height: 440px;"
+                       :thumb-style="{ left: '0px', width: '5px' }">
+          <q-card flat square ref="chatArea">
+            <q-card-main>
+              <div v-for="(msg, index) in messages" :key="`reg-${index}`">
+                <q-chat-message
+                  v-if="msg.type === 'family_ios_text'"
+                  :key="`reg-${index}`"
+                  :label="msg.label"
+                  :sent="msg.sent"
+                  :text-color="msg.textColor"
+                  :bg-color="msg.bgColor"
+                  :name="msg.name"
+                  :avatar="getAvatar(msg)"
+                  :text="msg.text"
+                  :stamp="msg.stamp"
+                />
+                <q-chat-message
+                  v-else-if="msg.type === 'audio'"
+                  :key="`reg-${index}`"
+                  :label="msg.label"
+                  :sent="msg.sent"
+                  :text-color="msg.textColor"
+                  :bg-color="msg.bgColor"
+                  :name="msg.name"
+                  :avatar="getAvatar(msg)"
+                  :stamp="msg.stamp"
+                >
+                  <q-btn round icon="fas fa-play" color="brown" @click="playRecord">  </q-btn>
+                </q-chat-message>
+              </div>
+            </q-card-main>
+          </q-card>
+        </q-scroll-area>
 
       <q-page-sticky position="bottom" :offset="[10, 10]">
       <div style="width: 500px; max-width: 90vw; padding: 20px;">
@@ -131,6 +137,9 @@ export default {
       if (this.messageText !== '') {
         this.textMessageObj.text.push(this.messageText)
       }(this.messages.push(this.textMessageObj))
+
+      this.$refs.chatScrollArea.setScrollPosition(this.$refs.chatArea.$el.scrollHeight, 500)
+
       this.$auth.post(`${this.$root.$options.hosts.rest}/new_message/`, {
         'type': 'family_ios_text',
         'key': key,
