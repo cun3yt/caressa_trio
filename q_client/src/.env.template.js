@@ -8,5 +8,6 @@ export default {
   PUSHER_CLUSTER: 'cluster-value',
   API_HOST: 'api-host-address',
   CLIENT_ID: 'api-client-id',
-  CLIENT_SECRET: 'api-client-secret'
+  CLIENT_SECRET: 'api-client-secret',
+  SENTRY_DSN: 'sentry-dsn-from-sentry.io'
 }
