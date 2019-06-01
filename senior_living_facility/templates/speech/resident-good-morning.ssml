@@ -6,4 +6,8 @@
     {{ todays_date | safe }}
 
     {% if weather %}{{ weather | safe }}{% endif %}
+
+    {% if filler_content_url %}
+        <audio src="{{ filler_content_url }}"></audio>
+    {% endif %}
 </speak>

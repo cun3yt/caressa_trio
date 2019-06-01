@@ -53,8 +53,8 @@ def deliver_daily_calendar(facility: Union[SeniorLivingFacility, int, str]):
 
     events_summary = facility.today_events_summary_in_text()
     content = SeniorLivingFacilityContent.find(delivery_type=ContentDeliveryRule.TYPE_INJECTABLE,
-                                               start=time_today_in_tz(facility.timezone, 1, 0),
-                                               end=time_today_in_tz(facility.timezone, 16, 0),
+                                               start=time_today_in_tz(facility.timezone, 0, 1),
+                                               end=time_today_in_tz(facility.timezone, 23, 59),
                                                frequency=0,
                                                recipient_ids=None,
                                                senior_living_facility=facility,

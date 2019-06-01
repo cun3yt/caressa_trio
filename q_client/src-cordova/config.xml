@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.caressa.mobile.app.dev2" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="com.caressa.mobile.app.dev" version="0.0.1" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>Caressa</name>
     <description>Family Application</description>
     <author email="dev@cordova.apache.org" href="http://cordova.io">
@@ -34,6 +34,7 @@
     <plugin name="cordova-plugin-photo-library" spec="^2.2.1">
         <variable name="PHOTO_LIBRARY_USAGE_DESCRIPTION" value="To choose photos" />
     </plugin>
+    <preference name="DisallowOverscroll" value="true" />
     <engine name="android" spec="^7.0.0" />
     <engine name="ios" spec="^4.5.5" />
 </widget>

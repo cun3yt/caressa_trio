@@ -1,0 +1,5 @@
+<speak>
+    Your daughter, Amy, thinks you will like this song: I Wanna Dance With Somebody, by Whitney Houston.
+    <break time="{{ after_break_ms }}ms"/>
+    <audio src="https://s3-us-west-1.amazonaws.com/caressa-prod/music/pop/whitney-houston/I+Wanna+Dance+with+Somebody.mp3"></audio>
+</speak>

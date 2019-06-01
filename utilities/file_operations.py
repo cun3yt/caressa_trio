@@ -1,13 +1,8 @@
-"""
-todo image operations deserve their own module, I think this file can be renamed as `image.py`
-
-@author Cuneyt M.
-"""
-
 from PIL import Image
 import boto3
 from shutil import copyfile
 from uuid import uuid4
+from pydub import AudioSegment
 
 
 def image_resizer(file_name, hash_version, file_format, size):
@@ -92,3 +87,14 @@ def generate_versioned_picture_name(current_picture_name=''):
     increment_version = int(current_picture_version[1:]) + 1
     return '{hash}_v{version}'.format(hash=str(uuid4())[:8],
                                       version=increment_version,)
+
+
+def concat_mp3_files(files: list, output_file_name) -> str:
+    combined = AudioSegment.empty()
+
+    for file in files:
+        combined += AudioSegment.from_mp3(file)
+
+    file_location = "/tmp/{}".format(output_file_name)
+    combined.export(file_location, format="mp3")
+    return file_location

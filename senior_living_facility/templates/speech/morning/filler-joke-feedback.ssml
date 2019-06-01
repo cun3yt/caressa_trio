@@ -1,0 +1,7 @@
+<speak>
+    Your granddaughter, Jenny, also likes the “knock knock” joke you heard last night.
+    <break time="{{ after_break_ms }}ms"/>
+    She replied <break time="{{ after_break_ms }}ms"/>
+    <audio src="https://s3-us-west-1.amazonaws.com/caressa-prod/audio/demo/grandkid-to-grandma.mp3"></audio>
+    <break time="{{ after_break_ms }}ms"/>
+</speak>

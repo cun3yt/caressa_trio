@@ -460,11 +460,13 @@ class SeniorLivingFacilityContent(CreatedTimeStampedModel, AudioFileAndDeliveryR
     TYPE_DAILY_CALENDAR = 'Daily-Calendar'
     TYPE_CHECK_IN_CALL = 'Check-In-Call'
     TYPE_UPCOMING_INDIVIDUAL_EVENT = 'Upcoming-Individual-Event'
+    TYPE_MORNING_FIRST_CONTENT = 'Morning-First-Content'
     TYPE_MEAL_ANNOUNCEMENT = 'Meal-Announcement'
 
     CONTENT_TYPES = Choices(TYPE_DAILY_CALENDAR,
                             TYPE_CHECK_IN_CALL,
                             TYPE_UPCOMING_INDIVIDUAL_EVENT,
+                            TYPE_MORNING_FIRST_CONTENT,
                             TYPE_MEAL_ANNOUNCEMENT, )
 
     senior_living_facility = models.ForeignKey(to=SeniorLivingFacility,

@@ -77,7 +77,7 @@ class TtsTestCases(TestCase):
         self.assertTrue(filename.endswith('.mp3'))
         self.assertTrue(local_file_path.startswith('/tmp/'))
 
-    @patch('voice_service.google.tts.boto3_client')
+    @patch('utilities.aws_operations.boto3')
     @patch('voice_service.google.tts.tts')
     def test_tts_to_s3(self, mock_tts, mock_boto3_client):
         def _upload_file(*args, **kwargs):
@@ -89,7 +89,7 @@ class TtsTestCases(TestCase):
         file_key = tts_to_s3('key', text='Yesterday, all my trouble seems so far away!')
         self.assertEqual(file_key, 'tts/a-file.mp3')
 
-    @patch('voice_service.google.tts.boto3_client')
+    @patch('utilities.aws_operations.boto3')
     @patch('voice_service.google.tts.tts')
     def test_tts_to_s3_url(self, mock_tts, mock_boto3_client):
         def _upload_file(*args, **kwargs):
@@ -99,4 +99,4 @@ class TtsTestCases(TestCase):
         mock_boto3_client.return_value = _Response(upload_file=_upload_file)
 
         url = tts_to_s3('url', text='Yesterday, all my trouble seems so far away!')
-        self.assertEqual(url, 'https://s3-us-west-1.amazonaws.com/caressa-prod/tts/a-file.mp3')
+        self.assertEqual(url, 'https://s3-us-west-1.amazonaws.com/caressa-dev/tts/a-file.mp3')
