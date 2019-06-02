@@ -1,6 +1,8 @@
 import pytz
 
 from django.db.models import Q, Count
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework import viewsets, mixins, status, views
 from rest_framework.response import Response
 from rest_framework.decorators import authentication_classes, permission_classes, api_view
@@ -23,7 +25,8 @@ from senior_living_facility.models import SeniorLivingFacility, Photo
 from utilities import file_operations as file_ops
 from utilities.aws_operations import move_file_from_upload_to_prod_bucket, \
     resize_photo_from_aws_and_upload_to_prod_bucket
-from utilities.time import now_in_tz, today_in_tz, time_today_in_tz
+from utilities.time import now_in_tz, today_in_tz
+from caressa.settings import CACHE_DEFAULT_TIMEOUT
 
 
 class SeniorLivingFacilityViewSet(mixins.UpdateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -319,6 +322,7 @@ class CalendarViewSet(views.APIView):
     authentication_classes = (OAuth2Authentication, )
     permission_classes = (IsAuthenticated, IsFacilityOrgMember, )
 
+    @method_decorator(cache_page(CACHE_DEFAULT_TIMEOUT))
     def get(self, request, pk, format=None):
         """
         Returns the calendar events for the days of the given day GET parameter `start` +/- day_delta.
