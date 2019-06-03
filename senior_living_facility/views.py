@@ -1,7 +1,3 @@
-import json
-
-from django.core import serializers
-from django.forms import model_to_dict
 from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from alexa.admin import UserCreationForm

@@ -234,6 +234,19 @@ if DB_DEBUG:
         },
     }
 
+CACHE_DEFAULT_TIMEOUT = 7200
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'z_cache_table',
+        'TIMEOUT': CACHE_DEFAULT_TIMEOUT,
+        'OPTIONS': {
+            'MAX_ENTRIES': 10000,
+        }
+    }
+}
+
 # Pusher ENV variables
 pusher_app_id = environ.get('PUSHER_APP_ID')
 pusher_key_id = environ.get('PUSHER_KEY')
