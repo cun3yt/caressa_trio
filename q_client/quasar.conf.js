@@ -7,6 +7,7 @@ module.exports = function (ctx) {
       'resource',
       'auth',
       'vuelidate',
+      'sentry'
     ],
     css: [
       'app.styl'

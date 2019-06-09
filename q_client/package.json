@@ -11,6 +11,8 @@
     "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
+    "@sentry/browser": "^5.4.0",
+    "@sentry/integrations": "^5.4.1",
     "chart.js": "^2.7.2",
     "cordova-plugin-ios-microphone-permissions": "^1.0.0",
     "cordova-plugin-media-stub": "^2.1.0",
